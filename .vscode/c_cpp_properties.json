@@ -3,11 +3,13 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "C:/raylib/w64devkit/include"
     
             ],
             "defines": [],
-            "compilerPath": "C:/mingw64/bin/gcc.exe",
+            // "compilerPath": "C:/mingw64/bin/gcc.exe",
+            "compilerPath": "C:/raylib/w64devkit/bin/gcc.exe",
             "cStandard": "c17",
             "intelliSenseMode": "windows-gcc-x64"
         }
