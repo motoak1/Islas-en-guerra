@@ -2,39 +2,34 @@
     "version": "2.0.0",
     "tasks": [
         {
-    "type": "shell",
-    "label": "Compilar Islas en Guerra",
-    "command": "C:/raylib/w64devkit/bin/gcc.exe",
-    "args": [
-        "-g",
-        "${workspaceFolder}/mapa/mapa.c",
-        "${workspaceFolder}/mapa/visual.c",
-        "${workspaceFolder}/mapa/demoMapa.c",
-        "-o",
-        "${workspaceFolder}/Islas en guerra.exe",
-        "-IC:/raylib/w64devkit/x86_64-w64-mingw32/include",
-        "-LC:/raylib/w64devkit/x86_64-w64-mingw32/lib",
-        "-lraylib",
-        "-lopengl32",
-        "-lgdi32",
-        "-lwinmm",
-        "-lshell32",
-        "-lm",
-        "-Wl,-subsystem,console"
-    ],
-    "options": {
-        "shell": {
-            "executable": "C:\\Windows\\System32\\cmd.exe",
-            "args": ["/c"]
+            "type": "shell",
+            "label": "Compilar Islas en Guerra",
+            "command": "C:/raylib/w64devkit/bin/gcc.exe",
+            "args": [
+                "-g",
+                "${workspaceFolder}/mapa/mapa.c",
+                "${workspaceFolder}/mapa/visual.c",
+                "${workspaceFolder}/mapa/demoMapa.c",
+                "-o",
+                "${workspaceFolder}/Islas en guerra.exe",
+
+                "-lgdi32",
+                "-lm",
+                "-Wl,-subsystem,console"
+            ],
+            "options": {
+                "shell": {
+                    "executable": "C:\\Windows\\System32\\cmd.exe",
+                    "args": ["/c"]
+                },
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"]
         },
-        "cwd": "${workspaceFolder}"
-    },
-    "group": {
-        "kind": "build",
-        "isDefault": true
-    },
-    "problemMatcher": ["$gcc"]
-},
         {
             "type": "cppbuild",
             "label": "C/C++: gcc.exe build active file",
