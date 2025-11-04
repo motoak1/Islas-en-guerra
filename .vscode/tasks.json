@@ -11,7 +11,7 @@
                 "${workspaceFolder}/mapa/visual.c",
                 "${workspaceFolder}/mapa/demoMapa.c",
                 "-o",
-                "${workspaceFolder}/Islas en guerra.exe",
+                "${workspaceFolder}/Islas-en-guerra.exe",
 
                 "-lgdi32",
                 "-lm",

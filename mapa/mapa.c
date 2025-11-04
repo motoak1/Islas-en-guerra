@@ -1,189 +1,195 @@
-// mapa.c
-#include <stdio.h>
+#include "mapa.h"
 #include <stdlib.h>
 #include <time.h>
-#include <windows.h>
-#include "mapa.h"
+#include <conio.h>
 
-// ===================================================
-// Ajustes de consola (tamaño y utilidades)
-// ===================================================
-static HANDLE hConsole = NULL;
+#define NUM_ISLAS 4
+#define NUM_RECURSOS 15
+#define NUM_ENEMIGOS 8
 
-void inicializarConsola(int ancho, int alto) {
-    hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-
-    // Ajustar tamaño del buffer primero
-    COORD bufferSize = { (SHORT)ancho, (SHORT)(alto + 2) }; // +2 para la línea de ayuda
-    SetConsoleScreenBufferSize(hConsole, bufferSize);
-
-    // Ajustar ventana
-    SMALL_RECT windowSize = { 0, 0, (SHORT)(ancho - 1), (SHORT)(alto - 1) };
-    SetConsoleWindowInfo(hConsole, TRUE, &windowSize);
-
-    // Opcional: esconder cursor para evitar parpadeo
+/* ============================= */
+/*  Oculta el cursor de consola  */
+/* ============================= */
+void ocultarCursor() {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO cursorInfo;
-    GetConsoleCursorInfo(hConsole, &cursorInfo);
+    GetConsoleCursorInfo(hOut, &cursorInfo);
     cursorInfo.bVisible = FALSE;
-    SetConsoleCursorInfo(hConsole, &cursorInfo);
+    SetConsoleCursorInfo(hOut, &cursorInfo);
 }
 
-void restaurarCursorVisible() {
-    if (!hConsole) return;
-    CONSOLE_CURSOR_INFO cursorInfo;
-    GetConsoleCursorInfo(hConsole, &cursorInfo);
-    cursorInfo.bVisible = TRUE;
-    SetConsoleCursorInfo(hConsole, &cursorInfo);
+/* ============================= */
+/*  Mueve el cursor a (x, y)     */
+/* ============================= */
+void moverCursor(short x, short y) {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    COORD pos;
+    pos.X = x;
+    pos.Y = y;
+    SetConsoleCursorPosition(hOut, pos);
 }
 
-// Mueve el cursor a (x,y)
-void moverCursor(int x, int y) {
-    if (!hConsole) hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    COORD pos = { (SHORT)x, (SHORT)y };
-    SetConsoleCursorPosition(hConsole, pos);
+/* ============================= */
+/*  Cambia color de texto/fondo  */
+/* ============================= */
+void setColor(int colorFondo, int colorTexto) {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(hOut, colorFondo * 16 + colorTexto);
 }
 
-// Cambia color (atributo) del texto (0..255, usamos bajo 16)
-void setColor(int color) {
-    if (!hConsole) hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetConsoleTextAttribute(hConsole, (WORD)color);
+/* ============================= */
+/*  Inicializa el mapa base      */
+/* ============================= */
+void inicializarMapa(char mapa[SIZE][SIZE]) {
+    int i, j;
+    int cx, cy, w, h, ix, iy;
+    int placed, rx, ry, ex, ey, patch;
+
+    srand((unsigned int)time(NULL));
+
+    /* Llenar todo con agua */
+    for (i = 0; i < SIZE; i++) {
+        for (j = 0; j < SIZE; j++) {
+            mapa[i][j] = '~';
+        }
+    }
+
+    /* Crear islas: regiones de '.' con distinto tamaño y posición */
+    for (patch = 0; patch < NUM_ISLAS; patch++) {
+        cx = rand() % SIZE;
+        cy = rand() % SIZE;
+        w = 3 + rand() % 5;
+        h = 2 + rand() % 4;
+
+        for (ix = cx; ix < cx + h && ix < SIZE; ix++) {
+            for (iy = cy; iy < cy + w && iy < SIZE; iy++) {
+                if (ix >= 0 && iy >= 0)
+                    mapa[ix][iy] = '.';
+            }
+        }
+    }
+
+    /* Colocar recursos ($) */
+    placed = 0;
+    while (placed < NUM_RECURSOS) {
+        rx = rand() % SIZE;
+        ry = rand() % SIZE;
+        if (mapa[rx][ry] == '.') {
+            mapa[rx][ry] = '$';
+            placed++;
+        }
+    }
+
+    /* Colocar enemigos (E) */
+    placed = 0;
+    while (placed < NUM_ENEMIGOS) {
+        ex = rand() % SIZE;
+        ey = rand() % SIZE;
+        if (mapa[ex][ey] == '.') {
+            mapa[ex][ey] = 'E';
+            placed++;
+        }
+    }
 }
 
-// No rellenamos todo el buffer para evitar efectos secundarios.
-// Solo colocamos el cursor al inicio para sobrescribir lo existente.
-void prepararFrame() {
+/* ============================= */
+/*  Mostrar mapa en colores      */
+/* ============================= */
+void mostrarMapa(char mapa[SIZE][SIZE]) {
+    int i, j;
+    ocultarCursor();
     moverCursor(0, 0);
-}
 
-// ===================================================
-// Generador de ruido (idéntico al anterior)
-// ===================================================
-static float ruidoPerlin(int x, int y, int semilla) {
-    int n = x + y * 57 + semilla * 131;
-    n = (n << 13) ^ n;
-    return (1.0f - ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0f);
-}
-
-// ===================================================
-// Inicializa el mapa con islas y recursos
-// ===================================================
-void inicializarMapa(Mapa *mapa) {
-    srand((unsigned)time(NULL));
-	int i,j,n;
-    for ( i= 0; i < FILAS; i++)
-        for ( j = 0; j < COLUMNAS; j++)
-            mapa->celdas[i][j] = AGUA;
-
-    int centros[4][2] = {{10, 20}, {10, 60}, {30, 20}, {30, 60}};
-
-    for ( n = 0; n < 4; n++) {
-        int cx = centros[n][0], cy = centros[n][1];
-        int radio = 8 + rand() % 5;
-        int semilla1 = rand() % 1000;
-        int semilla2 = rand() % 1000;
-
-        for ( i = -radio * 2; i <= radio * 2; i++) {
-            for ( j = -radio * 2; j <= radio * 2; j++) {
-                int x = cx + i;
-                int y = cy + j;
-                if (x < 0 || x >= FILAS || y < 0 || y >= COLUMNAS)
-                    continue;
-
-                float dist = (i * i + j * j) / (float)(radio * radio);
-                float deform1 = (ruidoPerlin(x, y, semilla1) + 1.0f) / 2.0f;
-                float deform2 = (ruidoPerlin(x / 3, y / 3, semilla2) + 1.0f) / 2.0f;
-                float ruido_total = (deform1 * 0.3f) + (deform2 * 0.7f);
-
-                if (dist + ruido_total * 0.8f < 1.0f) {
-                    int r = rand() % 100;
-                    if (r < 5)
-                        mapa->celdas[x][y] = COMIDA;
-                    else if (r < 10)
-                        mapa->celdas[x][y] = MADERA;
-                    else if (r < 15)
-                        mapa->celdas[x][y] = RECURSO;
-                    else
-                        mapa->celdas[x][y] = TIERRA;
-                }
+    for (i = 0; i < SIZE; i++) {
+        for (j = 0; j < SIZE; j++) {
+            char c = mapa[i][j];
+            if (c == '~') {
+                setColor(1, 9);    /* fondo azul, texto azul claro */
+                printf("~ ");
+            } else if (c == '.') {
+                setColor(2, 6);    /* fondo verde, texto amarillo claro */
+                printf(". ");
+            } else if (c == '$') {
+                setColor(2, 14);   /* fondo verde, texto amarillo brillante */
+                printf("$ ");
+            } else if (c == 'E') {
+                setColor(4, 12);   /* fondo rojo oscuro, texto rojo claro */
+                printf("E ");
+            } else {
+                setColor(0, 15);
+                printf("%c ", c);
             }
         }
+        printf("\n");
     }
-
-    mapa->jugadorX = centros[0][0];
-    mapa->jugadorY = centros[0][1];
-    mapa->celdaBajoJugador = mapa->celdas[mapa->jugadorX][mapa->jugadorY];
-    mapa->celdas[mapa->jugadorX][mapa->jugadorY] = JUGADOR;
+    setColor(0, 15);
 }
 
-// ===================================================
-// Movimiento del jugador
-// ===================================================
-void moverJugador(Mapa *mapa, char dir) {
-    int nx = mapa->jugadorX, ny = mapa->jugadorY;
-    if (dir == 'w') nx--;
-    if (dir == 's') nx++;
-    if (dir == 'a') ny--;
-    if (dir == 'd') ny++;
+/* ============================= */
+/*  Mover al jugador (WASD)      */
+/* ============================= */
+void moverJugador(char mapa[SIZE][SIZE], int *x, int *y, char direccion) {
+    int nx = *x;
+    int ny = *y;
+    char destino;
+    char msg[60];
+    int i;
 
-    if (nx < 0 || nx >= FILAS || ny < 0 || ny >= COLUMNAS)
+    if (direccion >= 'a' && direccion <= 'z')
+        direccion -= 32;
+
+    if (direccion == 'W') nx--;
+    else if (direccion == 'S') nx++;
+    else if (direccion == 'A') ny--;
+    else if (direccion == 'D') ny++;
+    else return;
+
+    /* Validar límites */
+    if (nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE) {
+        moverCursor(0, SIZE + 1);
+        setColor(0, 14);
+        printf("No puedes salir del mapa!        ");
+        setColor(0, 15);
         return;
-
-    if (mapa->celdas[nx][ny] != AGUA) {
-        mapa->celdas[mapa->jugadorX][mapa->jugadorY] = mapa->celdaBajoJugador;
-        mapa->celdaBajoJugador = mapa->celdas[nx][ny];
-        mapa->jugadorX = nx;
-        mapa->jugadorY = ny;
-        mapa->celdas[nx][ny] = JUGADOR;
-    }
-}
-
-// ===================================================
-// Dibuja el mapa en consola con colores, sobrescribiendo la pantalla
-// recibe 'tiempo' para animación
-// ===================================================
-void dibujarMapa(Mapa *mapa, double tiempo) {
-    prepararFrame(); // mueve cursor a 0,0 para sobrescribir
-	int i,j;
-    for (i = 0; i < FILAS; i++) {
-        // Construimos la fila en un buffer y la imprimimos una vez para eficiencia
-        char filaBuf[COLUMNAS + 1];
-        for ( j = 0; j < COLUMNAS; j++) {
-            TipoCelda celda = mapa->celdas[i][j];
-            char simbolo = ' ';
-            int color = 7; // blanco por defecto
-
-            switch (celda) {
-                case AGUA: {
-                    int fase = ((int)(tiempo * 3.0) + (i / 2) + j) % 3;
-                    if (fase == 0) simbolo = '~';
-                    else if (fase == 1) simbolo = '-';
-                    else simbolo = '.';
-                    color = 9; // azul claro
-                    break;
-                }
-                case TIERRA: simbolo = '#'; color = 6; break;
-                case JUGADOR: simbolo = '@'; color = 15; break;
-                case COMIDA: simbolo = 'f'; color = 10; break;
-                case MADERA: simbolo = 'T'; color = 2; break;
-                case RECURSO: simbolo = '$'; color = 14; break;
-                default: simbolo = '?'; color = 12; break;
-            }
-
-            // Guardamos símbolo; coloreamos e imprimimos la fila completa después.
-            filaBuf[j] = simbolo;
-
-            // Establecemos atributo por carácter: para simplificar, imprimimos por carácter
-            // pero sin mover el cursor línea a línea (eficiente suficiente para mapas pequeños).
-            setColor(color);
-            putchar(simbolo);
-        }
-        filaBuf[COLUMNAS] = '\0';
-        // ya imprimimos la fila con putchar; al final de fila, reseteamos color e imprimimos newline
-        setColor(7);
-        putchar('\n');
     }
 
-    // Imprimir línea de ayuda en la siguiente fila (si la consola tiene espacio)
-    setColor(7);
-    printf("Usa WASD o flechas para moverte | Q para salir\n");
+    destino = mapa[nx][ny];
+    msg[0] = '\0';
+
+    if (destino == '$') {
+        sprintf(msg, "Has encontrado un recurso!");
+        mapa[nx][ny] = '.';
+    } else if (destino == 'E') {
+        sprintf(msg, "Has encontrado un enemigo!");
+        mapa[nx][ny] = '.';
+    }
+
+    /* Redibujar celda anterior */
+    moverCursor((short)(*y * 2), (short)(*x));
+    char actual = mapa[*x][*y];
+    if (actual == '~') setColor(1, 9);
+    else if (actual == '.') setColor(2, 6);
+    else if (actual == '$') setColor(2, 14);
+    else if (actual == 'E') setColor(4, 12);
+    else setColor(0, 15);
+    printf("%c ", actual);
+
+    /* Dibujar jugador */
+    moverCursor((short)(ny * 2), (short)(nx));
+    setColor(0, 10); /* texto verde brillante */
+    printf("P ");
+    setColor(0, 15);
+
+    *x = nx;
+    *y = ny;
+
+    moverCursor(0, SIZE + 1);
+    for (i = 0; i < 60; i++) printf(" ");
+    moverCursor(0, SIZE + 1);
+
+    if (msg[0] != '\0') {
+        setColor(0, 11);
+        printf("%s", msg);
+        setColor(0, 15);
+    }
 }

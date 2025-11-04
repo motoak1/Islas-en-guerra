@@ -1,61 +1,57 @@
-// demoMapa.c
 #include <stdio.h>
 #include <conio.h>
-#include <windows.h>
-#include <time.h>
 #include "mapa.h"
 
-// Convertir códigos de tecla a nuestros comandos 'w','a','s','d','q'
-char capturarTecla() {
-    if (!_kbhit()) return 0;
-    int c = _getch();
-    if (c == 0 || c == 0xE0) {
-        // Tecla especial — leer el código siguiente
-        int c2 = _getch();
-        switch (c2) {
-            case 72: return 'w'; // Flecha arriba
-            case 80: return 's'; // Flecha abajo
-            case 75: return 'a'; // Flecha izquierda
-            case 77: return 'd'; // Flecha derecha
-            default: return 0;
-        }
-    } else {
-        // Tecla normal
-        if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a'; // tolower
-        return (char)c;
-    }
-}
-
 int main() {
-    Mapa miMapa;
-    inicializarMapa(&miMapa);
+    char mapa[SIZE][SIZE];
+    int px = SIZE / 2;
+    int py = SIZE / 2;
+    int i, j;
+    int encontrado = 0;
+    int tecla;
 
-    // Ajustar consola al tamaño del mapa
-    int ancho = COLUMNAS;
-    int alto = FILAS + 1; // +1 para la línea de ayuda
-    inicializarConsola(ancho, alto);
+    inicializarMapa(mapa);
 
-    clock_t inicio = clock();
-    double tiempo = 0.0;
-    const int msFrame = 1000 / 15; // ~15 FPS suficiente para consola
-
-    while (1) {
-        // Captura no bloqueante de tecla
-        char tecla = capturarTecla();
-        if (tecla) {
-            if (tecla == 'q') break;
-            if (tecla == 'w' || tecla == 'a' || tecla == 's' || tecla == 'd') {
-                moverJugador(&miMapa, tecla);
+    /* Buscar terreno disponible si el centro está ocupado */
+    if (mapa[px][py] != '.') {
+        for (i = 0; i < SIZE && !encontrado; i++) {
+            for (j = 0; j < SIZE; j++) {
+                if (mapa[i][j] == '.') {
+                    px = i;
+                    py = j;
+                    encontrado = 1;
+                    break;
+                }
             }
         }
-
-        tiempo = (double)(clock() - inicio) / CLOCKS_PER_SEC;
-        dibujarMapa(&miMapa, tiempo);
-
-        Sleep(msFrame);
     }
 
-    // Restaurar cursor visible antes de salir
-    restaurarCursorVisible();
+    mostrarMapa(mapa);
+
+    /* Dibujar jugador inicial */
+    moverCursor(py * 2, px);
+    setColor(0, 10);
+    printf("P ");
+    setColor(0, 15);
+
+    moverCursor(0, SIZE + 2);
+    printf("Usa W, A, S, D para moverte. Presiona ESC para salir.\n");
+
+    while (1) {
+        tecla = _getch();
+
+        if (tecla == 27) { /* ESC */
+            moverCursor(0, SIZE + 3);
+            setColor(0, 15);
+            printf("Gracias por jugar Islas en Guerra.\n");
+            break;
+        }
+
+        if (tecla == 'w' || tecla == 'W' || tecla == 'a' || tecla == 'A' ||
+            tecla == 's' || tecla == 'S' || tecla == 'd' || tecla == 'D') {
+            moverJugador(mapa, &px, &py, (char)tecla);
+        }
+    }
+
     return 0;
 }

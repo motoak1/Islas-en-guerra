@@ -2,30 +2,15 @@
 #define MAPA_H
 
 #include <windows.h>
+#include <stdio.h>
 
-#define FILAS 40
-#define COLUMNAS 80
+#define SIZE 20
 
-typedef enum {
-    AGUA,
-    TIERRA,
-    COMIDA,
-    MADERA,
-    RECURSO,
-    JUGADOR
-} TipoCelda;
-
-typedef struct {
-    TipoCelda celdas[FILAS][COLUMNAS];
-    int jugadorX;
-    int jugadorY;
-    TipoCelda celdaBajoJugador;
-} Mapa;
-
-void inicializarMapa(Mapa *mapa);
-void moverJugador(Mapa *mapa, char dir);
-void dibujarMapa(Mapa *mapa, double tiempo);
-void inicializarConsola(int ancho, int alto);
-void restaurarCursorVisible();
+void inicializarMapa(char mapa[SIZE][SIZE]);
+void mostrarMapa(char mapa[SIZE][SIZE]);
+void moverJugador(char mapa[SIZE][SIZE], int *x, int *y, char direccion);
+void ocultarCursor();
+void moverCursor(short x, short y);
+void setColor(int colorFondo, int colorTexto);
 
 #endif

@@ -1,4 +1,4 @@
-#include <stdio.h>
+/*#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <conio.h>
@@ -185,4 +185,4 @@ void MostrarInterfaz(struct Jugador j1, struct Jugador j2, struct Jugador j3, st
 
     
 //     return 0;
-// }
+// }*/
