@@ -3,13 +3,12 @@
 #include <time.h>
 #include <conio.h>
 
-#define NUM_ISLAS 4
 #define NUM_RECURSOS 15
-#define NUM_ENEMIGOS 8
+#define NUM_ENEMIGOS 7
 
-/* ============================= */
-/*  Oculta el cursor de consola  */
-/* ============================= */
+/* =============================== */
+/* Utilidades de consola           */
+/* =============================== */
 void ocultarCursor() {
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO cursorInfo;
@@ -18,9 +17,6 @@ void ocultarCursor() {
     SetConsoleCursorInfo(hOut, &cursorInfo);
 }
 
-/* ============================= */
-/*  Mueve el cursor a (x, y)     */
-/* ============================= */
 void moverCursor(short x, short y) {
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     COORD pos;
@@ -29,47 +25,55 @@ void moverCursor(short x, short y) {
     SetConsoleCursorPosition(hOut, pos);
 }
 
-/* ============================= */
-/*  Cambia color de texto/fondo  */
-/* ============================= */
-void setColor(int colorFondo, int colorTexto) {
+void setColor(int fondo, int texto) {
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetConsoleTextAttribute(hOut, colorFondo * 16 + colorTexto);
+    SetConsoleTextAttribute(hOut, fondo * 16 + texto);
 }
 
-/* ============================= */
-/*  Inicializa el mapa base      */
-/* ============================= */
-void inicializarMapa(char mapa[SIZE][SIZE]) {
+/* =============================== */
+/* Generador de islas fijas        */
+/* =============================== */
+void crearIsla(char mapa[SIZE][SIZE], int cx, int cy, int rx, int ry) {
     int i, j;
-    int cx, cy, w, h, ix, iy;
-    int placed, rx, ry, ex, ey, patch;
+    int dx, dy, dist, deformacion, nx, ny;
+    int maxX = rx + 2;
+    int maxY = ry + 2;
+
+    for (i = -maxY; i <= maxY; i++) {
+        for (j = -maxX; j <= maxX; j++) {
+            dx = j;
+            dy = i;
+            dist = dx * dx + dy * dy;
+            deformacion = rand() % 5;
+            if (dist <= (rx * ry) + deformacion) {
+                nx = cy + i;
+                ny = cx + j;
+                if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE)
+                    mapa[nx][ny] = '.';
+            }
+        }
+    }
+}
+
+/* =============================== */
+/* Inicializar mapa                */
+/* =============================== */
+void inicializarMapa(char mapa[SIZE][SIZE]) {
+    int i, j, placed, rx, ry, ex, ey;
 
     srand((unsigned int)time(NULL));
 
-    /* Llenar todo con agua */
     for (i = 0; i < SIZE; i++) {
         for (j = 0; j < SIZE; j++) {
             mapa[i][j] = '~';
         }
     }
 
-    /* Crear islas: regiones de '.' con distinto tamaño y posición */
-    for (patch = 0; patch < NUM_ISLAS; patch++) {
-        cx = rand() % SIZE;
-        cy = rand() % SIZE;
-        w = 3 + rand() % 5;
-        h = 2 + rand() % 4;
+    crearIsla(mapa, 7, 7, 6, 5);
+    crearIsla(mapa, 22, 7, 7, 5);
+    crearIsla(mapa, 7, 22, 7, 5);
+    crearIsla(mapa, 22, 22, 6, 5);
 
-        for (ix = cx; ix < cx + h && ix < SIZE; ix++) {
-            for (iy = cy; iy < cy + w && iy < SIZE; iy++) {
-                if (ix >= 0 && iy >= 0)
-                    mapa[ix][iy] = '.';
-            }
-        }
-    }
-
-    /* Colocar recursos ($) */
     placed = 0;
     while (placed < NUM_RECURSOS) {
         rx = rand() % SIZE;
@@ -80,7 +84,6 @@ void inicializarMapa(char mapa[SIZE][SIZE]) {
         }
     }
 
-    /* Colocar enemigos (E) */
     placed = 0;
     while (placed < NUM_ENEMIGOS) {
         ex = rand() % SIZE;
@@ -92,9 +95,9 @@ void inicializarMapa(char mapa[SIZE][SIZE]) {
     }
 }
 
-/* ============================= */
-/*  Mostrar mapa en colores      */
-/* ============================= */
+/* =============================== */
+/* Mostrar mapa                    */
+/* =============================== */
 void mostrarMapa(char mapa[SIZE][SIZE]) {
     int i, j;
     ocultarCursor();
@@ -104,16 +107,16 @@ void mostrarMapa(char mapa[SIZE][SIZE]) {
         for (j = 0; j < SIZE; j++) {
             char c = mapa[i][j];
             if (c == '~') {
-                setColor(1, 9);    /* fondo azul, texto azul claro */
+                setColor(1, 9);
                 printf("~ ");
             } else if (c == '.') {
-                setColor(2, 6);    /* fondo verde, texto amarillo claro */
+                setColor(2, 6);
                 printf(". ");
             } else if (c == '$') {
-                setColor(2, 14);   /* fondo verde, texto amarillo brillante */
+                setColor(2, 14);
                 printf("$ ");
             } else if (c == 'E') {
-                setColor(4, 12);   /* fondo rojo oscuro, texto rojo claro */
+                setColor(4, 12);
                 printf("E ");
             } else {
                 setColor(0, 15);
@@ -125,15 +128,16 @@ void mostrarMapa(char mapa[SIZE][SIZE]) {
     setColor(0, 15);
 }
 
-/* ============================= */
-/*  Mover al jugador (WASD)      */
-/* ============================= */
+/* =============================== */
+/* Mover jugador                   */
+/* =============================== */
 void moverJugador(char mapa[SIZE][SIZE], int *x, int *y, char direccion) {
     int nx = *x;
     int ny = *y;
     char destino;
     char msg[60];
     int i;
+    char actual;
 
     if (direccion >= 'a' && direccion <= 'z')
         direccion -= 32;
@@ -144,17 +148,24 @@ void moverJugador(char mapa[SIZE][SIZE], int *x, int *y, char direccion) {
     else if (direccion == 'D') ny++;
     else return;
 
-    /* Validar límites */
     if (nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE) {
         moverCursor(0, SIZE + 1);
         setColor(0, 14);
-        printf("No puedes salir del mapa!        ");
+        printf("No puedes salir del mapa!          ");
         setColor(0, 15);
         return;
     }
 
     destino = mapa[nx][ny];
     msg[0] = '\0';
+
+    if (destino == '~') {
+        moverCursor(0, SIZE + 1);
+        setColor(0, 14);
+        printf("No puedes nadar!                   ");
+        setColor(0, 15);
+        return;
+    }
 
     if (destino == '$') {
         sprintf(msg, "Has encontrado un recurso!");
@@ -164,9 +175,8 @@ void moverJugador(char mapa[SIZE][SIZE], int *x, int *y, char direccion) {
         mapa[nx][ny] = '.';
     }
 
-    /* Redibujar celda anterior */
     moverCursor((short)(*y * 2), (short)(*x));
-    char actual = mapa[*x][*y];
+    actual = mapa[*x][*y];
     if (actual == '~') setColor(1, 9);
     else if (actual == '.') setColor(2, 6);
     else if (actual == '$') setColor(2, 14);
@@ -174,9 +184,8 @@ void moverJugador(char mapa[SIZE][SIZE], int *x, int *y, char direccion) {
     else setColor(0, 15);
     printf("%c ", actual);
 
-    /* Dibujar jugador */
     moverCursor((short)(ny * 2), (short)(nx));
-    setColor(0, 10); /* texto verde brillante */
+    setColor(0, 10);
     printf("P ");
     setColor(0, 15);
 
@@ -193,3 +202,58 @@ void moverJugador(char mapa[SIZE][SIZE], int *x, int *y, char direccion) {
         setColor(0, 15);
     }
 }
+
+/* =============================== */
+/* Animar agua con flujo (~ y ' ') */
+/* =============================== */
+void animarAgua(char mapa[SIZE][SIZE]) {
+    int i, j;
+    static int frame = 0;
+    frame++;
+
+    for (i = 0; i < SIZE; i++) {
+        for (j = 0; j < SIZE; j++) {
+            if (mapa[i][j] == '~') {
+                moverCursor(j * 2, i);
+                if ((i + j + frame) % 3 == 0) {
+                    setColor(1, 9); printf("~ ");
+                } else {
+                    setColor(1, 9); printf("  ");
+                }
+            }
+        }
+    }
+    setColor(0, 15);
+}
+
+/* =============================== */
+/* Menú inicial                    */
+/* =============================== */
+void mostrarMenu() {
+    int i;
+    ocultarCursor();
+    system("cls");
+
+    printf("\n\n\n\n");
+    printf("                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+    printf("                      ISLAS  EN  GUERRA  \n");
+    printf("                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n");
+
+    setColor(0, 14);
+    printf("                 Presiona [ENTER] para comenzar\n\n");
+    setColor(0, 8);
+    printf("                  Desarrollado en C - 100%% CMD Edition\n\n");
+
+    
+
+    setColor(0, 15);
+    
+
+    while (1) {
+        if (_kbhit() && _getch() == 13) break;
+    }
+
+    system("cls");
+}
+
+    
