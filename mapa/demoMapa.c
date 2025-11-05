@@ -6,7 +6,7 @@
 #include "mapa.h"
 
 int main() {
-    char mapa[FILAS][COLUMNAS];
+    char mapa[MAPA_F][MAPA_C];
     int px = 0, py = 0;
     int tecla;
     DWORD tInicio, tActual;
@@ -18,13 +18,21 @@ int main() {
 
     // Busca una posición inicial válida para el jugador en cualquier isla.
     do {
-        px = rand() % FILAS;
-        py = rand() % COLUMNAS;
+        px = rand() % MAPA_F;
+        py = rand() % MAPA_C;
     } while (mapa[px][py] != '.');
+
+    // Inicializar offset centrado en el jugador
+    offset_f = px - FILAS / 2;
+    offset_c = py - COLUMNAS / 2;
+    if (offset_f < 0) offset_f = 0;
+    if (offset_f > MAPA_F - FILAS) offset_f = MAPA_F - FILAS;
+    if (offset_c < 0) offset_c = 0;
+    if (offset_c > MAPA_C - COLUMNAS) offset_c = MAPA_C - COLUMNAS;
 
     mostrarMapa(mapa);
 
-    moverCursor(py * 2, px);
+    moverCursor((py - offset_c) * 2, px - offset_f);
     setColor(0, 10);
     printf("P ");
     setColor(0, 15);
