@@ -6,7 +6,15 @@
 #include <stdbool.h>
 
 #define NUM_RECURSOS 15
-#define NUM_ENEMIGOS 7
+#define NUM_ENEMIGOS 5
+#define NUM_COMIDA 10
+#define NUM_MADERA 10
+#define NUM_PIEDRA 10
+
+#define COLOR_MADERA 14 // Amarillo (Foreground)
+#define COLOR_PIEDRA 8  // Gris (Foreground)
+#define COLOR_COMIDA 10 // Verde Brillante (Foreground)
+#define COLOR_TIERRA_BG 6 // Amarillo/Marrón (Background de la tierra)
 
 // Variables globales para el offset de la vista (scrolling)
 int offset_f = 0;
@@ -118,6 +126,33 @@ void inicializarMapa(char mapa[MAPA_F][MAPA_C]) {
             placed++;
         }
     }
+    placed = 0;
+    while (placed < NUM_COMIDA) {
+        ex = rand() % MAPA_F;
+        ey = rand() % MAPA_C;
+        if (mapa[ex][ey] == '.') {
+            mapa[ex][ey] = 'C';
+            placed++;
+        }
+    }
+    placed = 0;
+    while (placed < NUM_MADERA) {
+        ex = rand() % MAPA_F;
+        ey = rand() % MAPA_C;
+        if (mapa[ex][ey] == '.') {
+            mapa[ex][ey] = 'M';
+            placed++;
+        }
+    }
+    placed = 0;
+    while (placed < NUM_PIEDRA) {
+        ex = rand() % MAPA_F;
+        ey = rand() % MAPA_C;
+        if (mapa[ex][ey] == '.') {
+            mapa[ex][ey] = 'R';
+            placed++;
+        }
+    }
 }
 
 /* =============================== */
@@ -176,7 +211,16 @@ void mostrarMapa(char mapa[MAPA_F][MAPA_C]) {
             } else if (c == '$') {
                 setColor(2, 14);
                 printf("$ ");
-            } else if (c == 'E') {
+            } else if (c == 'C') {
+                setColor(COLOR_COMIDA, COLOR_TIERRA_BG);
+                printf("C ");
+            }else if (c == 'R') {
+                setColor(COLOR_PIEDRA, COLOR_TIERRA_BG);
+                printf("R ");
+            }else if (c == 'M') {
+                setColor(COLOR_MADERA, COLOR_TIERRA_BG);
+                printf("M ");
+            }else if (c == 'E') {
                 setColor(4, 12);
                 printf("E ");
             } else {
@@ -229,10 +273,19 @@ void moverJugador(char mapa[MAPA_F][MAPA_C], int *x, int *y, char direccion) {
     }
 
     if (destino == '$') {
-        sprintf(msg, "Has encontrado un recurso!");
+        sprintf(msg, "Has encontrado oro!");
         mapa[nx][ny] = '.';
     } else if (destino == 'E') {
         sprintf(msg, "Has encontrado un enemigo!");
+        mapa[nx][ny] = '.';
+    } else if (destino == 'M') {
+        sprintf(msg, "Has encontrado madera!");
+        mapa[nx][ny] = '.';
+    } else if (destino == 'R') {
+        sprintf(msg, "Has encontrado piedra!");
+        mapa[nx][ny] = '.';
+    } else if (destino == 'C') {
+        sprintf(msg, "Has encontrado comida!");
         mapa[nx][ny] = '.';
     }
 
@@ -262,6 +315,9 @@ void moverJugador(char mapa[MAPA_F][MAPA_C], int *x, int *y, char direccion) {
         else if (actual == '.') setColor(2, 6);
         else if (actual == '$') setColor(2, 14);
         else if (actual == 'E') setColor(4, 12);
+        else if (actual == 'M') setColor(COLOR_MADERA, COLOR_TIERRA_BG);
+        else if (actual == 'R') setColor(COLOR_PIEDRA, COLOR_TIERRA_BG);
+        else if (actual == 'C') setColor(COLOR_COMIDA, COLOR_TIERRA_BG);
         else setColor(0, 15);
         printf("%c ", actual);
     }
