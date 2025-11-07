@@ -236,16 +236,6 @@ void moverJugador(char mapa[MAPA_F][MAPA_C], int *x, int *y, char direccion) {
         mapa[nx][ny] = '.';
     }
 
-    // Redibujar la celda anterior del jugador
-    moverCursor((short)((*y - offset_c) * 2 + 2), (short)(*x - offset_f + 1));
-    actual = mapa[*x][*y];
-    if (actual == '~') setColor(1, 9);
-    else if (actual == '.') setColor(2, 6);
-    else if (actual == '$') setColor(2, 14);
-    else if (actual == 'E') setColor(4, 12);
-    else setColor(0, 15);
-    printf("%c ", actual);
-
     // Calcular nuevo offset para centrar la vista en el jugador
     int new_offset_f = offset_f;
     int new_offset_c = offset_c;
@@ -261,6 +251,21 @@ void moverJugador(char mapa[MAPA_F][MAPA_C], int *x, int *y, char direccion) {
         offset_c = new_offset_c;
         offset_changed = 1;
     }
+    
+    // Solo redibujamos la celda anterior si NO hubo cambio de offset.
+    // Si hubo cambio de offset, la llamada a mostrarMapa(mapa) se encargará de esto.
+    if (!offset_changed) {
+        // Redibujar la celda anterior del jugador
+        moverCursor((short)((*y - offset_c) * 2 + 2), (short)(*x - offset_f + 1));
+        actual = mapa[*x][*y];
+        if (actual == '~') setColor(1, 9);
+        else if (actual == '.') setColor(2, 6);
+        else if (actual == '$') setColor(2, 14);
+        else if (actual == 'E') setColor(4, 12);
+        else setColor(0, 15);
+        printf("%c ", actual);
+    }
+
 
     *x = nx;
     *y = ny;
