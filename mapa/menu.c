@@ -165,18 +165,8 @@ void mostrarInstrucciones() {
     dibujarMarco(); // Dibuja el marco
     ocultarCursor();
 
-    // Título de Instrucciones
-    moverCursor(INICIO_TITULO_X, 5);
-    setColor(COLOR_AZUL_MARINO, COLOR_AMARILLO);
-    printf("=================================");
-
     moverCursor(INICIO_TITULO_X, 6);
-    setColor(COLOR_AZUL_MARINO, COLOR_BLANCO);
     printf("||       --- INSTRUCCIONES ---   ||");
-
-    moverCursor(INICIO_TITULO_X, 7);
-    setColor(COLOR_AZUL_MARINO, COLOR_AMARILLO);
-    printf("=================================");
 
     // Contenido de Instrucciones
     setColor(COLOR_NEGRO, COLOR_BLANCO); // Texto Blanco sobre fondo (transparente)
@@ -195,7 +185,7 @@ void mostrarInstrucciones() {
 
     // Mensaje de retorno
     moverCursor(INICIO_MENU_X - 12, 19);
-    setColor(COLOR_ROJO, COLOR_AMARILLO); // Texto Amarillo sobre fondo Rojo
+    setColor(COLOR_VERDE_OSCURO, COLOR_BLANCO); // Texto Blanco sobre fondo Verde Oscuro
     printf(" PRESIONA CUALQUIER TECLA PARA VOLVER ");
 
     // Esperar entrada
@@ -324,18 +314,17 @@ void mostrarMenu() {
                     // Redibujar el título (ya que los colores se cambiaron para el título)
                     // ... (Copiar/pegar el código de dibujo del título aquí) ...
                     // Colores para el título: Blanco sobre el color del Océano (Azul Marino)
-                    setColor(COLOR_AZUL_MARINO, COLOR_AMARILLO);
-                    moverCursor(INICIO_TITULO_X, INICIO_Y - 8);
-                    printf("%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c", 201, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 187);
                     moverCursor(INICIO_TITULO_X, INICIO_Y - 7);
-                    setColor(COLOR_AZUL_MARINO, COLOR_BLANCO);
-                    printf("%c       ISLAS EN GUERRA       %c", 186, 186);
-                    moverCursor(INICIO_TITULO_X, INICIO_Y - 6);
-                    setColor(COLOR_AZUL_MARINO, COLOR_AMARILLO);
-                    printf("%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c", 200, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 205, 188);
+                    printf("       ISLAS EN GUERRA       ");
                     
-                    // Redibujar todas las opciones en estado normal (porque Instrucciones pudo borrarlas)
-                    setColor(COLOR_AZUL_MARINO, COLOR_BLANCO);
+                    // ------------------------------
+                    
+                    // ==========================================================
+                    // === PASO 1.5: Dibujar TODAS las opciones una vez (Inicial)
+                    // ==========================================================
+                    // Dibujar todas las opciones inicialmente con el formato NO seleccionado.
+                    // La opción '0' se redibujará inmediatamente después con el formato de selección.
+                    setColor(COLOR_NEGRO, COLOR_BLANCO);
                     for (int i = 0; i < numOpciones; i++) {
                         moverCursor(INICIO_MENU_X-10, INICIO_Y + i * 2);
                         printf("       %s       ", opciones[i]);
