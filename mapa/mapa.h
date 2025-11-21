@@ -33,6 +33,7 @@ extern int offset_f;
 extern int offset_c;
 
 void inicializarMapa(char mapa[MAPA_F][MAPA_C]);
+// CAMBIO: Ahora acepta px y py para dibujar al jugador dentro del buffer
 void mostrarMapa(char mapa[MAPA_F][MAPA_C]);
 void animarAgua(char mapa[MAPA_F][MAPA_C]);
 

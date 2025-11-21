@@ -201,49 +201,139 @@ void dibujarMarcoMapa() {
 /* =============================== */
 /* Mostrar mapa                   */
 /* =============================== */
-void mostrarMapa(char mapa[MAPA_F][MAPA_C]) {
-    int i, j;
-     // <-- Para clipping
-    ocultarCursor();
-    dibujarMarcoMapa();
+// void mostrarMapa(char mapa[MAPA_F][MAPA_C]) {
+//     int i, j;
+//      // <-- Para clipping
+//     ocultarCursor();
+//     dibujarMarcoMapa();
     
-    for (i = 0; i < FILAS; i++) {
-        moverCursor(2, i + 1); // Posicionar cursor al inicio de la fila
+//     for (i = 0; i < FILAS; i++) {
+//         moverCursor(2, i + 1); // Posicionar cursor al inicio de la fila
         
-        for (j = 0; j < COLUMNAS; j++) {
+//         for (j = 0; j < COLUMNAS; j++) {
             
             
 
+//             char c = mapa[offset_f + i][offset_c + j];
+//             if (c == '~') {
+//                 setColor(COLOR_AGUA_BG, COLOR_AGUA_FG);
+//                 printf("~ ");
+//             } else if (c == '.') {
+//                 setColor(COLOR_TIERRA_BG, COLOR_TIERRA_FG);
+//                 printf(". ");
+//             } else if (c == '$') {
+//                 setColor(COLOR_TIERRA_BG, COLOR_ORO);
+//                 printf("$ ");
+//             } else if (c == 'C') {
+//                 setColor(COLOR_TIERRA_BG, COLOR_COMIDA);
+//                 printf("C ");
+//             } else if (c == 'R') {
+//                 setColor(COLOR_TIERRA_BG, COLOR_PIEDRA);
+//                 printf("R ");
+//             } else if (c == 'M') {
+//                 setColor(COLOR_TIERRA_BG, COLOR_MADERA);
+//                 printf("M ");
+//             } else if (c == 'E') {
+//                 setColor(12, COLOR_ENEMIGO);
+//                 printf("E ");
+//             } else {
+//                 setColor(0, 15);
+//                 printf("%c ", c);
+//             }
+//         }
+//     }
+//     setColor(0, 15);
+// }
+
+
+void mostrarMapa(char mapa[MAPA_F][MAPA_C]) {
+    // Configuración para escritura en bloque (elimina el parpadeo)
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    
+    // El ancho es COLUMNAS * 2 porque cada tile visualmente son 2 caracteres ("~ ", ". ", etc.)
+    int bufferWidth = COLUMNAS * 2;
+    int bufferHeight = FILAS;
+
+    COORD bufferSize = { (short)bufferWidth, (short)bufferHeight };
+    COORD bufferCoord = { 0, 0 };
+    
+    // Definimos la región de la pantalla donde vamos a "pegar" el buffer
+    // Empieza en Columna 2, Fila 1 (según tu lógica original de moverCursor(2, i+1))
+    SMALL_RECT writeRegion = { 
+        2, 
+        1, 
+        (short)(2 + bufferWidth - 1), 
+        (short)(1 + bufferHeight - 1) 
+    };
+
+    // Creamos un array de CHAR_INFO. Esto actúa como nuestro "mapa en memoria"
+    // Usamos VLA (Variable Length Array) o un tamaño fijo grande si el compilador es antiguo.
+    // Dado que FILAS y COLUMNAS son defines, esto es seguro.
+    CHAR_INFO buffer[FILAS * COLUMNAS * 2];
+
+    int i, j;
+
+    // Dibujamos el marco primero (esto es rápido y estático)
+    ocultarCursor();
+    dibujarMarcoMapa();
+    
+    // Llenamos el buffer en memoria en lugar de imprimir en pantalla
+    for (i = 0; i < FILAS; i++) {
+        for (j = 0; j < COLUMNAS; j++) {
             char c = mapa[offset_f + i][offset_c + j];
+            WORD attr = 0;
+            char symbol = ' ';
+
+            // Lógica de colores traducida a atributos de Windows
+            // (Fondo << 4) | Texto
             if (c == '~') {
-                setColor(COLOR_AGUA_BG, COLOR_AGUA_FG);
-                printf("~ ");
+                attr = (COLOR_AGUA_BG << 4) | COLOR_AGUA_FG;
+                symbol = '~';
             } else if (c == '.') {
-                setColor(COLOR_TIERRA_BG, COLOR_TIERRA_FG);
-                printf(". ");
+                attr = (COLOR_TIERRA_BG << 4) | COLOR_TIERRA_FG;
+                symbol = '.';
             } else if (c == '$') {
-                setColor(COLOR_TIERRA_BG, COLOR_ORO);
-                printf("$ ");
+                attr = (COLOR_TIERRA_BG << 4) | COLOR_ORO;
+                symbol = '$';
             } else if (c == 'C') {
-                setColor(COLOR_TIERRA_BG, COLOR_COMIDA);
-                printf("C ");
+                attr = (COLOR_TIERRA_BG << 4) | COLOR_COMIDA;
+                symbol = 'C';
             } else if (c == 'R') {
-                setColor(COLOR_TIERRA_BG, COLOR_PIEDRA);
-                printf("R ");
+                attr = (COLOR_TIERRA_BG << 4) | COLOR_PIEDRA;
+                symbol = 'R';
             } else if (c == 'M') {
-                setColor(COLOR_TIERRA_BG, COLOR_MADERA);
-                printf("M ");
+                attr = (COLOR_TIERRA_BG << 4) | COLOR_MADERA;
+                symbol = 'M';
             } else if (c == 'E') {
-                setColor(12, COLOR_ENEMIGO);
-                printf("E ");
+                // Asumiendo que tu setColor(12, COLOR_ENEMIGO) usa 12 como fondo
+                attr = (12 << 4) | COLOR_ENEMIGO;
+                symbol = 'E';
             } else {
-                setColor(0, 15);
-                printf("%c ", c);
+                attr = (0 << 4) | 15; // Blanco sobre negro por defecto
+                symbol = c;
             }
+
+            // Calculamos la posición lineal en el array unidimensional
+            int index = (i * bufferWidth) + (j * 2);
+
+            // Asignamos el primer caracter del tile (ej: '~')
+            buffer[index].Char.AsciiChar = symbol;
+            buffer[index].Attributes = attr;
+
+            // Asignamos el segundo caracter del tile (espacio ' ')
+            buffer[index + 1].Char.AsciiChar = ' ';
+            buffer[index + 1].Attributes = attr;
         }
     }
+
+    // ¡MAGIA! Escribimos todo el bloque de memoria a la consola en una sola operación.
+    // Esto es instantáneo y elimina el parpadeo durante el scroll.
+    WriteConsoleOutput(hConsole, buffer, bufferSize, bufferCoord, &writeRegion);
+
+    // Restauramos colores para el resto de la interfaz
     setColor(0, 15);
 }
+
 /* =============================== */
 /* Mover jugador                  */
 /* =============================== */
@@ -385,6 +475,8 @@ int moverJugador(struct Jugador *j, char mapa[MAPA_F][MAPA_C], int *x, int *y, c
 
     return recurso_recolectado;
 }
+
+
 /* =============================== */
 /* Animar agua con flujo (~ y ' ') */
 /* =============================== */
