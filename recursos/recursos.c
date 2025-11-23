@@ -3,8 +3,7 @@
 #include <string.h>
 #include <conio.h>
 #include <windows.h> //Necesario para poder posicionar en cualqueir lado de la pantalla los datos de los jugadores.
-#include "menu.h"
-#include "mapa.h"
+#include "../mapa/menu.h"
 #include "recursos.h"
 
 

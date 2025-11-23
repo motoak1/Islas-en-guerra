@@ -3,7 +3,7 @@
 #define MAPA_H
 #include <windows.h>
 #include <stdio.h>
-#include "recursos.h"
+#include "../recursos/recursos.h"
 
 #define FILAS 26
 #define COLUMNAS 41

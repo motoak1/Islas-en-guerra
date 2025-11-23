@@ -5,7 +5,7 @@
 #include <windows.h>
 #include "mapa.h"
 #include "menu.h"
-#include "recursos.h"
+#include "../recursos/recursos.h"
 
 int main() {
     char mapa[MAPA_F][MAPA_C];

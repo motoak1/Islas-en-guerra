@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <conio.h>
-#include "recursos.h"  // ✓ CORRECTO - mismo directorio 
+#include "../recursos/recursos.h"  // ✓ CORRECTO - mismo directorio 
 #include <stdbool.h>
 
 // --- CONFIGURACIÓN DE GENERACIÓN ---
