@@ -34,12 +34,11 @@ struct Jugador
 	int Capacidad;
 };
 
-// --- PROTOTIPOS DE FUNCIONES ---
-
 void IniciacionRecursos (struct Jugador *j ,const char *Nombre);
 void IniciacionTropa (struct Tropa *t, const char *Nombre, int Oro , int Comida, int Madera, int Piedra, int Vida, int Fuerza , int VelocidadAtaque,int DistanciaAtaque);
 void gotoxy(int x, int y);
-void mostrarStats(struct Jugador j, int x, int y); // Nueva función
+void mostrarStats(struct Jugador j, int x, int y);
 void dibujarPanelFondo();
+void dibujarPanelEnMapa(struct Jugador j);  // ✅ AÑADIR ESTA LÍNEA
 
 #endif
