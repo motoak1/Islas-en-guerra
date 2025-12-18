@@ -1,40 +1,26 @@
-# Project: Islas en guerra
-# Makefile created by Dev-C++ 5.9.2
+CC := gcc
+CFLAGS := -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -I. -Imapa -Irecursos -Ibatallas
+LDFLAGS := -lgdi32 -luser32
 
-CPP      = g++.exe
-CC       = gcc.exe
-WINDRES  = windres.exe
-OBJ      = main.o mapa/demoMapa.o mapa/mapa.o recursos/recursos.o batallas/batallas.o
-LINKOBJ  = main.o mapa/demoMapa.o mapa/mapa.o recursos/recursos.o batallas/batallas.o
-LIBS     = -L"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib" -L"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib" -static-libgcc -g3
-INCS     = -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include"
-CXXINCS  = -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include/c++"
-BIN      = "Islas en guerra.exe"
-CXXFLAGS = $(CXXINCS) -g3
-CFLAGS   = $(INCS) -g3
-RM       = rm.exe -f
+SRC := main.c \
+       mapa/mapa.c \
+       mapa/menu.c \
+       recursos/recursos.c \
+       batallas/batallas.c
+OBJ := $(SRC:.c=.o)
+OUT := Islas en guerra.exe
+OUT_ESC := Islas\ en\ guerra.exe
 
-.PHONY: all all-before all-after clean clean-custom
+all: $(OUT_ESC)
 
-all: all-before $(BIN) all-after
+$(OUT_ESC): $(OBJ)
+	$(CC) $(OBJ) -o "$(OUT)" $(LDFLAGS)
 
-clean: clean-custom
-	${RM} $(OBJ) $(BIN)
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BIN): $(OBJ)
-	$(CC) $(LINKOBJ) -o $(BIN) $(LIBS)
+clean:
+	-if exist "$(OUT)" del /f /q "$(OUT)"
+	-del /f /q main.o mapa\mapa.o mapa\menu.o recursos\recursos.o batallas\batallas.o 2> NUL
 
-main.o: main.c
-	$(CC) -c main.c -o main.o $(CFLAGS)
-
-mapa/demoMapa.o: mapa/demoMapa.c
-	$(CC) -c mapa/demoMapa.c -o mapa/demoMapa.o $(CFLAGS)
-
-mapa/mapa.o: mapa/mapa.c
-	$(CC) -c mapa/mapa.c -o mapa/mapa.o $(CFLAGS)
-
-recursos/recursos.o: recursos/recursos.c
-	$(CC) -c recursos/recursos.c -o recursos/recursos.o $(CFLAGS)
-
-batallas/batallas.o: batallas/batallas.c
-	$(CC) -c batallas/batallas.c -o batallas/batallas.o $(CFLAGS)
+.PHONY: all clean
