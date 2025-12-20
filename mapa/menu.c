@@ -54,18 +54,24 @@
 #define TECLA_S 's'
 
 // --- RECURSOS ---
+// Fondo general del menú y fondo específico de instrucciones
 #define RUTA_FONDO "assets\\menu_bg.bmp"
+#define RUTA_FONDO_INSTRUC "assets\\menu_bg_instruc.bmp"
 
 static HBITMAP fondoBmp = NULL;
 static BITMAP infoFondo;
 static bool fondoListo = false;
 
+static HBITMAP fondoInstrucBmp = NULL;
+static BITMAP infoFondoInstruc;
+static bool fondoInstrucListo = false;
+
 // --- Estado global del menú ---
 static int gSeleccion = 0;
 static HFONT gFontTitulo = NULL;
 static HFONT gFontOpciones = NULL;
-static const char *OPCIONES_MENU[] = { "Iniciar partida", "Instrucciones", "Salir" };
-static const int OPCIONES_TOTAL = 3;
+static const char *OPCIONES_MENU[] = { "Iniciar partida", "Cargar partida", "Instrucciones", "Salir" };
+static const int OPCIONES_TOTAL = 4;
 static bool gMostrandoInstrucciones = false;
 static HWND gMenuHwnd = NULL;
 
@@ -111,6 +117,21 @@ static bool cargarFondo(void) {
     return true;
 }
 
+static bool cargarFondoInstruc(void) {
+    if (fondoInstrucListo) {
+        return true;
+    }
+
+    fondoInstrucBmp = (HBITMAP)LoadImageA(NULL, RUTA_FONDO_INSTRUC, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    if (fondoInstrucBmp == NULL) {
+        return false;
+    }
+
+    GetObject(fondoInstrucBmp, sizeof(infoFondoInstruc), &infoFondoInstruc);
+    fondoInstrucListo = true;
+    return true;
+}
+
 static void dibujarFondoBmp(HDC hdc, RECT rc) {
     if (!cargarFondo()) {
         HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));
@@ -132,6 +153,32 @@ static void dibujarFondoBmp(HDC hdc, RECT rc) {
         0,
         infoFondo.bmWidth,
         infoFondo.bmHeight,
+        SRCCOPY);
+    SelectObject(mem, old);
+    DeleteDC(mem);
+}
+
+static void dibujarFondoBmpInstrucciones(HDC hdc, RECT rc) {
+    if (!cargarFondoInstruc()) {
+        HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));
+        FillRect(hdc, &rc, brush);
+        DeleteObject(brush);
+        return;
+    }
+
+    HDC mem = CreateCompatibleDC(hdc);
+    HBITMAP old = (HBITMAP)SelectObject(mem, fondoInstrucBmp);
+    StretchBlt(
+        hdc,
+        0,
+        0,
+        rc.right - rc.left,
+        rc.bottom - rc.top,
+        mem,
+        0,
+        0,
+        infoFondoInstruc.bmWidth,
+        infoFondoInstruc.bmHeight,
         SRCCOPY);
     SelectObject(mem, old);
     DeleteDC(mem);
@@ -194,14 +241,13 @@ static void renderMenu(HWND hwnd) {
 
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
-    dibujarFondoBmp(hdc, rc);
-
     int ancho = rc.right - rc.left;
     int alto = rc.bottom - rc.top;
     int centroX = ancho / 2;
     int tituloY = alto / 5;
 
     if (gMostrandoInstrucciones) {
+        dibujarFondoBmpInstrucciones(hdc, rc);
         // Título de instrucciones
         dibujarTextoCentrado(hdc, gFontTitulo, "INSTRUCCIONES", centroX, tituloY, RGB(240, 240, 240));
 
@@ -212,7 +258,7 @@ static void renderMenu(HWND hwnd) {
             "Controles:",
             "- W / Flecha Arriba: mover seleccion",
             "- S / Flecha Abajo : mover seleccion",
-            "- ENTER           : confirmar",
+            "  - ENTER: confirmar",
             "",
             "ESC: Volver al menu"
         };
@@ -228,6 +274,7 @@ static void renderMenu(HWND hwnd) {
             dibujarTextoCentrado(hdc, gFontOpciones, lineas[i], centroX, inicioY + i * alturaLinea, color);
         }
     } else {
+        dibujarFondoBmp(hdc, rc);
         dibujarOpciones(hdc, gFontOpciones, OPCIONES_MENU, OPCIONES_TOTAL, gSeleccion, rc);
     }
 
@@ -279,8 +326,12 @@ static LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                             // Iniciar partida: cerrar ventana y volver al juego
                             PostMessage(hwnd, WM_CLOSE, 0, 0);
                         } else if (gSeleccion == 1) {
-                            mostrarInstrucciones();
+                            // Cargar partida (pendiente de implementar)
+                            MessageBoxA(hwnd, "La carga de partidas se implementara proximamente.", "Cargar partida", MB_OK | MB_ICONINFORMATION);
+                            InvalidateRect(hwnd, NULL, FALSE);
                         } else if (gSeleccion == 2) {
+                            mostrarInstrucciones();
+                        } else if (gSeleccion == 3) {
                             // Salir
                             ExitProcess(0);
                         }
@@ -328,10 +379,6 @@ void setColor(int fondo, int texto) {
 }
 
 // --- PANTALLAS DEL JUEGO ---
-
-void dibujarFondo() {
-    // Ya no usamos la consola para dibujar el fondo del menú.
-}
 
 void mostrarInstrucciones() {
     // Cambiar a vista de instrucciones y refrescar

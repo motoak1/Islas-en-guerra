@@ -62,39 +62,35 @@ int main() {
     tInicio = GetTickCount();
     
     // Bucle principal del juego
-    // Bucle principal del juego
-// Bucle principal del juego
-// Bucle principal del juego
-while (1) {
-    // Animar el agua cada 300 milisegundos
-    tActual = GetTickCount();
-    if (tActual - tInicio >= 300) {
-        animarAgua(mapa);
-        // Redibujar panel después de animar agua (siempre forzado)
-        forzarRedibujoPanelEnMapa(jugador1);
-        tInicio = tActual;
-    }
-    
-    // Detectar entrada del teclado
-    if (_kbhit()) {
-        tecla = _getch();
-        
-        if (tecla == 27) break;
-        
-        if (tecla == 'w' || tecla == 'W' || tecla == 'a' || tecla == 'A' ||
-            tecla == 's' || tecla == 'S' || tecla == 'd' || tecla == 'D' ||
-            tecla == 13) {
-            
-            // Ejecutar accion
-            explorarMapa(&jugador1, mapa, &px, &py, (char)tecla);
-            
-            // SIEMPRE redibujar panel después de cualquier acción
+    while (1) {
+        // Animar el agua cada 300 milisegundos
+        tActual = GetTickCount();
+        if (tActual - tInicio >= 300) {
+            animarAgua(mapa);
+            // Redibujar panel después de animar agua (siempre forzado)
             forzarRedibujoPanelEnMapa(jugador1);
+            tInicio = tActual;
+        }
+
+        // Detectar entrada del teclado
+        if (_kbhit()) {
+            tecla = _getch();
+
+            if (tecla == 27) break;
+
+            if (tecla == 'w' || tecla == 'W' || tecla == 'a' || tecla == 'A' ||
+                tecla == 's' || tecla == 'S' || tecla == 'd' || tecla == 'D' ||
+                tecla == 13) {
+                
+                // Ejecutar accion
+                explorarMapa(&jugador1, mapa, &px, &py, (char)tecla);
+                
+                // SIEMPRE redibujar panel después de cualquier acción
+                forzarRedibujoPanelEnMapa(jugador1);
+            }
         }
     }
-}
 
-    
     moverCursor(0, FILAS + 3);
     setColor(0, 15);
     printf("Gracias por jugar ISLAS EN GUERRA\n");
