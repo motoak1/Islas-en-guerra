@@ -8,6 +8,28 @@
 #include <signal.h>
 #include "recursos/recursos.h"
 
+
+void configurarPantallaCompleta() {
+    // Obtenemos el manejador de la salida estándar de la consola
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    COORD coord;
+    
+    // Intentamos activar el modo de pantalla completa nativo de Windows
+    // Nota: Esto funciona en el host de consola estándar de Windows
+    if (!SetConsoleDisplayMode(hConsole, CONSOLE_FULLSCREEN_MODE, &coord)) {
+        // Si falla el modo nativo (común en Windows 10/11 con la nueva Terminal), 
+        // forzamos la maximización de la ventana mediante el manejo del HWND.
+        HWND hwnd = GetConsoleWindow();
+        ShowWindow(hwnd, SW_MAXIMIZE);
+    }
+
+    // Opcional: Ocultar el cursor para que no interfiera con los .bmp
+    CONSOLE_CURSOR_INFO cursorInfo;
+    GetConsoleCursorInfo(hConsole, &cursorInfo);
+    cursorInfo.bVisible = FALSE; // Cambiar a TRUE si necesitas ver el cursor
+    SetConsoleCursorInfo(hConsole, &cursorInfo);
+}
+
 int main() {
 
     // Ignorar Ctrl+C (Interrumpir)
@@ -27,6 +49,8 @@ int main() {
     #if defined(SIGQUIT)
         signal(SIGQUIT, SIG_IGN);
     #endif
+
+    configurarPantallaCompleta();
 
     char mapa[MAPA_F][MAPA_C];
     int px = 0, py = 0;

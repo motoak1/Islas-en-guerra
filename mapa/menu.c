@@ -55,8 +55,8 @@
 
 // --- RECURSOS ---
 // Fondo general del menú y fondo específico de instrucciones
-#define RUTA_FONDO "assets\\menu_bg.bmp"
-#define RUTA_FONDO_INSTRUC "assets\\menu_bg_instruc.bmp"
+#define RUTA_FONDO "..\\assets\\menu_bg.bmp"
+#define RUTA_FONDO_INSTRUC "..\\assets\\menu_bg_instruc.bmp"
 
 static HBITMAP fondoBmp = NULL;
 static BITMAP infoFondo;
