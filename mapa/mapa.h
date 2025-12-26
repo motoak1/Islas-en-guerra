@@ -2,6 +2,7 @@
 #define MAPA_H
 
 #include <windows.h>
+#include "../recursos/recursos.h"
 
 // --- CONSTANTES DE DIMENSIÓN ---
 #define MAPA_SIZE 2048    //
@@ -16,8 +17,9 @@ typedef struct {
 } Camara;
 
 // Funciones Gráficas
+// Actualizamos el prototipo para incluir al jugador
+void dibujarMundo(HDC hdc, RECT rectPantalla, Camara cam, struct Jugador *pJugador);
 void cargarRecursosGraficos();
-void dibujarMundo(HDC hdc, RECT rectPantalla, Camara cam);
-void explorarMapaGrafico(Camara *cam, int dx, int dy);
+void dibujarObreros(HDC hdcBuffer, struct Jugador *j, Camara cam, int anchoP, int altoP);
 
 #endif

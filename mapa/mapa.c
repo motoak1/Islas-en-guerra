@@ -1,10 +1,13 @@
 #include "mapa.h"
 #include <stdio.h>
 #include <time.h>
+#include <stdlib.h>
+#include <windows.h>
+#include "../recursos/recursos.h"
 
 // Definiciones manuales de rutas
-#define RUTA_MAPA "../assets/mapaDemo2.bmp"
-#define RUTA_MAPA_ALT "assets/mapaDemo2.bmp"
+#define RUTA_MAPA "../assets/islas/isla1.bmp"
+#define RUTA_MAPA_ALT "assets/islas/isla1.bmp"
 
 #define ARBOL1 "../assets/arboles/arbol1.bmp"
 #define ARBOL1_ALT "assets/arboles/arbol1.bmp"
@@ -17,6 +20,12 @@
 
 #define ARBOL4 "../assets/arboles/arbol4.bmp"
 #define ARBOL4_ALT "assets/arboles/arbol4.bmp"
+
+#define obrero_front "../assets/obrero/obrero_front.bmp"
+#define obrero_back  "../assets/obrero/obrero_back.bmp"
+#define obrero_left  "../assets/obrero/obrero_left.bmp"
+#define obrero_right "../assets/obrero/obrero_right.bmp"
+
 
 static HBITMAP hMapaBmp = NULL;
 static HBITMAP hArboles[4] = {NULL};
@@ -66,6 +75,8 @@ void generarBosqueAutomatico() {
     ReleaseDC(NULL, hdcPantalla);
 }
 
+static HBITMAP hObreroBmp[4] = {NULL}; // Front, Back, Left, Right
+
 void cargarRecursosGraficos() {
     // 1. Cargar Mapa Base (Intento doble)
     hMapaBmp = (HBITMAP)LoadImageA(NULL, RUTA_MAPA, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
@@ -88,11 +99,41 @@ void cargarRecursosGraficos() {
         if (hArboles[i]) cargados++;
     }
     
+    // --- AGREGA ESTO PARA LOS OBREROS ---
+    hObreroBmp[DIR_FRONT] = (HBITMAP)LoadImageA(NULL, obrero_front, IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hObreroBmp[DIR_BACK]  = (HBITMAP)LoadImageA(NULL, obrero_back, IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hObreroBmp[DIR_LEFT]  = (HBITMAP)LoadImageA(NULL, obrero_left, IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hObreroBmp[DIR_RIGHT] = (HBITMAP)LoadImageA(NULL, obrero_right, IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+
     printf("[DEBUG] Recursos: %d/4 arboles cargados fisicamente.\n", cargados);
     generarBosqueAutomatico();
 }
+void dibujarObreros(HDC hdcBuffer, struct Jugador *j, Camara cam, int anchoP, int altoP) {
+    HDC hdcSprites = CreateCompatibleDC(hdcBuffer);
+    for (int i = 0; i < 6; i++) {
+        UnidadObrero *o = &j->obreros[i];
+        int pantX = (int)((o->x - cam.x) * cam.zoom);
+        int pantY = (int)((o->y - cam.y) * cam.zoom);
+        int tam = (int)(64 * cam.zoom);
 
-void dibujarMundo(HDC hdc, RECT rect, Camara cam) {
+        if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 && pantY < altoP) {
+            SelectObject(hdcSprites, hObreroBmp[o->dir]);
+            TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0, 64, 64, RGB(255, 255, 255));
+            
+            if (o->seleccionado) { // Círculo de selección
+                HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+                HPEN verde = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
+                SelectObject(hdcBuffer, nullBrush);
+                SelectObject(hdcBuffer, verde);
+                Ellipse(hdcBuffer, pantX, pantY + tam - 10, pantX + tam, pantY + tam + 5);
+                DeleteObject(verde);
+            }
+        }
+    }
+    DeleteDC(hdcSprites);
+    }
+
+void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador) {
     if (!hMapaBmp) return;
 
     int anchoP = rect.right - rect.left;
@@ -140,6 +181,11 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam) {
             }
         }
     }
+    // Dentro de dibujarMundo, después de dibujar los árboles:
+
+    // 3. DIBUJAR OBREROS (Ahora dentro del búfer)
+    // Llamamos a la función usando el puntero del jugador
+    dibujarObreros(hdcBuffer, pJugador, cam, anchoP, altoP);
 
     BitBlt(hdc, 0, 0, anchoP, altoP, hdcBuffer, 0, 0, SRCCOPY);
 
@@ -148,3 +194,4 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam) {
     SelectObject(hdcMapa, hOldMapa); DeleteDC(hdcMapa);
     SelectObject(hdcBuffer, hOldBuffer); DeleteObject(hbmBuffer); DeleteDC(hdcBuffer);
 }
+
