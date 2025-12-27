@@ -1,0 +1,44 @@
+// edificios/edificios.h
+#ifndef EDIFICIOS_H
+#define EDIFICIOS_H
+
+#include <windows.h>
+#include <stdbool.h>
+
+// --- TIPOS DE EDIFICIOS ---
+typedef enum {
+    EDIFICIO_AYUNTAMIENTO,
+    EDIFICIO_CUARTEL,
+    EDIFICIO_GRANJA
+} TipoEdificio;
+
+// --- ESTRUCTURA DE EDIFICIO ---
+typedef struct {
+    TipoEdificio tipo;
+    float x, y;           // Posición en píxeles del mundo (esquina superior izquierda)
+    int ancho, alto;      // Dimensiones del sprite (128x128 para ayuntamiento)
+    bool construido;      // Si está activo en el juego
+    HBITMAP sprite;       // Sprite cargado del edificio
+} Edificio;
+
+// --- FUNCIONES DE EDIFICIOS ---
+
+// Inicializa un edificio del tipo especificado en una posición
+void edificioInicializar(Edificio *e, TipoEdificio tipo, float x, float y);
+
+// Detecta si un punto (mundoX, mundoY) está dentro del edificio
+bool edificioContienePunto(const Edificio *e, float mundoX, float mundoY);
+
+// Carga los sprites de edificios desde archivos
+void edificiosCargarSprites();
+
+// Dibuja un edificio en pantalla con la cámara especificada
+void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY, float zoom, int anchoP, int altoP);
+
+// Libera recursos gráficos de edificios
+void edificiosLiberarSprites();
+
+// Sprite global del ayuntamiento (se carga una vez)
+extern HBITMAP g_spriteAyuntamiento;
+
+#endif

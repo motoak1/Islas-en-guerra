@@ -1,26 +1,43 @@
-CC := gcc
-CFLAGS := -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -I. -Imapa -Irecursos -Ibatallas
-LDFLAGS := -lgdi32 -luser32
+# Project: islas en guerra
+# Makefile created by Embarcadero Dev-C++ 6.3
 
-SRC := main.c \
-       mapa/mapa.c \
-       mapa/menu.c \
-       recursos/recursos.c \
-       batallas/batallas.c
-OBJ := $(SRC:.c=.o)
-OUT := Islas en guerra.exe
-OUT_ESC := Islas\ en\ guerra.exe
+CPP      = g++.exe
+CC       = gcc.exe
+WINDRES  = windres.exe
+OBJ      = main.o mapa/mapa.o mapa/menu.o recursos/recursos.o edificios/edificios.o recursos/ui_compra.o
+LINKOBJ  = main.o mapa/mapa.o mapa/menu.o recursos/recursos.o edificios/edificios.o recursos/ui_compra.o
+LIBS     = -L"C:/raylib/w64devkit/lib" -L"C:/raylib/w64devkit/x86_64-w64-mingw32/lib" -L"C:/raylib/lib" -lraylib -lopengl32 -lgdi32 -lwinmm -static-libstdc++ -static-libgcc -mconsole -lmsimg32
+INCS     = -I"C:/raylib/w64devkit/include" -I"C:/raylib/w64devkit/x86_64-w64-mingw32/include" -I"C:/raylib/w64devkit/lib/gcc/x86_64-w64-mingw32/14.2.0/include"
+CXXINCS  = -I"C:/raylib/w64devkit/include" -I"C:/raylib/w64devkit/x86_64-w64-mingw32/include" -I"C:/raylib/w64devkit/lib/gcc/x86_64-w64-mingw32/14.2.0/include" -I"C:/raylib/w64devkit/lib/gcc/x86_64-w64-mingw32/14.2.0/include/c++"
+BIN      = "islas en guerra.exe"
+CXXFLAGS = $(CXXINCS) -I"C:/raylib/include"
+CFLAGS   = $(INCS) -I"C:/raylib/include"
+DEL      = C:\Program Files (x86)\Embarcadero\Dev-Cpp\devcpp.exe INTERNAL_DEL
 
-all: $(OUT_ESC)
+.PHONY: all all-before all-after clean clean-custom
 
-$(OUT_ESC): $(OBJ)
-	$(CC) $(OBJ) -o "$(OUT)" $(LDFLAGS)
+all: all-before $(BIN) all-after
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+clean: clean-custom
+	${DEL} $(OBJ) $(BIN)
 
-clean:
-	-if exist "$(OUT)" del /f /q "$(OUT)"
-	-del /f /q main.o mapa\mapa.o mapa\menu.o recursos\recursos.o batallas\batallas.o 2> NUL
+$(BIN): $(OBJ)
+	$(CC) $(LINKOBJ) -o $(BIN) $(LIBS)
 
-.PHONY: all clean
+main.o: main.c
+	$(CC) -c main.c -o main.o $(CFLAGS)
+
+mapa/mapa.o: mapa/mapa.c
+	$(CC) -c mapa/mapa.c -o mapa/mapa.o $(CFLAGS)
+
+mapa/menu.o: mapa/menu.c
+	$(CC) -c mapa/menu.c -o mapa/menu.o $(CFLAGS)
+
+recursos/recursos.o: recursos/recursos.c
+	$(CC) -c recursos/recursos.c -o recursos/recursos.o $(CFLAGS)
+
+edificios/edificios.o: edificios/edificios.c
+	$(CC) -c edificios/edificios.c -o edificios/edificios.o $(CFLAGS)
+
+recursos/ui_compra.o: recursos/ui_compra.c
+	$(CC) -c recursos/ui_compra.c -o recursos/ui_compra.o $(CFLAGS)
