@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define imgAyuntamiento "../assets/ayuntamiento.bmp"
+
 // Sprite global del ayuntamiento
 HBITMAP g_spriteAyuntamiento = NULL;
 
@@ -52,12 +54,12 @@ void edificiosCargarSprites() {
   }
 
   // Construir ruta completa: directorio_exe\assets\ayuntamiento.bmp
-  sprintf(rutaCompleta, "%s\\assets\\ayuntamiento.bmp", directorioEXE);
+  sprintf(rutaCompleta, "%s..\\assets\\ayuntamiento.bmp", directorioEXE);
 
   // Cargar sprite del ayuntamiento
   g_spriteAyuntamiento =
-      (HBITMAP)LoadImageA(NULL, rutaCompleta, IMAGE_BITMAP, 0, 0,
-                          LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+      (HBITMAP)LoadImageA(NULL, imgAyuntamiento, IMAGE_BITMAP, 128, 128,
+                          LR_LOADFROMFILE);
 
   if (!g_spriteAyuntamiento) {
     printf("[ERROR] No se pudo cargar ayuntamiento desde: %s\n", rutaCompleta);
