@@ -41,27 +41,19 @@ void corregirLimitesCamara(RECT rect) {
 void seleccionarObrero(float mundoX, float mundoY) {
     // Uso de puntero para recorrer la estructura del jugador
     struct Jugador *pJugador = &jugador1;
-    for (int i = 0; i < 6; i++) {
-        UnidadObrero *o = &(pJugador->obreros[i]);
-        float dx = mundoX - o->x;
-        float dy = mundoY - o->y;
-        float distancia = sqrt(dx*dx + dy*dy);
-
-        // Si el click está dentro del rango del sprite (64px aprox)
-        o->seleccionado = (distancia < 32.0f); 
+    UnidadObrero *base = pJugador->obreros;
+    for (UnidadObrero *o = base; o < base + 6; o++) {
+        // Selección RTS simple: hitbox 64x64 (top-left en o->x/o->y)
+        // Aritmética de punteros: iteramos con punteros, sin índices.
+        bool dentroX = (mundoX >= o->x) && (mundoX < o->x + TILE_SIZE);
+        bool dentroY = (mundoY >= o->y) && (mundoY < o->y + TILE_SIZE);
+        o->seleccionado = (dentroX && dentroY);
     }
 }
 
 void comandarMovimiento(float mundoX, float mundoY) {
-    struct Jugador *pJugador = &jugador1;
-    for (int i = 0; i < 6; i++) {
-        UnidadObrero *o = &(pJugador->obreros[i]);
-        if (o->seleccionado) {
-            o->destinoX = mundoX;
-            o->destinoY = mundoY;
-            o->moviendose = true;
-        }
-    }
+    // Movimiento RTS con pathfinding (en recursos.c)
+    rtsComandarMovimiento(&jugador1, mundoX, mundoY);
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -167,6 +159,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
         case WM_DESTROY:
             KillTimer(hwnd, IDT_TIMER_JUEGO);
+            // Limpieza de memoria dinámica (rutas + collisionMap)
+            rtsLiberarMovimientoJugador(&jugador1);
+            mapaLiberarCollisionMap();
             PostQuitMessage(0);
             return 0;
     }

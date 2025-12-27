@@ -33,6 +33,79 @@ static HBITMAP hArboles[4] = {NULL};
 // Matriz lógica 32x32
 int mapaObjetos[GRID_SIZE][GRID_SIZE] = {0}; 
 
+// --- COLISIONES (matriz dinámica int**)
+// 0 = libre, 1 = ocupado (árboles u obstáculos)
+static int **gCollisionMap = NULL;
+
+static void collisionMapAllocIfNeeded(void) {
+    if (gCollisionMap) return;
+
+    gCollisionMap = (int**)malloc(GRID_SIZE * sizeof(int*));
+    if (!gCollisionMap) return;
+
+    for (int i = 0; i < GRID_SIZE; i++) {
+        *(gCollisionMap + i) = (int*)malloc(GRID_SIZE * sizeof(int));
+        if (!*(gCollisionMap + i)) {
+            for (int k = 0; k < i; k++) free(*(gCollisionMap + k));
+            free(gCollisionMap);
+            gCollisionMap = NULL;
+            return;
+        }
+    }
+}
+
+static void collisionMapClear(int value) {
+    if (!gCollisionMap) return;
+    for (int i = 0; i < GRID_SIZE; i++) {
+        int *row = *(gCollisionMap + i);
+        for (int j = 0; j < GRID_SIZE; j++) {
+            *(row + j) = value;
+        }
+    }
+}
+
+int **mapaObtenerCollisionMap(void) {
+    collisionMapAllocIfNeeded();
+    return gCollisionMap;
+}
+
+void mapaReconstruirCollisionMap(void) {
+    collisionMapAllocIfNeeded();
+    if (!gCollisionMap) return;
+
+    // 1) Limpiar
+    collisionMapClear(0);
+
+    // 2) Marcar árboles. Regla: árbol ocupa 2x2 celdas (128x128)
+    // Anclaje simple: si mapaObjetos[f][c] tiene árbol, ocupa (f,c), (f,c+1), (f+1,c), (f+1,c+1)
+    int (*ptrFila)[GRID_SIZE] = mapaObjetos;
+    for (int f = 0; f < GRID_SIZE; f++) {
+        for (int c = 0; c < GRID_SIZE; c++) {
+            int tipo = *(*(ptrFila + f) + c);
+            if (tipo <= 0) continue;
+
+            // Marcar 2x2 con control de límites
+            for (int df = 0; df < 2; df++) {
+                for (int dc = 0; dc < 2; dc++) {
+                    int nf = f + df;
+                    int nc = c + dc;
+                    if (nf < 0 || nf >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) continue;
+                    *(*(gCollisionMap + nf) + nc) = 1;
+                }
+            }
+        }
+    }
+}
+
+void mapaLiberarCollisionMap(void) {
+    if (!gCollisionMap) return;
+    for (int i = 0; i < GRID_SIZE; i++) {
+        free(*(gCollisionMap + i));
+    }
+    free(gCollisionMap);
+    gCollisionMap = NULL;
+}
+
 void generarBosqueAutomatico() {
     if (!hMapaBmp) return;
 
@@ -70,6 +143,9 @@ void generarBosqueAutomatico() {
     }
     printf("[DEBUG] Logica: %d arboles registrados en la matriz con punteros.\n", contador);
 
+    // Construir la grilla de colisión a partir de la matriz lógica (movimiento/colisiones)
+    mapaReconstruirCollisionMap();
+
     SelectObject(hdcMem, hOldBmp);
     DeleteDC(hdcMem);
     ReleaseDC(NULL, hdcPantalla);
@@ -105,6 +181,15 @@ void cargarRecursosGraficos() {
     hObreroBmp[DIR_LEFT]  = (HBITMAP)LoadImageA(NULL, obrero_left, IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
     hObreroBmp[DIR_RIGHT] = (HBITMAP)LoadImageA(NULL, obrero_right, IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
 
+    for(int i = 0; i < 4; i++) {
+        if (hObreroBmp[i] == NULL) {
+            printf("[ERROR] No se pudo cargar el BMP del obrero indice %d. Ruta: %s\n", i, 
+                (i==0)?obrero_front:(i==1)?obrero_back:(i==2)?obrero_left:obrero_right);
+        } else {
+            printf("[OK] Obrero BMP %d cargado correctamente.\n", i);
+        }
+    }
+
     printf("[DEBUG] Recursos: %d/4 arboles cargados fisicamente.\n", cargados);
     generarBosqueAutomatico();
 }
@@ -115,6 +200,13 @@ void dibujarObreros(HDC hdcBuffer, struct Jugador *j, Camara cam, int anchoP, in
         int pantX = (int)((o->x - cam.x) * cam.zoom);
         int pantY = (int)((o->y - cam.y) * cam.zoom);
         int tam = (int)(64 * cam.zoom);
+
+
+        // LOG DE POSICIÓN (Solo para el primer obrero para no saturar)
+        // if (i == 0) {
+        //     printf("[DEBUG] Obrero 0 -> Mundo(%.1f, %.1f) | Pantalla(%d, %d) | Zoom: %.2f\n", 
+        //            o->x, o->y, pantX, pantY, cam.zoom);
+        // }
 
         if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 && pantY < altoP) {
             SelectObject(hdcSprites, hObreroBmp[o->dir]);

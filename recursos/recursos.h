@@ -20,6 +20,14 @@ struct Tropa {
 // Estados de animación/dirección
 typedef enum { DIR_FRONT, DIR_BACK, DIR_LEFT, DIR_RIGHT } Direccion;
 
+// Sistema mínimo de animación (lógica). El render actual usa BMP por dirección;
+// aquí mantenemos el estado como punteros a estructuras, como pide la especificación.
+typedef struct Animation {
+    Direccion dir;       // Dirección asociada a la animación
+    int frameCount;      // Cantidad de frames (lógico)
+    int ticksPerFrame;   // Cuántos ticks dura cada frame
+} Animation;
+
 typedef struct {
     float x, y;           // Posición exacta en el mapa (píxeles)
     float destinoX, destinoY; // A donde debe ir
@@ -27,6 +35,22 @@ typedef struct {
     bool seleccionado;
     Direccion dir;
     int frame;            // Para animar el caminado
+
+    // --- Movimiento RTS con pathfinding (memoria dinámica) ---
+    int objetivoFila;     // Celda destino en grid (0..GRID_SIZE-1)
+    int objetivoCol;
+    int *rutaCeldas;      // Ruta como lista de celdas a visitar (fila*GRID_SIZE+col)
+    int rutaLen;
+    int rutaIdx;
+
+    // --- Sincronización Matriz <-> Mundo ---
+    // Celda actualmente ocupada por el obrero (se actualiza solo cuando cambia de celda por completo).
+    int celdaFila;
+    int celdaCol;
+
+    // --- Animación por puntero a estado ---
+    const Animation *animActual;
+    int animTick;
 } UnidadObrero;
 
 struct Jugador
@@ -48,6 +72,10 @@ struct Jugador
 
 
 void actualizarObreros(struct Jugador *j);
+// Movimiento estilo RTS: planifica ruta evitando colisiones y límites del mapa.
+void rtsComandarMovimiento(struct Jugador *j, float mundoX, float mundoY);
+// Libera memoria dinámica asociada al movimiento (rutas por unidad, etc).
+void rtsLiberarMovimientoJugador(struct Jugador *j);
 void IniciacionRecursos (struct Jugador *j ,const char *Nombre);
 void IniciacionTropa (struct Tropa *t, const char *Nombre, int Oro , int Comida, int Madera, int Piedra, int Vida, int Fuerza , int VelocidadAtaque,int DistanciaAtaque);
 void gotoxy(int x, int y);

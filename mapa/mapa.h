@@ -16,6 +16,14 @@ typedef struct {
     float zoom;  // Nivel de zoom
 } Camara;
 
+// --- COLISIONES / GRID (matriz dinámica con punteros) ---
+// Retorna una matriz GRID_SIZE x GRID_SIZE (int**) donde 1 = ocupado.
+int **mapaObtenerCollisionMap(void);
+// Reconstruye la matriz en base a los árboles registrados en mapaObjetos.
+void mapaReconstruirCollisionMap(void);
+// Libera la memoria del collisionMap dinámico.
+void mapaLiberarCollisionMap(void);
+
 // Funciones Gráficas
 // Actualizamos el prototipo para incluir al jugador
 void dibujarMundo(HDC hdc, RECT rectPantalla, Camara cam, struct Jugador *pJugador);
