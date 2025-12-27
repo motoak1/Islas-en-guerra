@@ -91,56 +91,114 @@ static void obreroLiberarRuta(UnidadObrero *o) {
     o->rutaIdx = 0;
 }
 
-// BFS OPTIMIZADO: Ignora unidades (2) para evitar que se bloqueen entre sí
-static bool pathfindBFS(int startF, int startC, int goalF, int goalC, int **collision, int **outRuta, int *outLen) {
+// PATHFINDING SIMPLE: Movimiento greedy sin usar colas.
+// Genera una ruta paso a paso moviéndose hacia el objetivo,
+// eligiendo la dirección más cercana al destino que no esté bloqueada.
+static bool pathfindSimple(int startF, int startC, int goalF, int goalC, int **collision, int **outRuta, int *outLen) {
     if (startF == goalF && startC == goalC) return false;
     
-    int total = GRID_SIZE * GRID_SIZE;
-    int *cola = (int*)malloc(total * sizeof(int));
-    int *prev = (int*)malloc(total * sizeof(int));
-    char *visit = (char*)calloc(total, 1);
-
-    for(int i=0; i<total; i++) prev[i] = -1;
-
-    int head = 0, tail = 0;
-    cola[tail++] = startF * GRID_SIZE + startC;
-    visit[startF * GRID_SIZE + startC] = 1;
-
-    int dF[] = {-1, 1, 0, 0}, dC[] = {0, 0, -1, 1};
-    bool found = false;
-
-    while(head < tail) {
-        int cur = cola[head++];
-        int cf = cur / GRID_SIZE, cc = cur % GRID_SIZE;
-        if (cf == goalF && cc == goalC) { found = true; break; }
-
-        for(int i=0; i<4; i++) {
-            int nf = cf + dF[i], nc = cc + dC[i];
-            if (nf >= 0 && nf < GRID_SIZE && nc >= 0 && nc < GRID_SIZE) {
-                // SOLO los árboles (1) bloquean el paso del BFS
-                if (!visit[nf * GRID_SIZE + nc] && collision[nf][nc] != 1) {
-                    visit[nf * GRID_SIZE + nc] = 1;
-                    prev[nf * GRID_SIZE + nc] = cur;
-                    cola[tail++] = nf * GRID_SIZE + nc;
-                }
+    // Máximo de pasos para evitar bucles infinitos (diagonal máxima del mapa)
+    const int MAX_PASOS = GRID_SIZE * 2;
+    
+    // Array temporal para guardar la ruta (máximo MAX_PASOS celdas)
+    int *rutaTemp = (int*)malloc(MAX_PASOS * sizeof(int));
+    if (!rutaTemp) return false;
+    
+    // Matriz de visitados para no volver a celdas ya recorridas
+    // Usamos un array simple de tamaño GRID_SIZE * GRID_SIZE
+    char *visitado = (char*)calloc(GRID_SIZE * GRID_SIZE, sizeof(char));
+    if (!visitado) { free(rutaTemp); return false; }
+    
+    int pasos = 0;
+    int actualF = startF;
+    int actualC = startC;
+    
+    // Marcar inicio como visitado
+    visitado[actualF * GRID_SIZE + actualC] = 1;
+    
+    // Direcciones: arriba, abajo, izquierda, derecha
+    int dF[4] = {-1, 1, 0, 0};
+    int dC[4] = {0, 0, -1, 1};
+    
+    // Bucle principal: intentar llegar al objetivo
+    while (pasos < MAX_PASOS) {
+        // Si llegamos al objetivo, terminamos
+        if (actualF == goalF && actualC == goalC) {
+            break;
+        }
+        
+        // Buscar la mejor dirección (la que más nos acerca al objetivo)
+        int mejorDir = -1;
+        float mejorDist = 999999.0f;
+        
+        for (int i = 0; i < 4; i++) {
+            int nf = actualF + dF[i];
+            int nc = actualC + dC[i];
+            
+            // Verificar límites del mapa
+            if (nf < 0 || nf >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) continue;
+            
+            // Verificar si es transitable (solo árboles bloquean, valor 1)
+            if (collision[nf][nc] == 1) continue;
+            
+            // Verificar si ya fue visitada
+            if (visitado[nf * GRID_SIZE + nc]) continue;
+            
+            // Calcular distancia al objetivo (distancia Manhattan)
+            int distF = (nf > goalF) ? (nf - goalF) : (goalF - nf);
+            int distC = (nc > goalC) ? (nc - goalC) : (goalC - nc);
+            float dist = (float)(distF + distC);
+            
+            if (dist < mejorDist) {
+                mejorDist = dist;
+                mejorDir = i;
             }
         }
-    }
-
-    if (found) {
-        int pasos = 0;
-        for (int v = goalF * GRID_SIZE + goalC; v != -1; v = prev[v]) pasos++;
-        int *ruta = (int*)malloc((pasos-1) * sizeof(int));
-        int idx = pasos - 2;
-        for (int v = goalF * GRID_SIZE + goalC; v != (startF * GRID_SIZE + startC); v = prev[v]) {
-            ruta[idx--] = v;
+        
+        // Si no hay dirección válida, no podemos continuar
+        if (mejorDir == -1) {
+            free(rutaTemp);
+            free(visitado);
+            return false;
         }
-        *outRuta = ruta;
-        *outLen = pasos - 1;
+        
+        // Moverse en la mejor dirección
+        actualF += dF[mejorDir];
+        actualC += dC[mejorDir];
+        
+        // Marcar como visitado
+        visitado[actualF * GRID_SIZE + actualC] = 1;
+        
+        // Agregar a la ruta
+        rutaTemp[pasos] = actualF * GRID_SIZE + actualC;
+        pasos++;
     }
-
-    free(cola); free(prev); free(visit);
-    return found;
+    
+    free(visitado);
+    
+    // Si no llegamos al objetivo
+    if (actualF != goalF || actualC != goalC) {
+        free(rutaTemp);
+        return false;
+    }
+    
+    // Crear la ruta final con el tamaño exacto
+    int *rutaFinal = (int*)malloc(pasos * sizeof(int));
+    if (!rutaFinal) {
+        free(rutaTemp);
+        return false;
+    }
+    
+    // Copiar la ruta
+    for (int i = 0; i < pasos; i++) {
+        rutaFinal[i] = rutaTemp[i];
+    }
+    
+    free(rutaTemp);
+    
+    *outRuta = rutaFinal;
+    *outLen = pasos;
+    return true;
 }
 
 void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
@@ -229,7 +287,7 @@ void rtsComandarMovimiento(struct Jugador *j, float mundoX, float mundoY) {
         int sF = obreroFilaActual(o), sC = obreroColActual(o);
         int *ruta = NULL; int len = 0;
         
-        if (pathfindBFS(sF, sC, gF, gC, col, &ruta, &len)) {
+        if (pathfindSimple(sF, sC, gF, gC, col, &ruta, &len)) {
             obreroLiberarRuta(o);
             o->rutaCeldas = ruta;
             o->rutaLen = len;
