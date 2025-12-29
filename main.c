@@ -140,7 +140,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     // Coordenadas ajustables: (x, y)
     // - x: 960 = centrado horizontalmente en el mapa (2048/2 - 64)
     // - y: 600 = zona superior pero no extrema (ajusta según necesites)
-    edificioInicializar(&mina, EDIFICIO_MINA, 1024.0f - 64.0f, 600.0f);
+    edificioInicializar(&mina, EDIFICIO_MINA, 1024.0f - 64.0f, 450.0f);
     jugador1.mina = &mina;
 
     // Marcar la mina en el mapa de colisiones
