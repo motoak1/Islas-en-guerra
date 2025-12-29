@@ -57,7 +57,7 @@ void corregirLimitesCamara(RECT rect) {
 // evalúa directamente la posición del obrero en coordenadas del mundo.
 // Esto permite seleccionar unidades "a través" de objetos visuales.
 // ============================================================================
-void seleccionarObrero(float mundoX, float mundoY) {
+void seleccionarPersonaje(float mundoX, float mundoY) {
   // Puntero a la estructura del jugador
   struct Jugador *pJugador = &jugador1;
   
@@ -242,7 +242,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     float mundoX = (px / camara.zoom) + camara.x;
     float mundoY = (py / camara.zoom) + camara.y;
 
-    seleccionarObrero(mundoX, mundoY);
+    seleccionarPersonaje(mundoX, mundoY);
 
     // También permitir arrastre si se mantiene presionado (opcional)
     arrastrandoCamara = true;
