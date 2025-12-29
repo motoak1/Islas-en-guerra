@@ -89,9 +89,10 @@ struct Jugador {
   int NumeroTropas;
   int Capacidad;
 
-  // Edificio del jugador (por ahora solo el ayuntamiento)
+  // Edificios del jugador
   void *ayuntamiento; // Puntero a Edificio (void* para evitar dependencia
                       // circular)
+  void *mina;         // Puntero a Edificio de la mina
 };
 
 void actualizarObreros(struct Jugador *j);

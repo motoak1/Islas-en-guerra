@@ -729,10 +729,16 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
   StretchBlt(hdcBuffer, 0, 0, anchoP, altoP, hdcMapa, cam.x, cam.y,
              (int)(anchoP / cam.zoom), (int)(altoP / cam.zoom), SRCCOPY);
 
-  // 1.5. DIBUJAR EDIFICIO (AYUNTAMIENTO) - antes del Y-sorting
+  // 1.5. DIBUJAR EDIFICIOS - antes del Y-sorting para que estén debajo de unidades
   if (pJugador->ayuntamiento != NULL) {
     Edificio *edificio = (Edificio *)pJugador->ayuntamiento;
     edificioDibujar(hdcBuffer, edificio, cam.x, cam.y, cam.zoom, anchoP, altoP);
+  }
+
+  // Dibujar mina
+  if (pJugador->mina != NULL) {
+    Edificio *edificioMina = (Edificio *)pJugador->mina;
+    edificioDibujar(hdcBuffer, edificioMina, cam.x, cam.y, cam.zoom, anchoP, altoP);
   }
 
   // 2. Y-SORTING: DIBUJAR FILA POR FILA (árboles + obreros mezclados)

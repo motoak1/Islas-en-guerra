@@ -3,10 +3,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#define imgAyuntamiento "../assets/ayuntamiento.bmp"
+#define imgAyuntamiento "../assets/ayuntamiento2.bmp"
+#define imgMina "../assets/mina.bmp"
 
-// Sprite global del ayuntamiento
+// Sprites globales de edificios
 HBITMAP g_spriteAyuntamiento = NULL;
+HBITMAP g_spriteMina = NULL;
 
 void edificioInicializar(Edificio *e, TipoEdificio tipo, float x, float y) {
   e->tipo = tipo;
@@ -22,11 +24,16 @@ void edificioInicializar(Edificio *e, TipoEdificio tipo, float x, float y) {
     e->alto = 128;
     e->sprite = g_spriteAyuntamiento;
     break;
+  case EDIFICIO_MINA:
+    e->ancho = 128;
+    e->alto = 128;
+    e->sprite = g_spriteMina;
+    break;
   case EDIFICIO_CUARTEL:
   case EDIFICIO_GRANJA:
     e->ancho = 128;
     e->alto = 128;
-    e->sprite = NULL; // Por ahora solo ayuntamiento
+    e->sprite = NULL; // Por ahora solo ayuntamiento y mina
     break;
   }
 }
@@ -76,6 +83,17 @@ void edificiosCargarSprites() {
     printf("[OK] Ayuntamiento BMP cargado correctamente desde: %s\n",
            rutaCompleta);
   }
+
+  // Cargar sprite de la mina
+  g_spriteMina =
+      (HBITMAP)LoadImageA(NULL, imgMina, IMAGE_BITMAP, 128, 128,
+                          LR_LOADFROMFILE);
+
+  if (!g_spriteMina) {
+    printf("[ERROR] No se pudo cargar mina desde: %s\n", imgMina);
+  } else {
+    printf("[OK] Mina BMP cargado correctamente.\n");
+  }
 }
 
 void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
@@ -120,10 +138,11 @@ void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
   BITMAP bm;
   GetObject(e->sprite, sizeof(bm), &bm);
 
-  // Dibujar sprite escalado correctamente desde su tamaño original
+  // Dibujar sprite con transparencia (fondo blanco = RGB(255, 255, 255))
+  // Esto hace que el edificio se vea sin recuadro blanco, igual que árboles y unidades
   SetStretchBltMode(hdcBuffer, HALFTONE);
-  StretchBlt(hdcBuffer, pantallaX, pantallaY, anchoZoom, altoZoom, hdcSprite, 0,
-             0, bm.bmWidth, bm.bmHeight, SRCCOPY);
+  TransparentBlt(hdcBuffer, pantallaX, pantallaY, anchoZoom, altoZoom, 
+                 hdcSprite, 0, 0, bm.bmWidth, bm.bmHeight, RGB(255, 255, 255));
 
   SelectObject(hdcSprite, oldBmp);
   DeleteDC(hdcSprite);
@@ -133,5 +152,9 @@ void edificiosLiberarSprites() {
   if (g_spriteAyuntamiento) {
     DeleteObject(g_spriteAyuntamiento);
     g_spriteAyuntamiento = NULL;
+  }
+  if (g_spriteMina) {
+    DeleteObject(g_spriteMina);
+    g_spriteMina = NULL;
   }
 }

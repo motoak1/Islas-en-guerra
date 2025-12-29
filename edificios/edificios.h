@@ -9,7 +9,8 @@
 typedef enum {
     EDIFICIO_AYUNTAMIENTO,
     EDIFICIO_CUARTEL,
-    EDIFICIO_GRANJA
+    EDIFICIO_GRANJA,
+    EDIFICIO_MINA
 } TipoEdificio;
 
 // --- ESTRUCTURA DE EDIFICIO ---
@@ -38,7 +39,8 @@ void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY, float
 // Libera recursos gráficos de edificios
 void edificiosLiberarSprites();
 
-// Sprite global del ayuntamiento (se carga una vez)
+// Sprites globales de edificios (se cargan una vez)
 extern HBITMAP g_spriteAyuntamiento;
+extern HBITMAP g_spriteMina;
 
 #endif

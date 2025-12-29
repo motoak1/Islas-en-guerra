@@ -20,6 +20,7 @@ bool arrastrandoCamara = false;
 POINT mouseUltimo;
 MenuCompra menuCompra; // Estado global del menú de compra
 Edificio ayuntamiento; // Edificio del ayuntamiento
+Edificio mina;         // Edificio de la mina
 
 // --- MOTOR DE VALIDACIÓN DE CÁMARA ---
 void corregirLimitesCamara(RECT rect) {
@@ -134,6 +135,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     // Marcar el ayuntamiento en el mapa de colisiones
     mapaMarcarEdificio(ayuntamiento.x, ayuntamiento.y, ayuntamiento.ancho,
                        ayuntamiento.alto);
+
+    // Inicializar mina en la parte superior de la isla (zona verde)
+    // Coordenadas ajustables: (x, y)
+    // - x: 960 = centrado horizontalmente en el mapa (2048/2 - 64)
+    // - y: 600 = zona superior pero no extrema (ajusta según necesites)
+    edificioInicializar(&mina, EDIFICIO_MINA, 1024.0f - 64.0f, 600.0f);
+    jugador1.mina = &mina;
+
+    // Marcar la mina en el mapa de colisiones
+    mapaMarcarEdificio(mina.x, mina.y, mina.ancho, mina.alto);
 
     // Inicializar menú de compra
     menuCompraInicializar(&menuCompra);
