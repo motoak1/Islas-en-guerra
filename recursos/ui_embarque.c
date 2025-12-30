@@ -1,6 +1,7 @@
 #include "ui_embarque.h"
 #include "recursos.h"
 #include "navegacion.h"
+#include "../mapa/menu.h"
 #include <stdio.h>
 #include <windows.h>
 
@@ -324,14 +325,17 @@ void menuEmbarqueEmbarcar(MenuEmbarque* menu, struct Jugador* j) {
   printf("[DEBUG] Tropas embarcadas: %d obreros, %d caballeros, %d guerreros (Total: %d)\n",
          obrerosEmbarcados, caballerosEmbarcados, guerrerosEmbarcados, j->barco.numTropas);
   
-  // NUEVO: Posicionar barco en mapa global según isla actual antes de cambiar vista
-  float barcoGlobalX, barcoGlobalY;
-  obtenerPosicionBarcoEnGlobal(j->islaActual, &barcoGlobalX, &barcoGlobalY);
-  j->barco.x = barcoGlobalX;
-  j->barco.y = barcoGlobalY;
-  
-  // Cambiar a vista global automáticamente después de embarcar
-  j->vistaActual = VISTA_GLOBAL;
-  
   menuEmbarqueCerrar(menu);
+  
+  // NUEVO FLUJO: Mostrar menú de selección de isla
+  printf("[DEBUG] Mostrando menu de seleccion de isla...\n");
+  
+  // Llamar al menú de isla (consola)
+  mostrarMenu();
+  int islaSeleccionada = menuObtenerIsla();
+  
+  printf("[DEBUG] Isla seleccionada: %d\n", islaSeleccionada);
+  
+  // Viajar directamente a la isla (sin animación)
+  viajarAIsla(j, islaSeleccionada);
 }

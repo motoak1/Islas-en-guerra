@@ -4,30 +4,6 @@
 #include <math.h>
 
 // ============================================================================
-// POSICIONES DE LAS 3 ISLAS EN MAPA GLOBAL (mapaDemo2.bmp)
-// ============================================================================
-// Estas son coordenadas aproximadas que debes ajustar según tu mapaDemo2.bmp
-// Para cada isla almacenamos el centro y la posición de orilla para el barco
-// ============================================================================
-
-typedef struct {
-  float centroX, centroY;  // Centro de la isla (para detección)
-  float orillaX, orillaY;  // Posición de orilla para el barco en mapa global
-} PosicionIsla;
-
-// IMPORTANTE: Ajusta estas coordenadas según tu mapaDemo2.bmp
-static PosicionIsla gPosicionesIslas[3] = {
-  // Isla 1: ajustar según posición real en mapaDemo2.bmp
-  {512.0f, 512.0f, 400.0f, 700.0f},
-  
-  // Isla 2: ajustar según posición real
-  {1536.0f, 1024.0f, 1400.0f, 1024.0f},
-  
-  // Isla 3: ajustar según posición real
-  {1024.0f, 1536.0f, 1024.0f, 1400.0f}
-};
-
-// ============================================================================
 // FUNCIONES AUXILIARES
 // ============================================================================
 
@@ -38,43 +14,71 @@ bool barcoContienePunto(Barco* barco, float mundoX, float mundoY) {
           mundoY >= barco->y && mundoY < barco->y + BARCO_SIZE);
 }
 
-void obtenerPosicionBarcoEnGlobal(int islaActual, float *outX, float *outY) {
-  if (islaActual < 1 || islaActual > 3) islaActual = 1;
-  
-  *outX = gPosicionesIslas[islaActual - 1].orillaX;
-  *outY = gPosicionesIslas[islaActual - 1].orillaY;
-  
-  printf("[DEBUG] Barco en isla %d posicionado en global: (%.1f, %.1f)\n", 
-         islaActual, *outX, *outY);
-}
-
-int detectarIslaPorPosicion(float x, float y) {
-  // Detectar en qué isla está el barco según su posición en mapa global
-  for (int i = 0; i < 3; i++) {
-    float dx = x - gPosicionesIslas[i].centroX;
-    float dy = y - gPosicionesIslas[i].centroY;
-    float dist = sqrt(dx*dx + dy*dy);
-    
-    // Si está dentro del radio de 400px de la isla, es esa isla
-    if (dist < 400.0f) {
-      printf("[DEBUG] Posición (%.1f, %.1f) detectada en isla %d\n", x, y, i + 1);
-      return i + 1; // Isla 1, 2, o 3
-    }
-  }
-  
-  printf("[DEBUG] Posición (%.1f, %.1f) no pertenece a ninguna isla\n", x, y);
-  return 0; // No detectada
-}
-
 void desembarcarTropas(Barco* barco, struct Jugador* j) {
   printf("[DEBUG] Desembarcando %d tropas...\n", barco->numTropas);
   
+  // CRÍTICO: Buscar punto de tierra más cercano al barco
+  // El barco está en agua, necesitamos encontrar la tierra adyacente
+  
+  // Obtener mapa de colisión para verificar dónde hay tierra
+  int **col = mapaObtenerCollisionMap();
+  if (!col) {
+    printf("[ERROR] No se pudo obtener mapa de colisión para desembarcar\n");
+    return;
+  }
+  
+  // Convertir posición del barco a celdas
+  int barcoCeldaX = (int)(barco->x / 32.0f);
+  int barcoCeldaY = (int)(barco->y / 32.0f);
+  
+  // Buscar tierra adyacente al barco (búsqueda en espiral)
+  int tierraX = -1, tierraY = -1;
+  bool tierraEncontrada = false;
+  
+  // Buscar en radio creciente alrededor del barco (hasta 10 celdas)
+  for (int radio = 1; radio <= 10 && !tierraEncontrada; radio++) {
+    for (int dy = -radio; dy <= radio && !tierraEncontrada; dy++) {
+      for (int dx = -radio; dx <= radio; dx++) {
+        int celdaX = barcoCeldaX + dx;
+        int celdaY = barcoCeldaY + dy;
+        
+        // Verificar límites
+        if (celdaX < 0 || celdaX >= 64 || celdaY < 0 || celdaY >= 64) continue;
+        
+        // Verificar si es TIERRA (valor 0 = tierra libre)
+        if (*(*(col + celdaY) + celdaX) == 0) {
+          tierraX = celdaX;
+          tierraY = celdaY;
+          tierraEncontrada = true;
+          break;
+        }
+      }
+    }
+  }
+  
+  // Si no se encontró tierra, usar posición de emergencia
+  if (!tierraEncontrada) {
+    printf("[WARNING] No se encontró tierra cerca del barco, usando posición de emergencia\n");
+    tierraX = 32; // Centro del mapa
+    tierraY = 32;
+  }
+  
+  printf("[DEBUG] Punto de desembarco en celda: [%d][%d]\n", tierraY, tierraX);
+  
+  // Convertir a coordenadas de píxeles
+  float desembarcoX = (float)(tierraX * 32);
+  float desembarcoY = (float)(tierraY * 32);
+  
+  // Colocar tropas en formación 3x2 cerca del punto de desembarco
   for (int i = 0; i < barco->numTropas; i++) {
     Unidad* tropa = barco->tropas[i];
     if (tropa) {
-      // Colocar tropas en formación 3x2 cerca del barco
-      tropa->x = barco->x + (i % 3) * 70.0f;
-      tropa->y = barco->y + (i / 3) * 70.0f + 200.0f;
+      // Formación: 3 columnas, 2 filas
+      int col = i % 3;
+      int fila = i / 3;
+      
+      tropa->x = desembarcoX + (col * 70.0f);
+      tropa->y = desembarcoY + (fila * 70.0f);
       
       printf("[DEBUG] Tropa %d desembarcada en (%.1f, %.1f)\n", 
              i, tropa->x, tropa->y);
@@ -86,103 +90,77 @@ void desembarcarTropas(Barco* barco, struct Jugador* j) {
 }
 
 // ============================================================================
-// NAVEGACIÓN DEL BARCO
+// REINICIAR ISLA DESCONOCIDA
 // ============================================================================
-
-void barcoIniciarNavegacion(Barco* barco, float destinoX, float destinoY) {
-  barco->destinoX = destinoX;
-  barco->destinoY = destinoY;
-  barco->navegando = true;
-  barco->velocidad = 3.0f; // Píxeles por frame (ajustable)
+// Cuando el jugador llega a una nueva isla, esta es una isla "desconocida"
+// sin edificios desarrollados, con recursos básicos, etc.
+// Esta función resetea el estado del jugador para la nueva isla.
+// ============================================================================
+void reiniciarIslaDesconocida(struct Jugador* j) {
+  printf("[DEBUG] Reiniciando isla desconocida...\n");
   
-  // Calcular dirección inicial
-  float dx = destinoX - barco->x;
-  float dy = destinoY - barco->y;
+  // CRÍTICO: Resetear recursos a valores iniciales bajos (isla sin desarrollar)
+  j->Comida = 50;    // Menos recursos que al inicio
+  j->Oro = 30;
+  j->Madera = 40;
+  j->Piedra = 30;
   
-  if (fabs(dx) > fabs(dy)) {
-    barco->dir = (dx > 0) ? DIR_RIGHT : DIR_LEFT;
-  } else {
-    barco->dir = (dy > 0) ? DIR_FRONT : DIR_BACK;
-  }
+  // CRÍTICO: Eliminar edificios (la nueva isla no tiene edificios)
+  j->ayuntamiento = NULL;
+  j->mina = NULL;
   
-  printf("[DEBUG] Barco iniciando navegación a (%.1f, %.1f)\n", destinoX, destinoY);
+  // NOTA: Los personajes ya fueron desembarcados correctamente ANTES de llamar esta función
+  // Por lo tanto, NO necesitamos hacer nada con ellos aquí
+  // Solo las tropas desembarcadas existen en esta isla nueva
+  
+  printf("[DEBUG] Isla reiniciada: Recursos=%d oro, %d comida, %d madera, %d piedra\n",
+         j->Oro, j->Comida, j->Madera, j->Piedra);
+  printf("[DEBUG] Solo las tropas desembarcadas están disponibles\n");
 }
 
-void barcoActualizarNavegacion(Barco* barco, struct Jugador* j) {
-  if (!barco->navegando) return;
+
+// ============================================================================
+// VIAJE DIRECTO A ISLA (SIN ANIMACIÓN)
+// ============================================================================
+// Cuando el jugador selecciona una isla después de embarcar tropas,
+// viaja directamente sin animación del barco.
+// ============================================================================
+
+void viajarAIsla(struct Jugador* j, int islaDestino) {
+  printf("[DEBUG] Viajando directamente a isla %d\n", islaDestino);
   
-  float dx = barco->destinoX - barco->x;
-  float dy = barco->destinoY - barco->y;
-  float distancia = sqrt(dx*dx + dy*dy);
-  
-  if (distancia <= barco->velocidad) {
-    // ¡LLEGÓ AL DESTINO!
-    barco->x = barco->destinoX;
-    barco->y = barco->destinoY;
-    barco->navegando = false;
-    
-    printf("[DEBUG] Barco llegó al destino. Detectando isla...\n");
-    
-    // CRÍTICO: Detectar a qué isla llegó
-    int islaDestino = detectarIslaPorPosicion(barco->x, barco->y);
-    
-    if (islaDestino != j->islaActual && islaDestino > 0) {
-      printf("[DEBUG] Cambiando de isla %d a isla %d\n", j->islaActual, islaDestino);
-      
-      // Cambiar isla activa
-      j->islaActual = islaDestino;
-      
-      // Cambiar mapa de isla
-      mapaSeleccionarIsla(islaDestino);
-      cargarRecursosGraficos(); // Recargar mapa y árboles
-      
-      // Posicionar barco en orilla de la nueva isla (vista local)
-      float nuevoBarcoX, nuevoBarcoY;
-      int nuevoDir;
-      mapaDetectarOrilla(&nuevoBarcoX, &nuevoBarcoY, &nuevoDir);
-      barco->x = nuevoBarcoX;
-      barco->y = nuevoBarcoY;
-      barco->dir = (Direccion)nuevoDir;
-      
-      printf("[DEBUG] Barco reposicionado en isla %d: (%.1f, %.1f)\n",
-             islaDestino, barco->x, barco->y);
-    }
-    
-    // Desembarcar tropas
-    desembarcarTropas(barco, j);
-    
-    // Volver a vista local
-    j->vistaActual = VISTA_LOCAL;
-    
+  // Si es la misma isla, desembarcar y listo
+  if (islaDestino == j->islaActual) {
+    printf("[DEBUG] Ya estás en la isla %d, desembarcando tropas\n", islaDestino);
+    desembarcarTropas(&j->barco, j);
     return;
   }
   
-  // Mover hacia el destino
-  barco->x += (dx / distancia) * barco->velocidad;
-  barco->y += (dy / distancia) * barco->velocidad;
+  // Cambiar isla activa
+  j->islaActual = islaDestino;
   
-  // Actualizar dirección visual
-  if (fabs(dx) > fabs(dy)) {
-    barco->dir = (dx > 0) ? DIR_RIGHT : DIR_LEFT;
-  } else {
-    barco->dir = (dy > 0) ? DIR_FRONT : DIR_BACK;
-  }
+  // Cambiar mapa de isla y recargar gráficos PRIMERO
+  mapaSeleccionarIsla(islaDestino);
+  cargarRecursosGraficos(); // Esto crea el nuevo mapa de colisión
+  
+  // Posicionar barco en orilla de la nueva isla
+  float nuevoBarcoX, nuevoBarcoY;
+  int nuevoDir;
+  mapaDetectarOrilla(&nuevoBarcoX, &nuevoBarcoY, &nuevoDir);
+  j->barco.x = nuevoBarcoX;
+  j->barco.y = nuevoBarcoY;
+  j->barco.dir = (Direccion)nuevoDir;
+  
+  printf("[DEBUG] Barco reposicionado en isla %d: (%.1f, %.1f)\n",
+         islaDestino, j->barco.x, j->barco.y);
+  
+  // CRÍTICO: Desembarcar tropas DESPUÉS de tener el mapa actualizado
+  desembarcarTropas(&j->barco, j);
+  
+  // AHORA sí, reiniciar isla desconocida (resetear recursos, eliminar edificios)
+  // Esto se hace AL FINAL para no afectar las tropas ya desembarcadas
+  reiniciarIslaDesconocida(j);
+  
+  printf("[DEBUG] Viaje completado\n");
 }
 
-void seleccionarIslaDestino(struct Jugador* j, int clickX, int clickY) {
-  printf("[DEBUG] Click en vista global: (%d, %d)\n", clickX, clickY);
-  
-  // Las posiciones de las islas en el mapa global son fijas
-  // Por ahora, navegar a una isla diferente de la actual
-  
-  // Ciclar entre las 3 islas
-  int islaObjetivo = (j->islaActual % 3) + 1;
-  
-  printf("[DEBUG] Navegando desde isla %d hacia isla %d\n", j->islaActual, islaObjetivo);
-  
-  // Obtener coordenadas de destino en mapa global
-  float destinoX = gPosicionesIslas[islaObjetivo - 1].centroX;
-  float destinoY = gPosicionesIslas[islaObjetivo - 1].centroY;
-  
-  barcoIniciarNavegacion(&j->barco, destinoX, destinoY);
-}

@@ -181,11 +181,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     jugador1.barco.dir = (Direccion)barcoDir;
     jugador1.barco.activo = true;
     jugador1.barco.numTropas = 0;
-    jugador1.barco.navegando = false;
-    jugador1.barco.velocidad = 3.0f;
-    
-    // Inicializar vista en modo local
-    jugador1.vistaActual = VISTA_LOCAL;
     
     printf("[DEBUG] Barco colocado en orilla: (%.1f, %.1f), dir=%d\n", 
            barcoX, barcoY, barcoDir);
@@ -199,11 +194,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
       actualizarPersonajes(&jugador1); // LA CLAVE: Se ejecuta 60 veces por segundo
       mapaActualizarVacas();           // NUEVO: Actualizar vacas (movimiento automático)
       menuCompraActualizar(&menuCompra); // Actualizar timers del menú
-      
-      // NUEVO: Actualizar navegación del barco
-      if (jugador1.barco.navegando) {
-        barcoActualizarNavegacion(&jugador1.barco, &jugador1);
-      }
       
       InvalidateRect(hwnd, NULL, FALSE);
     }
@@ -277,12 +267,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
       return 0; // Click procesado por el menú
     }
 
-    // En vista global, click selecciona isla destino
-    if (jugador1.vistaActual == VISTA_GLOBAL) {
-      seleccionarIslaDestino(&jugador1, px, py);
-      return 0;
-    }
-
     // Vista local: selección normal
     // Convertir coordenadas de pantalla a coordenadas del mundo real (0-2048)
     float mundoX = (px / camara.zoom) + camara.x;
@@ -318,15 +302,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     return 0;
 
   case WM_KEYDOWN:
-    if (wParam == 'M' || wParam == 'm') {
-      // Alternar entre vista local y global
-      if (jugador1.vistaActual == VISTA_LOCAL) {
-        jugador1.vistaActual = VISTA_GLOBAL;
-      } else {
-        jugador1.vistaActual = VISTA_LOCAL;
-      }
-      InvalidateRect(hwnd, NULL, FALSE);
-    }
+    // Teclas de control (futuro uso)
     return 0;
 
   case WM_ERASEBKGND:
@@ -336,15 +312,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
 
-    // Dibujar según la vista actual
-    if (jugador1.vistaActual == VISTA_LOCAL) {
-      // Vista local: mapa con zoom, personajes, edificios, etc.
-      // IMPORTANTE: Pasar menuEmbarque a dibujarMundo para evitar parpadeo
-      dibujarMundo(hdc, rect, camara, &jugador1, &menuCompra, &menuEmbarque);
-    } else {
-      // Vista global: solo mapa y barco, sin zoom
-      dibujarMapaGlobal(hdc, rect, &jugador1);
-    }
+    // Solo vista local: mapa con zoom, personajes, edificios, etc.
+    dibujarMundo(hdc, rect, camara, &jugador1, &menuCompra, &menuEmbarque);
 
     EndPaint(hwnd, &ps);
     return 0;

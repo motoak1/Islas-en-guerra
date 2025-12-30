@@ -521,11 +521,36 @@ void mapaDetectarOrilla(float *outX, float *outY, int *outDir) {
     }
   }
   
-  // Fallback: centro del mapa si no se encuentra orilla
-  *outX = (float)(centroC * TILE_SIZE);
-  *outY = (float)(centroF * TILE_SIZE);
+  // FALLBACK: Si no se encuentra orilla ideal, buscar CUALQUIER celda de agua
+  printf("[WARNING BARCO] No se encontró orilla con tierra adyacente, buscando agua...\n");
+  for (int f = 0; f < GRID_SIZE - BARCO_CELDAS; f++) {
+    for (int c = 0; c < GRID_SIZE - BARCO_CELDAS; c++) {
+      // Verificar si hay un bloque 6x6 de agua
+      bool esAgua = true;
+      for (int df = 0; df < BARCO_CELDAS && esAgua; df++) {
+        for (int dc = 0; dc < BARCO_CELDAS && esAgua; dc++) {
+          if (*(*(col + f + df) + c + dc) != 1) {
+            esAgua = false;
+          }
+        }
+      }
+      
+      if (esAgua) {
+        *outX = (float)(c * TILE_SIZE);
+        *outY = (float)(f * TILE_SIZE);
+        *outDir = DIR_FRONT;
+        printf("[DEBUG BARCO] Agua encontrada en posición: (%.1f, %.1f)\n", *outX, *outY);
+        fflush(stdout);
+        return;
+      }
+    }
+  }
+  
+  // Último recurso: centro del mapa (probablemente error en el mapa)
+  *outX = 1000.0f;
+  *outY = 1000.0f;
   *outDir = DIR_FRONT;
-  printf("[DEBUG BARCO] Orilla no encontrada, usando posicion central\n");
+  printf("[ERROR BARCO] ¡No se encontró NINGUNA agua en todo el mapa!\n");
   printf("[DEBUG BARCO] ============================================\n\n");
   fflush(stdout);
 }
@@ -571,7 +596,8 @@ void generarBosqueAutomatico() {
     
     // Verificar que el suelo sea verde (tierra válida para árbol)
     // Solo colocar en tierra (verde domina), no en agua (azul domina)
-    if (g > r && g > b && g > 45 && b < 100) {
+    // CRITERIO MÁS ESTRICTO: verde debe dominar claramente y azul debe ser bajo
+    if (g > r && g > b && g > 70 && b < 80 && r < 100) {
       // Colocar árbol aleatorio (tipo 1-4) usando aritmética de punteros
       *(*(ptrMatriz + fila) + col) = (rand() % 4) + 1;
       contador++;
@@ -606,8 +632,8 @@ void generarBosqueAutomatico() {
     BYTE g = GetGValue(color);
     BYTE b = GetBValue(color);
     
-    // Solo en tierra verde
-    if (g > r && g > b && g > 45 && b < 100) {
+    // Solo en tierra verde (mismo criterio estricto que árboles)
+    if (g > r && g > b && g > 70 && b < 80 && r < 100) {
       // Inicializar vaca en el array dinámico
       Vaca *v = &gVacas[gNumVacas];
       
@@ -1212,3 +1238,4 @@ void dibujarMapaGlobal(HDC hdc, RECT rect, struct Jugador *pJugador) {
   DeleteObject(hbmBuffer);
   DeleteDC(hdcBuffer);
 }
+
