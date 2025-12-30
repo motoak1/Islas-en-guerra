@@ -77,4 +77,7 @@ void mostrarMenu();
 // 0 = Nueva partida, 1 = Cargar partida
 int menuObtenerAccion();
 
+// Isla seleccionada para iniciar la partida (1-3).
+int menuObtenerIsla();
+
 #endif // MENU_H

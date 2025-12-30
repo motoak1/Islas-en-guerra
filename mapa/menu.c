@@ -58,6 +58,13 @@
 #define RUTA_FONDO "..\\assets\\menu_bg.bmp"
 #define RUTA_FONDO_INSTRUC "..\\assets\\menu_bg_instruc.bmp"
 
+#define RUTA_ISLA1 "..\\assets\\islas\\isla1.bmp"
+#define RUTA_ISLA1_ALT "assets/islas/isla1.bmp"
+#define RUTA_ISLA2 "..\\assets\\islas\\isla2.bmp"
+#define RUTA_ISLA2_ALT "assets/islas/isla2.bmp"
+#define RUTA_ISLA3 "..\\assets\\islas\\isla3.bmp"
+#define RUTA_ISLA3_ALT "assets/islas/isla3.bmp"
+
 static HBITMAP fondoBmp = NULL;
 static BITMAP infoFondo;
 static bool fondoListo = false;
@@ -75,9 +82,19 @@ static const int OPCIONES_TOTAL = 4;
 static bool gMostrandoInstrucciones = false;
 static HWND gMenuHwnd = NULL;
 static int gMenuAccion = 0; // 0 = nueva partida, 1 = cargar partida
+static bool gMostrandoSeleccionIsla = false;
+static int gSeleccionIsla = 0;
+static int gIslaSeleccionada = 1;
+static const char *OPCIONES_ISLAS[] = { "Isla 1", "Isla 2", "Isla 3", "Volver" };
+static const int OPCIONES_ISLAS_TOTAL = 4;
+
+static HBITMAP hIslaBmp[3] = {NULL};
+static BITMAP infoIsla[3];
+static bool islasCargadas = false;
 
 // --- Prototipos necesarios ---
 void mostrarInstrucciones();
+static void dibujarPreviewIsla(HDC hdc, RECT rc);
 
 // --- UTILIDADES DE CONSOLA Y PINTADO ---
 
@@ -131,6 +148,28 @@ static bool cargarFondoInstruc(void) {
     GetObject(fondoInstrucBmp, sizeof(infoFondoInstruc), &infoFondoInstruc);
     fondoInstrucListo = true;
     return true;
+}
+
+static bool cargarIslas(void) {
+    if (islasCargadas) {
+        return true;
+    }
+
+    const char *rutas[] = { RUTA_ISLA1, RUTA_ISLA2, RUTA_ISLA3 };
+    const char *rutasAlt[] = { RUTA_ISLA1_ALT, RUTA_ISLA2_ALT, RUTA_ISLA3_ALT };
+
+    for (int i = 0; i < 3; i++) {
+        hIslaBmp[i] = (HBITMAP)LoadImageA(NULL, rutas[i], IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+        if (!hIslaBmp[i]) {
+            hIslaBmp[i] = (HBITMAP)LoadImageA(NULL, rutasAlt[i], IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+        }
+        if (hIslaBmp[i]) {
+            GetObject(hIslaBmp[i], sizeof(BITMAP), &infoIsla[i]);
+        }
+    }
+
+    islasCargadas = (hIslaBmp[0] && hIslaBmp[1] && hIslaBmp[2]);
+    return islasCargadas;
 }
 
 static void dibujarFondoBmp(HDC hdc, RECT rc) {
@@ -274,6 +313,14 @@ static void renderMenu(HWND hwnd) {
             if (i == n - 1) color = RGB(255, 230, 120); // resaltar ESC
             dibujarTextoCentrado(hdc, gFontOpciones, lineas[i], centroX, inicioY + i * alturaLinea, color);
         }
+    } else if (gMostrandoSeleccionIsla) {
+        dibujarFondoBmp(hdc, rc);
+        RECT rcOpc = rc;
+        int ancho = rc.right - rc.left;
+        rcOpc.left += ancho / 14;// padding izquierdo
+        rcOpc.right = rc.left + (ancho / 2) - ancho / 20; // dejar aire con el preview
+        dibujarOpciones(hdc, gFontOpciones, OPCIONES_ISLAS, OPCIONES_ISLAS_TOTAL, gSeleccionIsla, rcOpc);
+        dibujarPreviewIsla(hdc, rc);
     } else {
         dibujarFondoBmp(hdc, rc);
         dibujarOpciones(hdc, gFontOpciones, OPCIONES_MENU, OPCIONES_TOTAL, gSeleccion, rc);
@@ -301,6 +348,9 @@ static LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                     if (gMostrandoInstrucciones) {
                         gMostrandoInstrucciones = false;
                         InvalidateRect(hwnd, NULL, FALSE);
+                    } else if (gMostrandoSeleccionIsla) {
+                        gMostrandoSeleccionIsla = false;
+                        InvalidateRect(hwnd, NULL, FALSE);
                     } else {
                         PostMessage(hwnd, WM_CLOSE, 0, 0);
                     }
@@ -308,7 +358,10 @@ static LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                 case VK_UP:
                 case 'W':
                 case 'w':
-                    if (!gMostrandoInstrucciones) {
+                    if (gMostrandoSeleccionIsla) {
+                        gSeleccionIsla = (gSeleccionIsla - 1 + OPCIONES_ISLAS_TOTAL) % OPCIONES_ISLAS_TOTAL;
+                        InvalidateRect(hwnd, NULL, FALSE);
+                    } else if (!gMostrandoInstrucciones) {
                         gSeleccion = (gSeleccion - 1 + OPCIONES_TOTAL) % OPCIONES_TOTAL;
                         InvalidateRect(hwnd, NULL, FALSE);
                     }
@@ -316,17 +369,29 @@ static LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                 case VK_DOWN:
                 case 'S':
                 case 's':
-                    if (!gMostrandoInstrucciones) {
+                    if (gMostrandoSeleccionIsla) {
+                        gSeleccionIsla = (gSeleccionIsla + 1) % OPCIONES_ISLAS_TOTAL;
+                        InvalidateRect(hwnd, NULL, FALSE);
+                    } else if (!gMostrandoInstrucciones) {
                         gSeleccion = (gSeleccion + 1) % OPCIONES_TOTAL;
                         InvalidateRect(hwnd, NULL, FALSE);
                     }
                     break;
                 case VK_RETURN:
-                    if (!gMostrandoInstrucciones) {
-                        if (gSeleccion == 0) {
-                            // Iniciar partida: cerrar ventana y volver al juego
+                    if (gMostrandoSeleccionIsla) {
+                        if (gSeleccionIsla >= 0 && gSeleccionIsla <= 2) {
+                            gIslaSeleccionada = gSeleccionIsla + 1;
                             gMenuAccion = 0;
                             PostMessage(hwnd, WM_CLOSE, 0, 0);
+                        } else {
+                            gMostrandoSeleccionIsla = false;
+                            InvalidateRect(hwnd, NULL, FALSE);
+                        }
+                    } else if (!gMostrandoInstrucciones) {
+                        if (gSeleccion == 0) {
+                            gMostrandoSeleccionIsla = true;
+                            gSeleccionIsla = gIslaSeleccionada - 1;
+                            InvalidateRect(hwnd, NULL, FALSE);
                         } else if (gSeleccion == 1) {
                             // Cargar partida
                             gMenuAccion = 1;
@@ -347,6 +412,9 @@ static LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
         case WM_DESTROY:
             if (gFontTitulo) { DeleteObject(gFontTitulo); gFontTitulo = NULL; }
             if (gFontOpciones) { DeleteObject(gFontOpciones); gFontOpciones = NULL; }
+            for (int i = 0; i < 3; i++) {
+                if (hIslaBmp[i]) { DeleteObject(hIslaBmp[i]); hIslaBmp[i] = NULL; }
+            }
             PostQuitMessage(0);
             return 0;
     }
@@ -390,6 +458,10 @@ void mostrarInstrucciones() {
 
 int menuObtenerAccion() {
     return gMenuAccion;
+}
+
+int menuObtenerIsla() {
+    return gIslaSeleccionada;
 }
 
 void mostrarMenu() {
@@ -440,4 +512,45 @@ void mostrarMenu() {
 
     // Volver a mostrar la consola para el juego
     if (hConsole) ShowWindow(hConsole, SW_SHOW);
+}
+
+static void dibujarPreviewIsla(HDC hdc, RECT rc) {
+    if (!cargarIslas()) {
+        return;
+    }
+
+    int idx = gSeleccionIsla;
+    if (idx < 0 || idx > 2) {
+        idx = gIslaSeleccionada - 1;
+    }
+    if (idx < 0 || idx > 2 || !hIslaBmp[idx]) {
+        return;
+    }
+
+    HDC mem = CreateCompatibleDC(hdc);
+    HBITMAP old = (HBITMAP)SelectObject(mem, hIslaBmp[idx]);
+
+    int ancho = rc.right - rc.left;
+    int alto = rc.bottom - rc.top;
+
+    int previewW = ancho / 3;
+    int previewH = alto / 2;
+
+    if (infoIsla[idx].bmWidth && infoIsla[idx].bmHeight) {
+        double ratioSrc = (double)infoIsla[idx].bmWidth / (double)infoIsla[idx].bmHeight;
+        double ratioDst = (double)previewW / (double)previewH;
+        if (ratioSrc > ratioDst) {
+            previewH = (int)(previewW / ratioSrc);
+        } else {
+            previewW = (int)(previewH * ratioSrc);
+        }
+    }
+
+    int destX = rc.left + (ancho / 2) - (previewW / 2); // centrar en el área media
+    int destY = rc.top + (alto / 2) - (previewH / 2);
+
+    StretchBlt(hdc, destX, destY, previewW, previewH, mem, 0, 0, infoIsla[idx].bmWidth, infoIsla[idx].bmHeight, SRCCOPY);
+
+    SelectObject(mem, old);
+    DeleteDC(mem);
 }

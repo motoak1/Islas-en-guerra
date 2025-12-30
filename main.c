@@ -288,6 +288,8 @@ int main() {
   if (menuObtenerAccion() == 3)
     return 0; // Salir si el usuario lo pide
 
+  mapaSeleccionarIsla(menuObtenerIsla());
+
   WNDCLASSA wc = {0};
   wc.lpfnWndProc = WindowProc;
   wc.hInstance = GetModuleHandle(NULL);

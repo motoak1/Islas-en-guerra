@@ -71,6 +71,9 @@ static HBITMAP hVacaBmp[4] = {NULL};
 static HBITMAP hMapaBmp = NULL;
 static HBITMAP hArboles[4] = {NULL};
 
+static char gRutaMapaPrincipal[MAX_PATH] = RUTA_MAPA;
+static char gRutaMapaAlterna[MAX_PATH] = RUTA_MAPA_ALT;
+
 // Matriz lógica 32x32
 int mapaObjetos[GRID_SIZE][GRID_SIZE] = {0};
 
@@ -116,6 +119,12 @@ static void collisionMapClear(int value) {
 int **mapaObtenerCollisionMap(void) {
   collisionMapAllocIfNeeded();
   return gCollisionMap;
+}
+
+void mapaSeleccionarIsla(int isla) {
+  int seleccion = (isla >= 1 && isla <= 3) ? isla : 1;
+  snprintf(gRutaMapaPrincipal, sizeof(gRutaMapaPrincipal), "..\\assets\\islas\\isla%d.bmp", seleccion);
+  snprintf(gRutaMapaAlterna, sizeof(gRutaMapaAlterna), "assets/islas/isla%d.bmp", seleccion);
 }
 
 void mapaReconstruirCollisionMap(void) {
@@ -593,10 +602,10 @@ printf("[DEBUG] Logica: %d vacas registradas en la matriz.\\n", contadorVacas);
 
 void cargarRecursosGraficos() {
   // 1. Cargar Mapa Base (Intento doble)
-  hMapaBmp = (HBITMAP)LoadImageA(NULL, RUTA_MAPA, IMAGE_BITMAP, 0, 0,
+  hMapaBmp = (HBITMAP)LoadImageA(NULL, gRutaMapaPrincipal, IMAGE_BITMAP, 0, 0,
                                  LR_LOADFROMFILE | LR_CREATEDIBSECTION);
   if (!hMapaBmp)
-    hMapaBmp = (HBITMAP)LoadImageA(NULL, RUTA_MAPA_ALT, IMAGE_BITMAP, 0, 0,
+    hMapaBmp = (HBITMAP)LoadImageA(NULL, gRutaMapaAlterna, IMAGE_BITMAP, 0, 0,
                                    LR_LOADFROMFILE | LR_CREATEDIBSECTION);
 
   // 2. Cargar cada árbol individualmente con sistema de respaldo (Fallback)

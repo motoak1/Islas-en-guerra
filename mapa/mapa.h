@@ -39,5 +39,6 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
 void cargarRecursosGraficos();
 void dibujarObreros(HDC hdcBuffer, struct Jugador *j, Camara cam, int anchoP,
                     int altoP);
+void mapaSeleccionarIsla(int isla);
 
 #endif
