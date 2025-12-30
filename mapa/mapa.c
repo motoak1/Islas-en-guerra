@@ -1,510 +1,998 @@
 #include "mapa.h"
-#include "menu.h"
+#include "../edificios/edificios.h"
+#include "../recursos/recursos.h"
+#include "../recursos/ui_compra.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <conio.h>
-#include "../recursos/recursos.h" // Sube al directorio padre y entra a recursos/ 
-#include <stdbool.h>
+#include <windows.h>
 
-#define NUM_RECURSOS 15
-#define NUM_ENEMIGOS 5
-#define NUM_COMIDA 10
-#define NUM_MADERA 10
-#define NUM_PIEDRA 10
+// Definiciones manuales de rutas
+#define RUTA_MAPA "../assets/islas/isla1.bmp"
+#define RUTA_MAPA_ALT "assets/islas/isla1.bmp"
 
-// Nuevos Esquemas de Color (Texto brillante sobre fondo oscuro/tierra)
-#define COLOR_AGUA_BG 1		// Azul Oscuro para el fondo del agua (~)
-#define COLOR_AGUA_FG 9		// Azul Claro para el simbolo del agua (~)
+#define ARBOL1 "../assets/arboles/arbol1.bmp"
+#define ARBOL1_ALT "assets/arboles/arbol1.bmp"
 
-#define COLOR_TIERRA_BG 2	// Verde Oscuro para el fondo de la tierra (.)
-#define COLOR_TIERRA_FG 10	// Verde Brillante para el simbolo de la tierra (.)
+#define ARBOL2 "../assets/arboles/arbol2.bmp"
+#define ARBOL2_ALT "assets/arboles/arbol2.bmp"
 
-#define COLOR_MADERA 14		// Amarillo Brillante (Texto 'M' sobre tierra BG)
-#define COLOR_PIEDRA 15		// Blanco Brillante (Texto 'R' sobre tierra BG)
-#define COLOR_COMIDA 14		// Rojo Brillante (Texto 'C' sobre tierra BG)
+#define ARBOL3 "../assets/arboles/arbol3.bmp"
+#define ARBOL3_ALT "assets/arboles/arbol3.bmp"
 
-#define COLOR_ORO 14		// Amarillo/Marron (Texto '$' sobre tierra BG)
-#define COLOR_ENEMIGO 4		// Rojo Oscuro (Texto 'E' sobre fondo Rojo Brillante)
+#define ARBOL4 "../assets/arboles/arbol4.bmp"
+#define ARBOL4_ALT "assets/arboles/arbol4.bmp"
 
-// Variables globales para el offset de la vista (scrolling)
-int offset_f = 0;
-int offset_c = 0;
+#define obrero_front "../assets/obrero/obrero_front.bmp"
+#define obrero_back "../assets/obrero/obrero_back.bmp"
+#define obrero_left "../assets/obrero/obrero_left.bmp"
+#define obrero_right "../assets/obrero/obrero_right.bmp"
 
-/* =============================== */
-/* Utilidades de consola          */
-/* =============================== */
-/* Se asume que setColor(int fondo, int texto) y otras utilidades
-   como moverCursor y ocultarCursor estan definidas en menu.h/otro. */
+#define caballero_front "../assets/caballero/caballero_front.bmp"
+#define caballero_back "../assets/caballero/caballero_back.bmp"
+#define caballero_left "../assets/caballero/caballero_walkLeft3.bmp"
+#define caballero_right "../assets/caballero/caballero_walkRight3.bmp"
 
-/* =============================== */
-/* Generador de islas fijas       */
-/* =============================== */
-void crearIsla(char mapa[MAPA_F][MAPA_C], int cx, int cy, int rx, int ry) {
-    int i, j;
-    int dx, dy, dist, deformacion, nx, ny;
-    int maxX = rx + 4;
-    int maxY = ry + 4;
+#define CABALLO_F_ALT "assets/caballero/caballero_front.bmp"
+#define CABALLO_B_ALT "assets/caballero/caballero_back.bmp"
+#define CABALLO_L_ALT "assets/caballero/caballero_walkLeft3.bmp"
+#define CABALLO_R_ALT "assets/caballero/caballero_walkRight3.bmp"
 
-    for (i = -maxY; i <= maxY; i++) {
-        for (j = -maxX; j <= maxX; j++) {
-            dx = j;
-            dy = i;
-            dist = dx * dx + dy * dy;
-            deformacion = rand() % 5;
-            if (dist <= (rx * ry) + deformacion) {
-                nx = cy + i;
-                ny = cx + j;
-                if (nx >= 0 && nx < MAPA_F && ny >= 0 && ny < MAPA_C)
-                    mapa[nx][ny] = '.';
-            }
-        }
+#define VACA_F "../assets/vaca/vaca_front.bmp"
+#define VACA_B "../assets/vaca/vaca_back.bmp"
+#define VACA_L "../assets/vaca/vaca_left.bmp"
+#define VACA_R "../assets/vaca/vaca_right.bmp"
+
+#define VACA_F_ALT "assets/vaca/vaca_front.bmp"
+#define VACA_B_ALT "assets/vaca/vaca_back.bmp"
+#define VACA_L_ALT "assets/vaca/vaca_left.bmp"
+#define VACA_R_ALT "assets/vaca/vaca_right.bmp"
+
+static HBITMAP hObreroBmp[4] = {NULL};    // Front, Back, Left, Right
+static HBITMAP hCaballeroBmp[4] = {NULL}; // Front, Back, Left, Right (NUEVO)
+static HBITMAP hBarcoBmp[4] = {NULL};     // Front, Back, Left, Right (192x192)
+
+static HBITMAP hVacaBmp[4] = {NULL};
+
+// Definiciones para obrerro fallback
+#define OBRERO_F_ALT "assets/obrero/obrero_front.bmp"
+#define OBRERO_B_ALT "assets/obrero/obrero_back.bmp"
+#define OBRERO_L_ALT "assets/obrero/obrero_left.bmp"
+#define OBRERO_R_ALT "assets/obrero/obrero_right.bmp"
+
+#define BARCO_F_ALT "../assets/barco/barco_front.bmp"
+#define BARCO_B_ALT "../assets/barco/barco_back.bmp"
+#define BARCO_L_ALT "../assets/barco/barco_left.bmp"
+#define BARCO_R_ALT "../assets/barco/barco_right.bmp"
+
+static HBITMAP hMapaBmp = NULL;
+static HBITMAP hArboles[4] = {NULL};
+
+// Matriz lógica 32x32
+int mapaObjetos[GRID_SIZE][GRID_SIZE] = {0};
+
+// --- COLISIONES (matriz dinámica int**)
+// 0 = libre, 1 = ocupado (árboles u obstáculos)
+static int **gCollisionMap = NULL;
+
+static void detectarAguaEnMapa(void);
+void mapaMarcarArea(int f_inicio, int c_inicio, int ancho_celdas,
+                    int alto_celdas, int valor);
+
+static void collisionMapAllocIfNeeded(void) {
+  if (gCollisionMap)
+    return;
+
+  gCollisionMap = (int **)malloc(GRID_SIZE * sizeof(int *));
+  if (!gCollisionMap)
+    return;
+
+  for (int i = 0; i < GRID_SIZE; i++) {
+    // Use calloc to zero-initialize memory (clean map)
+    *(gCollisionMap + i) = (int *)calloc(GRID_SIZE, sizeof(int));
+    if (!*(gCollisionMap + i)) {
+      for (int k = 0; k < i; k++)
+        free(*(gCollisionMap + k));
+      free(gCollisionMap);
+      gCollisionMap = NULL;
+      return;
     }
+  }
 }
 
-/* =============================== */
-/* Crear puente entre dos puntos  */
-/* =============================== */
-void crearPuente(char mapa[MAPA_F][MAPA_C], int x1, int y1, int x2, int y2) {
-    int dx = abs(x2 - x1);
-    int dy = abs(y2 - y1);
-    int sx = x1 < x2 ? 1 : -1;
-    int sy = y1 < y2 ? 1 : -1;
-    int err = dx - dy;
-
-    while (true) {
-        if (x1 >= 0 && x1 < MAPA_F && y1 >= 0 && y1 < MAPA_C)
-            mapa[x1][y1] = '.';
-        if (x1 == x2 && y1 == y2) break;
-        int e2 = 2 * err;
-        if (e2 > -dy) {
-            err -= dy;
-            x1 += sx;
-        }
-        if (e2 < dx) {
-            err += dx;
-            y1 += sy;
-        }
+static void collisionMapClear(int value) {
+  if (!gCollisionMap)
+    return;
+  for (int i = 0; i < GRID_SIZE; i++) {
+    int *row = *(gCollisionMap + i);
+    for (int j = 0; j < GRID_SIZE; j++) {
+      *(row + j) = value;
     }
+  }
 }
 
-/* =============================== */
-/* Inicializar mapa               */
-/* =============================== */
-void inicializarMapa(char mapa[MAPA_F][MAPA_C]) {
-    int i, j, placed, rx, ry, ex, ey;
-
-    srand((unsigned int)time(NULL));
-
-    for (i = 0; i < MAPA_F; i++) {
-        for (j = 0; j < MAPA_C; j++) {
-            mapa[i][j] = '~';
-        }
-    }
-
-    // Crear 5 islas: 4 en esquinas y 1 central ajustada para no cortarse
-    crearIsla(mapa, 12, 12, 10, 8);	// Esquina superior izquierda
-    crearIsla(mapa, 85, 12, 10, 8);	// Esquina superior derecha
-    crearIsla(mapa, 12, 85, 10, 8);	// Esquina inferior izquierda
-    crearIsla(mapa, 85, 85, 10, 8);	// Esquina inferior derecha
-    crearIsla(mapa, 40, 50, 10, 8);	// Isla central ajustada (no se corta)
-
-    // Crear puentes ortogonales para conectar las islas (sin diagonales)
-    crearPuente(mapa, 12, 12, 85, 12); // Puente horizontal superior (fila 12)
-    crearPuente(mapa, 12, 12, 12, 85); // Puente vertical izquierdo (columna 12)
-    crearPuente(mapa, 85, 12, 85, 85); // Puente vertical derecho (columna 85)
-    crearPuente(mapa, 12, 85, 85, 85); // Puente horizontal inferior (fila 85)
-    crearPuente(mapa, 40, 50, 85, 50); // Puente horizontal central a derecha (fila 50)
-    crearPuente(mapa, 40, 50, 12, 50); // Puente horizontal central a izquierda (fila 50)
-    crearPuente(mapa, 40, 50, 40, 12); // Puente vertical central a arriba (columna 50)
-    crearPuente(mapa, 40, 50, 40, 85); // Puente vertical central a abajo (columna 50)
-
-    placed = 0;
-    while (placed < NUM_RECURSOS) {
-        rx = rand() % MAPA_F;
-        ry = rand() % MAPA_C;
-        if (mapa[rx][ry] == '.') {
-            mapa[rx][ry] = '$';
-            placed++;
-        }
-    }
-
-    placed = 0;
-    while (placed < NUM_ENEMIGOS) {
-        ex = rand() % MAPA_F;
-        ey = rand() % MAPA_C;
-        if (mapa[ex][ey] == '.') {
-            mapa[ex][ey] = 'E';
-            placed++;
-        }
-    }
-    placed = 0;
-    while (placed < NUM_COMIDA) {
-        ex = rand() % MAPA_F;
-        ey = rand() % MAPA_C;
-        if (mapa[ex][ey] == '.') {
-            mapa[ex][ey] = 'C';
-            placed++;
-        }
-    }
-    placed = 0;
-    while (placed < NUM_MADERA) {
-        ex = rand() % MAPA_F;
-        ey = rand() % MAPA_C;
-        if (mapa[ex][ey] == '.') {
-            mapa[ex][ey] = 'M';
-            placed++;
-        }
-    }
-    placed = 0;
-    while (placed < NUM_PIEDRA) {
-        ex = rand() % MAPA_F;
-        ey = rand() % MAPA_C;
-        if (mapa[ex][ey] == '.') {
-            mapa[ex][ey] = 'R';
-            placed++;
-        }
-    }
+int **mapaObtenerCollisionMap(void) {
+  collisionMapAllocIfNeeded();
+  return gCollisionMap;
 }
 
-/* =============================== */
-/* Dibujar marco del mapa         */
-/* =============================== */
-void dibujarMarcoMapa() {
-    int i;
-    setColor(0, 8); // Color gris oscuro para el marco
+void mapaReconstruirCollisionMap(void) {
+  collisionMapAllocIfNeeded();
+  collisionMapClear(0);
 
-    // Esquinas y lineas horizontales
-    moverCursor(0, 0);
-    printf("%c", 201); // ╔
-    for (i = 1; i < COLUMNAS * 2 + 2; i++) { // Ajustado el ancho
-        printf("%c", 205); // ═
+  // mapaObjetos es 32x32 (árboles), pero la colisión es 64x64
+  for (int f = 0; f < 32; f++) {
+    for (int c = 0; c < 32; c++) {
+      if (mapaObjetos[f][c] > 0) {
+        // Un árbol de la matriz original ahora ocupa 4x4 celdas de 32px
+        mapaMarcarArea(f * 2, c * 2, 4, 4, 1);
+      }
     }
-    printf("%c", 187); // ╗
-
-    moverCursor(0, FILAS + 1);
-    printf("%c", 200); // ╚
-    for (i = 1; i < COLUMNAS * 2 + 2; i++) { // Ajustado el ancho
-        printf("%c", 205); // ═
-    }
-    printf("%c", 188); // ╝
-
-    // Lineas verticales
-    for (i = 1; i < FILAS + 1; i++) {
-        moverCursor(0, i);
-        printf("%c", 186); // ║
-        moverCursor(COLUMNAS * 2 + 2, i); // Ajustada la posicion
-        printf("%c", 186); // ║
-    }
-    setColor(0, 15); // Restaurar color por defecto
+  }
+  detectarAguaEnMapa();
 }
 
-/* =============================== */
-/* Mostrar mapa                   */
-/* =============================== */
-// void mostrarMapa(char mapa[MAPA_F][MAPA_C]) {
-//     int i, j;
-//      // <-- Para clipping
-//     ocultarCursor();
-//     dibujarMarcoMapa();
-    
-//     for (i = 0; i < FILAS; i++) {
-//         moverCursor(2, i + 1); // Posicionar cursor al inicio de la fila
-        
-//         for (j = 0; j < COLUMNAS; j++) {
-            
-            
+// Asegúrate de que mapaMarcarArea no esté marcada como static si la declaraste
+// normal
+void mapaMarcarArea(int f_inicio, int c_inicio, int ancho_celdas,
+                    int alto_celdas, int valor) {
+  int **col = mapaObtenerCollisionMap();
+  if (!col)
+    return;
+  for (int f = 0; f < alto_celdas; f++) {
+    int fila_idx = f_inicio + f;
+    if (fila_idx >= GRID_SIZE)
+      continue;
+    int *fila_ptr = *(col + fila_idx);
+    for (int c = 0; c < ancho_celdas; c++) {
+      int col_idx = c_inicio + c;
+      if (col_idx >= GRID_SIZE)
+        continue;
+      *(fila_ptr + col_idx) = valor;
+    }
+  }
+}
 
-//             char c = mapa[offset_f + i][offset_c + j];
-//             if (c == '~') {
-//                 setColor(COLOR_AGUA_BG, COLOR_AGUA_FG);
-//                 printf("~ ");
-//             } else if (c == '.') {
-//                 setColor(COLOR_TIERRA_BG, COLOR_TIERRA_FG);
-//                 printf(". ");
-//             } else if (c == '$') {
-//                 setColor(COLOR_TIERRA_BG, COLOR_ORO);
-//                 printf("$ ");
-//             } else if (c == 'C') {
-//                 setColor(COLOR_TIERRA_BG, COLOR_COMIDA);
-//                 printf("C ");
-//             } else if (c == 'R') {
-//                 setColor(COLOR_TIERRA_BG, COLOR_PIEDRA);
-//                 printf("R ");
-//             } else if (c == 'M') {
-//                 setColor(COLOR_TIERRA_BG, COLOR_MADERA);
-//                 printf("M ");
-//             } else if (c == 'E') {
-//                 setColor(12, COLOR_ENEMIGO);
-//                 printf("E ");
-//             } else {
-//                 setColor(0, 15);
-//                 printf("%c ", c);
-//             }
-//         }
-//     }
-//     setColor(0, 15);
-// }
+// Función auxiliar para marcar edificios en el collision map
+void mapaMarcarEdificio(float x, float y, int ancho, int alto) {
+  collisionMapAllocIfNeeded();
 
+  // Calcular celdas que ocupa el edificio (TILE_SIZE=64)
+  int celInicioFila = (int)(y / TILE_SIZE);
+  int celInicioCol = (int)(x / TILE_SIZE);
+  int celFinFila = (int)((y + alto) / TILE_SIZE);
+  int celFinCol = (int)((x + ancho) / TILE_SIZE);
 
-void mostrarMapa(char mapa[MAPA_F][MAPA_C]) {
-    // Configuración para escritura en bloque (elimina el parpadeo)
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    
-    // El ancho es COLUMNAS * 2 porque cada tile visualmente son 2 caracteres ("~ ", ". ", etc.)
-    int bufferWidth = COLUMNAS * 2;
-    int bufferHeight = FILAS;
+  // Marcar celdas como bloqueadas Y eliminar árboles
+  // Expandir 2 celdas de margen para evitar que las copas de los árboles tapen
+  // el edificio
+  for (int f = celInicioFila - 2; f <= celFinFila + 2 && f < GRID_SIZE; f++) {
+    for (int c = celInicioCol - 2; c <= celFinCol + 2 && c < GRID_SIZE; c++) {
+      if (f >= 0 && c >= 0) {
+        // Bloquear solo las celdas del edificio exacto
+        if (f >= celInicioFila && f <= celFinFila && c >= celInicioCol &&
+            c <= celFinCol) {
+          gCollisionMap[f][c] = 1; // Bloquear celda
+        }
 
-    COORD bufferSize = { (short)bufferWidth, (short)bufferHeight };
-    COORD bufferCoord = { 0, 0 };
-    
-    // Definimos la región de la pantalla donde vamos a "pegar" el buffer
-    // Empieza en Columna 2, Fila 1 (según tu lógica original de moverCursor(2, i+1))
-    SMALL_RECT writeRegion = { 
-        2, 
-        1, 
-        (short)(2 + bufferWidth - 1), 
-        (short)(1 + bufferHeight - 1) 
-    };
+        // Eliminar árboles en área expandida
+        mapaObjetos[f][c] = 0;
+      }
+    }
+  }
+}
 
-    // Creamos un array de CHAR_INFO. Esto actúa como nuestro "mapa en memoria"
-    // Usamos VLA (Variable Length Array) o un tamaño fijo grande si el compilador es antiguo.
-    // Dado que FILAS y COLUMNAS son defines, esto es seguro.
-    CHAR_INFO buffer[FILAS * COLUMNAS * 2];
+void mapaLiberarCollisionMap(void) {
+  if (!gCollisionMap)
+    return;
+  for (int i = 0; i < GRID_SIZE; i++) {
+    free(*(gCollisionMap + i));
+  }
+  free(gCollisionMap);
+  gCollisionMap = NULL;
+}
 
-    int i, j;
+// ============================================================================
+// DETECCIÓN DE AGUA Y RECONSTRUCCIÓN DE COLISIONES
+// ============================================================================
+// Valores en collisionMap:
+//   0 = Celda libre (transitable)
+//   1 = Obstáculo (árbol o agua - impasable)
+//   2 = Ocupada por unidad (temporalmente bloqueada)
+// ============================================================================
 
-    // Dibujamos el marco primero (esto es rápido y estático)
-    ocultarCursor();
-    dibujarMarcoMapa();
-    
-    // Llenamos el buffer en memoria en lugar de imprimir en pantalla
-    for (i = 0; i < FILAS; i++) {
-        for (j = 0; j < COLUMNAS; j++) {
-            char c = mapa[offset_f + i][offset_c + j];
-            WORD attr = 0;
-            char symbol = ' ';
+// Detecta agua analizando los píxeles del mapa base
+// Utiliza aritmética de punteros para recorrer la matriz
+static void detectarAguaEnMapa(void) {
+  if (!hMapaBmp || !gCollisionMap)
+    return;
 
-            // Lógica de colores traducida a atributos de Windows
-            // (Fondo << 4) | Texto
-            if (c == '~') {
-                attr = (COLOR_AGUA_BG << 4) | COLOR_AGUA_FG;
-                symbol = '~';
-            } else if (c == '.') {
-                attr = (COLOR_TIERRA_BG << 4) | COLOR_TIERRA_FG;
-                symbol = '.';
-            } else if (c == '$') {
-                attr = (COLOR_TIERRA_BG << 4) | COLOR_ORO;
-                symbol = '$';
-            } else if (c == 'C') {
-                attr = (COLOR_TIERRA_BG << 4) | COLOR_COMIDA;
-                symbol = 'C';
-            } else if (c == 'R') {
-                attr = (COLOR_TIERRA_BG << 4) | COLOR_PIEDRA;
-                symbol = 'R';
-            } else if (c == 'M') {
-                attr = (COLOR_TIERRA_BG << 4) | COLOR_MADERA;
-                symbol = 'M';
-            } else if (c == 'E') {
-                // Asumiendo que tu setColor(12, COLOR_ENEMIGO) usa 12 como fondo
-                attr = (12 << 4) | COLOR_ENEMIGO;
-                symbol = 'E';
+  printf("\n[DEBUG AGUA] ============================================\n");
+  printf("[DEBUG AGUA] Iniciando deteccion de agua con GetDIBits...\n");
+  fflush(stdout);
+
+  // ================================================================
+  // OBTENER INFORMACIÓN DEL BITMAP
+  // ================================================================
+  BITMAP bm;
+  if (!GetObject(hMapaBmp, sizeof(BITMAP), &bm)) {
+    printf("[DEBUG AGUA] ERROR: No se pudo obtener info del bitmap\n");
+    fflush(stdout);
+    return;
+  }
+
+  printf("[DEBUG AGUA] Bitmap dimensions: %dx%d\n", bm.bmWidth, bm.bmHeight);
+  printf("[DEBUG AGUA] Bits per pixel: %d\n", bm.bmBitsPixel);
+  fflush(stdout);
+
+  // ================================================================
+  // CONFIGURAR BITMAPINFO PARA LEER PIXELS
+  // ================================================================
+  BITMAPINFO bmi;
+  ZeroMemory(&bmi, sizeof(BITMAPINFO));
+  bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+  bmi.bmiHeader.biWidth = bm.bmWidth;
+  bmi.bmiHeader.biHeight = -bm.bmHeight; // Negativo = top-down
+  bmi.bmiHeader.biPlanes = 1;
+  bmi.bmiHeader.biBitCount = 24; // 24-bit RGB
+  bmi.bmiHeader.biCompression = BI_RGB;
+
+  // ================================================================
+  // LEER TODO EL BITMAP A MEMORIA
+  // ================================================================
+  int rowSize = ((bm.bmWidth * 3 + 3) & ~3); // Alineado a 4 bytes
+  int imageSize = rowSize * bm.bmHeight;
+  BYTE *pixelData = (BYTE *)malloc(imageSize);
+
+  if (!pixelData) {
+    printf("[DEBUG AGUA] ERROR: No se pudo asignar memoria\n");
+    fflush(stdout);
+    return;
+  }
+
+  HDC hdcScreen = GetDC(NULL);
+  int result = GetDIBits(hdcScreen, hMapaBmp, 0, bm.bmHeight, pixelData, &bmi,
+                         DIB_RGB_COLORS);
+  ReleaseDC(NULL, hdcScreen);
+
+  if (!result) {
+    printf("[DEBUG AGUA] ERROR: GetDIBits fallo\n");
+    free(pixelData);
+    fflush(stdout);
+    return;
+  }
+
+  printf("[DEBUG AGUA] Bitmap leido exitosamente a memoria\n");
+  fflush(stdout);
+
+  // ================================================================
+  // MUESTREO: Verificar primeros píxeles
+  // ================================================================
+  printf("\n[DEBUG AGUA] === MUESTREO DE COLORES ===\n");
+  int posicionesTest[][2] = {{5, 5}, {10, 10}, {15, 15}, {7, 7}, {14, 8}};
+
+  for (int i = 0; i < 5; i++) {
+    int f = posicionesTest[i][0];
+    int c = posicionesTest[i][1];
+    int px = (c * TILE_SIZE) + 16;
+    int py = (f * TILE_SIZE) + 16;
+
+    if (px >= 0 && px < bm.bmWidth && py >= 0 && py < bm.bmHeight) {
+      int offset = py * rowSize + px * 3;
+      BYTE b = pixelData[offset + 0];
+      BYTE g = pixelData[offset + 1];
+      BYTE r = pixelData[offset + 2];
+
+      bool verde = (g > r && g > b && g > 45);
+      bool beige = (r > 80 && g > 80 && b < 100 && abs(r - g) < 50);
+      printf("[DEBUG] Celda[%2d][%2d] @ (%4d,%4d): RGB(%3d,%3d,%3d) -> %s\n", f,
+             c, px, py, r, g, b, (verde || beige) ? "TIERRA" : "AGUA");
+    }
+  }
+  fflush(stdout);
+
+  // ================================================================
+  // DETECCIÓN COMPLETA DE AGUA
+  // ================================================================
+  int contadorAgua = 0;
+  int contadorTierra = 0;
+  int contadorFueraDeLimites = 0;
+
+  for (int f = 0; f < GRID_SIZE; f++) {
+    int *fila = *(gCollisionMap + f);
+    for (int c = 0; c < GRID_SIZE; c++) {
+      // No sobreescribir árboles u obstáculos
+      if (*(fila + c) != 0)
+        continue;
+
+      // Calcular pixel central de la celda
+      int px = (c * TILE_SIZE) + 16;
+      int py = (f * TILE_SIZE) + 16;
+
+      // Verificar límites
+      if (px < 0 || px >= bm.bmWidth || py < 0 || py >= bm.bmHeight) {
+        contadorFueraDeLimites++;
+        continue;
+      }
+
+      // Leer pixel desde buffer
+      int offset = py * rowSize + px * 3;
+      BYTE b = pixelData[offset + 0];
+      BYTE g = pixelData[offset + 1];
+      BYTE r = pixelData[offset + 2];
+
+      // ================================================================
+      // CRITERIO: DETECTAR SOLO AGUA AZUL
+      // ================================================================
+      // AGUA debe tener azul dominante sobre rojo y verde
+      // Arena/beige/verde son transitables
+      // ================================================================
+
+      bool esAguaAzulOscura =
+          (b > r + 20 && b > g + 20 && b > 60); // Azul oscuro
+      bool esAguaAzulClara =
+          (b > r && b > g && b > 100); // Azul claro (celeste)
+
+      bool esAgua = esAguaAzulOscura || esAguaAzulClara;
+
+      if (esAgua) {
+        // ES AGUA - marcar como impasable
+        *(fila + c) = 1;
+        contadorAgua++;
+
+        // Debug primeras 5 escrituras
+        if (contadorAgua <= 5) {
+          printf("[DEBUG] AGUA DETECTADA: gCollisionMap[%d][%d] = 1 "
+                 "(RGB=%d,%d,%d)\n",
+                 f, c, r, g, b);
+          fflush(stdout);
+        }
+      } else {
+        // NO es agua - es tierra transitable (verde, arena, beige, etc)
+        contadorTierra++;
+      }
+    }
+  }
+
+  // Liberar memoria
+  free(pixelData);
+
+  // ================================================================
+  // REPORTE FINAL
+  // ================================================================
+  printf("\n[DEBUG AGUA] === RESUMEN ===\n");
+  printf("[DEBUG AGUA] Celdas de AGUA: %d\n", contadorAgua);
+  printf("[DEBUG AGUA] Celdas de TIERRA: %d\n", contadorTierra);
+  printf("[DEBUG AGUA] Fuera de limites: %d\n", contadorFueraDeLimites);
+  printf("[DEBUG AGUA] Total procesado: %d\n",
+         contadorAgua + contadorTierra + contadorFueraDeLimites);
+  fflush(stdout);
+
+  // Verificación post-escritura
+  printf("\n[DEBUG AGUA] === VERIFICACION POST-ESCRITURA ===\n");
+  for (int i = 0; i < 5; i++) {
+    int f = posicionesTest[i][0];
+    int c = posicionesTest[i][1];
+    int valor = *(*(gCollisionMap + f) + c);
+    printf("[DEBUG] gCollisionMap[%d][%d] = %d\n", f, c, valor);
+  }
+
+  // Snapshot de fila 10
+  printf("\n[DEBUG] Fila 10: ");
+  for (int c = 0; c < 20; c++) {
+    printf("%d", *(*(gCollisionMap + 10) + c));
+  }
+  printf("...\n");
+
+  if (contadorAgua == 0) {
+    printf(
+        "\n[DEBUG AGUA] WARNING: No se detecto agua, activando fallback...\n");
+    // Marcar bordes como agua
+    for (int i = 0; i < GRID_SIZE; i++) {
+      if (*(*(gCollisionMap + 0) + i) == 0)
+        *(*(gCollisionMap + 0) + i) = 1;
+      if (*(*(gCollisionMap + GRID_SIZE - 1) + i) == 0)
+        *(*(gCollisionMap + GRID_SIZE - 1) + i) = 1;
+      if (*(*(gCollisionMap + i) + 0) == 0)
+        *(*(gCollisionMap + i) + 0) = 1;
+      if (*(*(gCollisionMap + i) + GRID_SIZE - 1) == 0)
+        *(*(gCollisionMap + i) + GRID_SIZE - 1) = 1;
+    }
+  }
+
+  printf("[DEBUG AGUA] Deteccion completada exitosamente.\n");
+  printf("[DEBUG AGUA] ============================================\n\n");
+  fflush(stdout);
+}
+
+// ============================================================================
+// DETECCIÓN AUTOMÁTICA DE ORILLA PARA BARCO (192x192px)
+// ============================================================================
+// Encuentra una posición válida en la orilla del mapa donde:
+// - El barco está EN EL AGUA (valor 1 = azul)
+// - Hay tierra adyacente (para confirmar que es orilla, no mar abierto)
+// - Hay espacio suficiente para el barco (6x6 celdas = 192px de agua)
+// Retorna la posición en píxeles y la dirección hacia la tierra
+// ============================================================================
+void mapaDetectarOrilla(float *outX, float *outY, int *outDir) {
+  int **col = mapaObtenerCollisionMap();
+  if (!col) {
+    *outX = 512.0f;
+    *outY = 512.0f;
+    *outDir = DIR_FRONT;
+    return;
+  }
+
+  printf("\n[DEBUG BARCO] ============================================\n");
+  printf("[DEBUG BARCO] Buscando AGUA para colocar barco...\n");
+  fflush(stdout);
+
+  // El barco ocupa 6x6 celdas (192px / 32px = 6)
+  const int BARCO_CELDAS = 6;
+
+  // Direcciones: arriba, abajo, izquierda, derecha
+  int dF[4] = {-1, 1, 0, 0};
+  int dC[4] = {0, 0, -1, 1};
+  // Orientación HACIA la tierra (inverso)
+  Direccion direcciones[4] = {DIR_FRONT, DIR_BACK, DIR_RIGHT, DIR_LEFT};
+
+  // Buscar desde el centro del mapa hacia afuera
+  int centroF = GRID_SIZE / 2;
+  int centroC = GRID_SIZE / 2;
+
+  for (int radio = 10; radio < GRID_SIZE / 2; radio++) {
+    for (int f = centroF - radio; f <= centroF + radio; f++) {
+      for (int c = centroC - radio; c <= centroC + radio; c++) {
+        // Verificar límites (el barco necesita espacio 6x6)
+        if (f < 1 || f >= GRID_SIZE - BARCO_CELDAS - 1 || c < 1 ||
+            c >= GRID_SIZE - BARCO_CELDAS - 1)
+          continue;
+
+        // ================================================================
+        // CRÍTICO: La celda actual debe ser AGUA (valor 1)
+        // ================================================================
+        if (*(*(col + f) + c) != 1)
+          continue;
+
+        // Verificar que el bloque 6x6 completo sea AGUA (valor 1)
+        bool bloqueAgua = true;
+        int celdasAgua = 0;
+        for (int df = 0; df < BARCO_CELDAS && bloqueAgua; df++) {
+          int *fila_ptr = *(col + f + df);
+          for (int dc = 0; dc < BARCO_CELDAS && bloqueAgua; dc++) {
+            int valor = *(fila_ptr + c + dc);
+            // Debe ser agua (1) para que el barco flote
+            if (valor == 1) {
+              celdasAgua++;
             } else {
-                attr = (0 << 4) | 15; // Blanco sobre negro por defecto
-                symbol = c;
+              // Si encuentra tierra o árbol, este bloque no es válido
+              bloqueAgua = false;
             }
-
-            // Calculamos la posición lineal en el array unidimensional
-            int index = (i * bufferWidth) + (j * 2);
-
-            // Asignamos el primer caracter del tile (ej: '~')
-            buffer[index].Char.AsciiChar = symbol;
-            buffer[index].Attributes = attr;
-
-            // Asignamos el segundo caracter del tile (espacio ' ')
-            buffer[index + 1].Char.AsciiChar = ' ';
-            buffer[index + 1].Attributes = attr;
+          }
         }
+
+        if (!bloqueAgua)
+          continue;
+
+        // Verificar que al menos el 90% del bloque sea agua
+        if (celdasAgua < (BARCO_CELDAS * BARCO_CELDAS * 9 / 10))
+          continue;
+
+        // Buscar TIERRA adyacente en las 4 direcciones para confirmar que es
+        // orilla
+        for (int d = 0; d < 4; d++) {
+          int nf = f + dF[d];
+          int nc = c + dC[d];
+
+          // Verificar límites
+          if (nf < 0 || nf >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE)
+            continue;
+
+          // Verificar si la celda adyacente es TIERRA (0)
+          if (*(*(col + nf) + nc) == 0) {
+            // ¡Encontramos una orilla válida! El barco está en agua, orientado
+            // hacia tierra
+            *outX = (float)(c * TILE_SIZE);
+            *outY = (float)(f * TILE_SIZE);
+            *outDir = direcciones[d];
+
+            printf("[DEBUG BARCO] Orilla encontrada!\n");
+            printf("[DEBUG BARCO]   Celda AGUA: [%d][%d]\n", f, c);
+            printf("[DEBUG BARCO]   Posicion: (%.1f, %.1f)\n", *outX, *outY);
+            printf("[DEBUG BARCO]   Direccion hacia tierra: %d\n", *outDir);
+            printf("[DEBUG BARCO]   Espacio: %dx%d celdas de AGUA\n",
+                   BARCO_CELDAS, BARCO_CELDAS);
+            printf("[DEBUG BARCO]   Celdas de agua verificadas: %d/%d\n",
+                   celdasAgua, BARCO_CELDAS * BARCO_CELDAS);
+            printf("[DEBUG BARCO] "
+                   "============================================\n\n");
+            fflush(stdout);
+            return;
+          }
+        }
+      }
     }
+  }
 
-    // ¡MAGIA! Escribimos todo el bloque de memoria a la consola en una sola operación.
-    // Esto es instantáneo y elimina el parpadeo durante el scroll.
-    WriteConsoleOutput(hConsole, buffer, bufferSize, bufferCoord, &writeRegion);
-
-    // Restauramos colores para el resto de la interfaz
-    setColor(0, 15);
+  // Fallback: centro del mapa si no se encuentra orilla
+  *outX = (float)(centroC * TILE_SIZE);
+  *outY = (float)(centroF * TILE_SIZE);
+  *outDir = DIR_FRONT;
+  printf("[DEBUG BARCO] Orilla no encontrada, usando posicion central\n");
+  printf("[DEBUG BARCO] ============================================\n\n");
+  fflush(stdout);
 }
 
-/* =============================== */
-/* Mover jugador                  */
-/* =============================== */
-/* =============================== */
-/* Mover jugador                  */
-/* =============================== */
-// ¡¡Firma de la función modificada!!
-int moverJugador(struct Jugador *j, char mapa[MAPA_F][MAPA_C], int *x, int *y, char direccion) {
-    int nx = *x;
-    int ny = *y;
-    char destino;
-    char msg[60];
-    int i;
-    char actual;
-    int offset_changed = 0;
-    int recurso_recolectado = 0;
+void generarBosqueAutomatico() {
+  if (!hMapaBmp)
+    return;
 
-    if (direccion >= 'a' && direccion <= 'z')
-        direccion -= 32;
+  HDC hdcPantalla = GetDC(NULL);
+  HDC hdcMem = CreateCompatibleDC(hdcPantalla);
+  HBITMAP hOldBmp = (HBITMAP)SelectObject(hdcMem, hMapaBmp);
 
-    if (direccion == 'W') nx--;
-    else if (direccion == 'S') nx++;
-    else if (direccion == 'A') ny--;
-    else if (direccion == 'D') ny++;
-    else return 0;
+  // Requisito: Aritmética de punteros para manejar la matriz
+  int (*ptrMatriz)[GRID_SIZE] = mapaObjetos;
+  srand((unsigned int)time(NULL));
 
-    if (nx < 0 || nx >= MAPA_F || ny < 0 || ny >= MAPA_C) {
-        moverCursor(0, FILAS + 2);
-        setColor(0, 14);
-        printf("No puedes salir del mapa!          ");
-        setColor(0, 15);
-        return 0;
+  // REQUISITO CRÍTICO: Colocar exactamente 40 árboles (no por probabilidad)
+  const int NUM_ARBOLES_EXACTO = 40;
+  int contador = 0;
+
+  // Bucle while que continúa hasta colocar exactamente 40 árboles
+  while (contador < NUM_ARBOLES_EXACTO) {
+    // Generar coordenadas aleatorias en la matriz 32x32
+    int fila = rand() % GRID_SIZE;
+    int col = rand() % GRID_SIZE;
+
+    // Verificar que la celda esté vacía (no haya otro árbol)
+    if (*(*(ptrMatriz + fila) + col) != 0) {
+      continue; // Ya hay un árbol aquí, intentar otra posición
     }
 
-    destino = mapa[nx][ny];
-    msg[0] = '\0';
+    // Calcular píxel central de la celda para verificar el color del suelo
+    int px = (col * TILE_SIZE) + (TILE_SIZE / 2);
+    int py = (fila * TILE_SIZE) + (TILE_SIZE / 2);
 
-    if (destino == '~') {
-        moverCursor(0, FILAS + 2);
-        setColor(0, 14);
-        printf("No puedes nadar!                   ");
-        setColor(0, 15);
-        return 0;
+    COLORREF color = GetPixel(hdcMem, px, py);
+    if (color == CLR_INVALID)
+      continue;
+
+    BYTE r = GetRValue(color);
+    BYTE g = GetGValue(color);
+    BYTE b = GetBValue(color);
+
+    // Verificar que el suelo sea verde (tierra válida para árbol)
+    // Solo colocar en tierra (verde domina), no en agua (azul domina)
+    if (g > r && g > b && g > 45 && b < 100) {
+      // Colocar árbol aleatorio (tipo 1-4) usando aritmética de punteros
+      *(*(ptrMatriz + fila) + col) = (rand() % 4) + 1;
+      contador++;
     }
+  }
 
-    // --- LÓGICA DE RECOLECCIÓN DE RECURSOS ---
-    if (destino == '$') {
-        sprintf(msg, "Has encontrado 10 de oro!");
-        j->Oro += 10; 
-        recurso_recolectado = 1;
-        mapa[nx][ny] = '.';
-    } else if (destino == 'E') {
-        sprintf(msg, "Has encontrado un enemigo!");
-        mapa[nx][ny] = '.';
-    } else if (destino == 'M') {
-        sprintf(msg, "Has encontrado 15 de madera!");
-        j->Madera += 15; 
-        recurso_recolectado = 1;
-        mapa[nx][ny] = '.';
-    } else if (destino == 'R') {
-        sprintf(msg, "Has encontrado 15 de piedra!");
-        j->Piedra += 15; 
-        recurso_recolectado = 1;
-        mapa[nx][ny] = '.';
-    } else if (destino == 'C') {
-        sprintf(msg, "Has encontrado 20 de comida!");
-        j->Comida += 20; 
-        recurso_recolectado = 1;
-        mapa[nx][ny] = '.';
+  printf("[DEBUG] Logica: %d arboles registrados en la matriz con punteros.\n",
+         contador);
+
+  const int NUM_VACAS_EXACTO = 10; // 10 vacas distribuidas en el mapa
+  int contadorVacas = 0;
+  while (contadorVacas < NUM_VACAS_EXACTO) {
+    int fila = rand() % GRID_SIZE;
+    int col = rand() % GRID_SIZE;
+
+    // No colocar vaca donde ya hay árbol
+    if (*(*(ptrMatriz + fila) + col) != 0)
+      continue;
+
+    // Verificar que el suelo sea tierra (mismo criterio que árboles)
+    int px = (col * TILE_SIZE) + (TILE_SIZE / 2);
+    int py = (fila * TILE_SIZE) + (TILE_SIZE / 2);
+
+    COLORREF color = GetPixel(hdcMem, px, py);
+    if (color == CLR_INVALID)
+      continue;
+
+    BYTE r = GetRValue(color);
+    BYTE g = GetGValue(color);
+    BYTE b = GetBValue(color);
+
+    // Solo en tierra verde
+    if (g > r && g > b && g > 45 && b < 100) {
+      // Colocar vaca con orientación aleatoria (5-8)
+      *(*(ptrMatriz + fila) + col) = 5 + (rand() % 4);
+      contadorVacas++;
     }
-    // ---------------------------------------------
+  }
+  printf("[DEBUG] Logica: %d vacas registradas en la matriz.\\n",
+         contadorVacas);
 
-    // Calcular nuevo offset para centrar la vista en el jugador
-    int new_offset_f = offset_f;
-    int new_offset_c = offset_c;
-    new_offset_f = nx - FILAS / 2;
-    new_offset_c = ny - COLUMNAS / 2; // COLUMNAS es 41, así que esto funciona
-    if (new_offset_f < 0) new_offset_f = 0;
-    if (new_offset_f > MAPA_F - FILAS) new_offset_f = MAPA_F - FILAS;
-    if (new_offset_c < 0) new_offset_c = 0;
-    if (new_offset_c > MAPA_C - COLUMNAS) new_offset_c = MAPA_C - COLUMNAS;
+  // Construir la grilla de colisión con árboles Y detectar agua
+  // NOTA: mapaReconstruirCollisionMap() YA llama a detectarAguaEnMapa()
+  // internamente
+  mapaReconstruirCollisionMap();
 
-    if (new_offset_f != offset_f || new_offset_c != offset_c) {
-        offset_f = new_offset_f;
-        offset_c = new_offset_c;
-        offset_changed = 1;
-    }
-
-    if (!offset_changed) {
-        // Borrar 'P' de la posición anterior
-        // Ya no necesitamos la comprobación 'if (old_physical_x < STATS_X)'
-        moverCursor((short)((*y - offset_c) * 2 + 2), (short)(*x - offset_f + 1));
-        actual = mapa[*x][*y];
-        if (actual == '~') {
-            setColor(COLOR_AGUA_BG, COLOR_AGUA_FG);
-        } else if (actual == '.') {
-            setColor(COLOR_TIERRA_BG, COLOR_TIERRA_FG);
-        } else if (actual == '$') {
-            setColor(COLOR_TIERRA_BG, COLOR_ORO);
-        } else if (actual == 'E') {
-            setColor(12, COLOR_ENEMIGO);
-        } else if (actual == 'M') {
-            setColor(COLOR_TIERRA_BG, COLOR_MADERA);
-        } else if (actual == 'R') {
-            setColor(COLOR_TIERRA_BG, COLOR_PIEDRA);
-        } else if (actual == 'C') {
-            setColor(COLOR_TIERRA_BG, COLOR_COMIDA);
-        } else {
-            setColor(0, 15);
-        }
-        printf("%c ", actual);
-    }
-
-
-    *x = nx;
-    *y = ny;
-
-    if (offset_changed) {
-        mostrarMapa(mapa);
-    }
-
-    // Dibujar 'P' en la nueva posición
-    // Ya no necesitamos la comprobación 'if (new_physical_x < STATS_X)'
-    moverCursor((short)((ny - offset_c) * 2 + 2), (short)(nx - offset_f + 1));
-    setColor(0, 10);
-    printf("P ");
-    setColor(0, 15);
-
-
-    moverCursor(0, FILAS + 2);
-    for (i = 0; i < 60; i++) printf(" ");
-    moverCursor(0, FILAS + 2);
-
-    if (msg[0] != '\0') {
-        setColor(0, 11);
-        printf("%s", msg);
-        setColor(0, 15);
-    }
-
-    return recurso_recolectado;
+  SelectObject(hdcMem, hOldBmp);
+  DeleteDC(hdcMem);
+  ReleaseDC(NULL, hdcPantalla);
 }
 
+void cargarRecursosGraficos() {
+  // 1. Cargar Mapa Base (Intento doble)
+  hMapaBmp = (HBITMAP)LoadImageA(NULL, RUTA_MAPA, IMAGE_BITMAP, 0, 0,
+                                 LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+  if (!hMapaBmp)
+    hMapaBmp = (HBITMAP)LoadImageA(NULL, RUTA_MAPA_ALT, IMAGE_BITMAP, 0, 0,
+                                   LR_LOADFROMFILE | LR_CREATEDIBSECTION);
 
-/* =============================== */
-/* Animar agua con flujo (~ y ' ') */
-/* =============================== */
-void animarAgua(char mapa[MAPA_F][MAPA_C]) {
-    int i, j;
-    static int frame = 0;
-    frame++;
+  // 2. Cargar cada árbol individualmente con sistema de respaldo (Fallback)
+  const char *rutasPrincipales[] = {ARBOL1, ARBOL2, ARBOL3, ARBOL4};
+  const char *rutasAlternas[] = {ARBOL1_ALT, ARBOL2_ALT, ARBOL3_ALT,
+                                 ARBOL4_ALT};
 
-    // El bucle 'j < COLUMNAS' ahora se detiene automáticamente antes del panel (en j = 40),
-    // porque COLUMNAS se definió como 41 en mapa.h.
-    for (i = 0; i < FILAS; i++) {
-        for (j = 0; j < COLUMNAS; j++) { 
-            
-            // Ya no necesitamos la variable 'physical_x' ni la comprobación 'if'.
+  int cargados = 0;
+  for (int i = 0; i < 4; i++) {
+    // Intento 1: Con "../"
+    hArboles[i] =
+        (HBITMAP)LoadImageA(NULL, rutasPrincipales[i], IMAGE_BITMAP,
+                            SPRITE_ARBOL, SPRITE_ARBOL, LR_LOADFROMFILE);
 
-            // Solo dibujamos si es agua
-            if (mapa[offset_f + i][offset_c + j] == '~') {
-
-                moverCursor((j * 2) + 2, i + 1);
-                if ((i + j + frame) % 3 == 0) {
-                    setColor(COLOR_AGUA_BG, COLOR_AGUA_FG); printf("~ ");
-                } else {
-                    setColor(COLOR_AGUA_BG, COLOR_AGUA_FG); printf("  ");
-                }
-            }
-        }
+    // Intento 2: Sin "../" (si el primer intento falló)
+    if (!hArboles[i]) {
+      hArboles[i] =
+          (HBITMAP)LoadImageA(NULL, rutasAlternas[i], IMAGE_BITMAP,
+                              SPRITE_ARBOL, SPRITE_ARBOL, LR_LOADFROMFILE);
     }
-    setColor(0, 15);
-    moverCursor(0, FILAS + 3); 
+
+    if (hArboles[i])
+      cargados++;
+  }
+
+  // --- AGREGA ESTO PARA LOS OBREROS (CON FALLBACK) ---
+  const char *rutasObr[] = {obrero_front, obrero_back, obrero_left,
+                            obrero_right};
+  const char *rutasObrAlt[] = {OBRERO_F_ALT, OBRERO_B_ALT, OBRERO_L_ALT,
+                               OBRERO_R_ALT};
+
+  for (int i = 0; i < 4; i++) {
+    hObreroBmp[i] = (HBITMAP)LoadImageA(NULL, rutasObr[i], IMAGE_BITMAP, 64, 64,
+                                        LR_LOADFROMFILE);
+    if (!hObreroBmp[i]) {
+      hObreroBmp[i] = (HBITMAP)LoadImageA(NULL, rutasObrAlt[i], IMAGE_BITMAP,
+                                          64, 64, LR_LOADFROMFILE);
+    }
+
+    if (!hObreroBmp[i]) {
+      printf("[ERROR] No se pudo cargar obrero[%d]\n", i);
+    } else {
+      printf("[OK] Obrero BMP %d cargado correctamente.\n", i);
+    }
+  }
+
+  // --- CARGAR SPRITES DE CABALLEROS ---
+
+  const char *rutasCab[] = {caballero_front, caballero_back, caballero_left,
+                            caballero_right};
+  const char *rutasCabAlt[] = {CABALLO_F_ALT, CABALLO_B_ALT, CABALLO_L_ALT,
+                               CABALLO_R_ALT};
+
+  for (int i = 0; i < 4; i++) {
+    hCaballeroBmp[i] = (HBITMAP)LoadImageA(NULL, rutasCab[i], IMAGE_BITMAP, 64,
+                                           64, LR_LOADFROMFILE);
+    if (!hCaballeroBmp[i]) {
+      hCaballeroBmp[i] = (HBITMAP)LoadImageA(NULL, rutasCabAlt[i], IMAGE_BITMAP,
+                                             64, 64, LR_LOADFROMFILE);
+    }
+
+    if (!hCaballeroBmp[i]) {
+      printf("[ERROR] No se pudo cargar caballero[%d]\n", i);
+    } else {
+      printf("[OK] Caballero BMP %d cargado correctamente.\n", i);
+    }
+  }
+
+  // --- CARGAR SPRITES DE BARCO (192x192) ---
+  const char *rutasBarcoAlt[] = {BARCO_F_ALT, BARCO_B_ALT, BARCO_L_ALT,
+                                 BARCO_R_ALT};
+
+  for (int i = 0; i < 4; i++) {
+    hBarcoBmp[i] = (HBITMAP)LoadImageA(NULL, rutasBarcoAlt[i], IMAGE_BITMAP,
+                                       192, 192, LR_LOADFROMFILE);
+
+    if (!hBarcoBmp[i]) {
+      printf("[ERROR] No se pudo cargar barco[%d]\n", i);
+    } else {
+      printf("[OK] Barco BMP %d cargado correctamente (192x192).\n", i);
+    }
+  }
+
+  const char *rutasVaca[] = {VACA_F, VACA_B, VACA_L, VACA_R};
+  const char *rutasVacaAlt[] = {VACA_F_ALT, VACA_B_ALT, VACA_L_ALT, VACA_R_ALT};
+  for (int i = 0; i < 4; i++) {
+    hVacaBmp[i] = (HBITMAP)LoadImageA(NULL, rutasVaca[i], IMAGE_BITMAP, 64, 64,
+                                      LR_LOADFROMFILE);
+    if (!hVacaBmp[i]) {
+      hVacaBmp[i] = (HBITMAP)LoadImageA(NULL, rutasVacaAlt[i], IMAGE_BITMAP, 64,
+                                        64, LR_LOADFROMFILE);
+    }
+    printf("[%s] Vaca BMP %d cargado.\\n", hVacaBmp[i] ? "OK" : "ERROR", i);
+  }
+
+  generarBosqueAutomatico();
 }
 
+// ============================================================================
+// DIBUJADO CON Y-SORTING (PROFUNDIDAD POR FILA)
+// ============================================================================
+// En lugar de dibujar todos los árboles y luego todos los obreros,
+// dibujamos el mapa fila por fila (de arriba hacia abajo).
+// Por cada fila Y:
+//   1. Dibujamos los árboles cuya fila coincide
+//   2. Dibujamos los obreros cuya posición Y coincide con esa fila
+//
+// Esto crea un efecto de profundidad natural: los objetos "más abajo"
+// en la pantalla se dibujan después (encima) de los objetos "más arriba).
+// ============================================================================
+
+void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
+                  struct MenuCompra *menu) {
+  if (!hMapaBmp)
+    return;
+
+  int anchoP = rect.right - rect.left;
+  int altoP = rect.bottom - rect.top;
+
+  // Crear buffer de doble renderizado
+  HDC hdcBuffer = CreateCompatibleDC(hdc);
+  HBITMAP hbmBuffer = CreateCompatibleBitmap(hdc, anchoP, altoP);
+  HBITMAP hOldBuffer = (HBITMAP)SelectObject(hdcBuffer, hbmBuffer);
+
+  HDC hdcMapa = CreateCompatibleDC(hdc);
+  HBITMAP hOldMapa = (HBITMAP)SelectObject(hdcMapa, hMapaBmp);
+
+  // 1. DIBUJAR SUELO (MAPA BASE)
+  SetStretchBltMode(hdcBuffer, HALFTONE);
+  StretchBlt(hdcBuffer, 0, 0, anchoP, altoP, hdcMapa, cam.x, cam.y,
+             (int)(anchoP / cam.zoom), (int)(altoP / cam.zoom), SRCCOPY);
+
+  // 1.5. DIBUJAR EDIFICIOS - antes del Y-sorting para que estén debajo de
+  // unidades
+  if (pJugador->ayuntamiento != NULL) {
+    Edificio *edificio = (Edificio *)pJugador->ayuntamiento;
+    edificioDibujar(hdcBuffer, edificio, cam.x, cam.y, cam.zoom, anchoP, altoP);
+  }
+
+  // Dibujar mina
+  if (pJugador->mina != NULL) {
+    Edificio *edificioMina = (Edificio *)pJugador->mina;
+    edificioDibujar(hdcBuffer, edificioMina, cam.x, cam.y, cam.zoom, anchoP,
+                    altoP);
+  }
+
+  // 2. Y-SORTING: DIBUJAR FILA POR FILA (árboles + obreros mezclados)
+  HDC hdcSprites = CreateCompatibleDC(hdc);
+
+  // Puntero a la matriz de objetos para aritmética de punteros
+  int (*ptrMatriz)[GRID_SIZE] = mapaObjetos;
+
+  // Recorrer cada fila del mapa (0 a GRID_SIZE-1)
+  for (int f = 0; f < GRID_SIZE; f++) {
+    // Puntero a la fila actual
+    int *filaActual = *(ptrMatriz + f);
+
+    // ================================================================
+    // A) DIBUJAR ÁRBOLES DE ESTA FILA
+    // ================================================================
+    for (int c = 0; c < GRID_SIZE; c++) {
+      // Lectura mediante aritmética de punteros
+      int tipo = *(filaActual + c);
+
+      if (tipo >= 1 && tipo <= 4 && hArboles[tipo - 1] != NULL) {
+        int mundoX = c * TILE_SIZE;
+        int mundoY = f * TILE_SIZE;
+
+        // Ajuste visual (centrar 128x128 sobre 64x64)
+        int dibX = mundoX - (SPRITE_ARBOL - TILE_SIZE) / 2;
+        int dibY = mundoY - (SPRITE_ARBOL - TILE_SIZE);
+
+        int pantX = (int)((dibX - cam.x) * cam.zoom);
+        int pantY = (int)((dibY - cam.y) * cam.zoom);
+        int tamZoom = (int)(SPRITE_ARBOL * cam.zoom);
+
+        if (pantX + tamZoom > 0 && pantX < anchoP && pantY + tamZoom > 0 &&
+            pantY < altoP) {
+          SelectObject(hdcSprites, hArboles[tipo - 1]);
+          TransparentBlt(hdcBuffer, pantX, pantY, tamZoom, tamZoom, hdcSprites,
+                         0, 0, SPRITE_ARBOL, SPRITE_ARBOL, RGB(255, 255, 255));
+        }
+      }
+    }
+
+    // ================================================================
+    // B) DIBUJAR OBREROS CUYA BASE (y + 64) COINCIDE CON ESTA FILA
+    // ================================================================
+    // La "base de los pies" del obrero está en y + TILE_SIZE (64)
+    // Calculamos la fila del mapa correspondiente a esa coordenada Y
+    int yMinFila = f * TILE_SIZE;
+    int yMaxFila = (f + 1) * TILE_SIZE;
+
+    // Puntero base al array de obreros
+    Unidad *baseObreros = pJugador->obreros;
+
+    for (Unidad *o = baseObreros; o < baseObreros + 6; o++) {
+      // La base del obrero (pies) está en o->y + TILE_SIZE
+      float basePies = o->y + (float)TILE_SIZE;
+
+      // Si la base del obrero cae en esta fila, dibujarlo
+      // Si la base del obrero cae en esta fila, dibujarlo
+      if (basePies >= (float)yMinFila && basePies < (float)yMaxFila) {
+        int pantX = (int)((o->x - cam.x) * cam.zoom);
+        int pantY = (int)((o->y - cam.y) * cam.zoom);
+        int tam = (int)(64 * cam.zoom); // Definir tam (asumiendo 64px)
+
+        if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 &&
+            pantY < altoP) {
+          // SELECCIONAR SPRITE SEGUN DIRECCION
+          // Suponemos que hObreroBmp es un array de 4 bitmaps [FRONT, BACK,
+          // LEFT, RIGHT] o algo similar. La estructura Unidad tiene 'dir'.
+          // Buscamos hObreroBmp global.
+
+          // NOTA: Como no vi la declaración exacta, asumo el patrón usado en
+          // caballeros (hCaballeroBmp[c->dir]) Si falla, el compilador avisará
+          // y corregiremos el nombre exacto.
+          SelectObject(hdcSprites, hObreroBmp[o->dir]);
+
+          // Dibujar Frame actual (si hay animación por frames en el bitmap,
+          // ajustar srcX) Por ahora dibujamos el frame 0 (0,0) o usamos
+          // o->frame si el bitmap es una tira. Viendo el código original
+          // (truncado), asumiremos dibujo simple de 64x64.
+          TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
+                         64, 64, RGB(255, 255, 255));
+        }
+
+        // Círculo de selección
+        if (o->seleccionado) {
+          HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+          HPEN verde = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
+          SelectObject(hdcBuffer, nullBrush);
+          SelectObject(hdcBuffer, verde);
+          Ellipse(hdcBuffer, pantX, pantY + tam - 10, pantX + tam,
+                  pantY + tam + 5);
+          DeleteObject(verde);
+        }
+      }
+    }
+
+    // C) DIBUJAR CABALLEROS (NUEVO)
+    Unidad *baseCaballeros = pJugador->caballeros;
+    for (Unidad *c = baseCaballeros; c < baseCaballeros + 4; c++) {
+      float basePies = c->y + (float)TILE_SIZE;
+
+      if (basePies >= (float)yMinFila && basePies < (float)yMaxFila) {
+        int pantX = (int)((c->x - cam.x) * cam.zoom);
+        int pantY = (int)((c->y - cam.y) * cam.zoom);
+        int tam = (int)(64 * cam.zoom);
+
+        if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 &&
+            pantY < altoP) {
+          SelectObject(hdcSprites, hCaballeroBmp[c->dir]);
+          TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
+                         64, 64, RGB(255, 255, 255));
+
+          // Círculo de selección
+          if (c->seleccionado) {
+            HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+            HPEN verde = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
+            SelectObject(hdcBuffer, nullBrush);
+            SelectObject(hdcBuffer, verde);
+            Ellipse(hdcBuffer, pantX, pantY + tam - 10, pantX + tam,
+                    pantY + tam + 5);
+            DeleteObject(verde);
+          }
+        }
+      }
+    }
+
+    // D) DIBUJAR BARCO SI ESTÁ ACTIVO (192x192)
+    if (pJugador->barco.activo) {
+      Barco *b = &pJugador->barco;
+      // El barco es 192px de alto, por lo que su base está en y + 192
+      float basePies = b->y + 192.0f;
+
+      if (basePies >= (float)yMinFila && basePies < (float)yMaxFila) {
+        int pantX = (int)((b->x - cam.x) * cam.zoom);
+        int pantY = (int)((b->y - cam.y) * cam.zoom);
+        int tam = (int)(192 * cam.zoom);
+
+        if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 &&
+            pantY < altoP) {
+          SelectObject(hdcSprites, hBarcoBmp[b->dir]);
+          TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
+                         192, 192, RGB(255, 255, 255));
+        }
+      }
+    }
+
+    // E) DIBUJAR VACAS DE ESTA FILA (64x64)
+    for (int c = 0; c < GRID_SIZE; c++) {
+      int tipo = *(filaActual + c);
+
+      // Vacas tienen valores 5-8 (front, back, left, right)
+      if (tipo >= 5 && tipo <= 8 && hVacaBmp[tipo - 5] != NULL) {
+        int mundoX = c * TILE_SIZE;
+        int mundoY = f * TILE_SIZE;
+
+        // Las vacas son 64x64, coinciden exactamente con TILE_SIZE
+        int pantX = (int)((mundoX - cam.x) * cam.zoom);
+        int pantY = (int)((mundoY - cam.y) * cam.zoom);
+        int tamZoom = (int)(64 * cam.zoom);
+
+        if (pantX + tamZoom > 0 && pantX < anchoP && pantY + tamZoom > 0 &&
+            pantY < altoP) {
+          SelectObject(hdcSprites, hVacaBmp[tipo - 5]);
+          TransparentBlt(hdcBuffer, pantX, pantY, tamZoom, tamZoom, hdcSprites,
+                         0, 0, 64, 64, RGB(255, 255, 255));
+        }
+      }
+    }
+  }
+
+  // 3. DIBUJAR INTERFAZ DE USUARIO (MENÚ) - AQUÍ EVITAMOS FLICKERING
+  // Dibujamos el menú sobre el buffer ANTES de volcarlo a pantalla
+  if (menu != NULL) {
+    menuCompraDibujar(hdcBuffer, menu, pJugador);
+  }
+
+  // Copiar el buffer COMPLETO (Juego + UI) a la pantalla de una vez
+  BitBlt(hdc, 0, 0, anchoP, altoP, hdcBuffer, 0, 0, SRCCOPY);
+
+  // Limpieza
+  DeleteDC(hdcSprites);
+  SelectObject(hdcMapa, hOldMapa);
+  DeleteDC(hdcMapa);
+  SelectObject(hdcBuffer, hOldBuffer);
+  DeleteObject(hbmBuffer);
+  DeleteDC(hdcBuffer);
+}
+
+// ============================================================================
+// FUNCIONES DE GESTIÓN DE OBJETOS DEL MAPA (ACCESO EXTERNO)
+// ============================================================================
+
+int mapaObtenerTipoObjeto(int f, int c) {
+  if (f >= 0 && f < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
+    // Aritmética de punteros para acceso a matriz
+    return *(*(mapaObjetos + f) + c);
+  }
+  return 0; // 0 = Nada
+}
+
+void mapaEliminarObjeto(int f, int c) {
+  if (f >= 0 && f < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
+    // 1. Eliminar de la matriz lógica
+    *(*(mapaObjetos + f) + c) = 0;
+
+    // 2. Actualizar mapa de colisiones (el árbol ya no bloquea)
+    mapaReconstruirCollisionMap();
+  }
+}
+
+// ============================================================================
+// SERIALIZACIÓN DEL MAPA
+// ============================================================================
+void mapaGuardar(FILE *f) {
+  if (!f)
+    return;
+  // Guardar la matriz entera de objetos (64x64 ints)
+  // mapaObjetos es int[GRID_SIZE][GRID_SIZE]
+  fwrite(mapaObjetos, sizeof(int), GRID_SIZE * GRID_SIZE, f);
+}
+
+void mapaCargar(FILE *f) {
+  if (!f)
+    return;
+  // Cargar la matriz entera
+  fread(mapaObjetos, sizeof(int), GRID_SIZE * GRID_SIZE, f);
+
+  // IMPORTANTE: Reconstruir colisiones tras cargar
+  mapaReconstruirCollisionMap();
+}

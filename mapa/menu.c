@@ -1,40 +1,38 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
 #include <conio.h>
-#include <windows.h> // Necesario para HANDLE, COORD, SetConsoleTextAttribute, Sleep, etc.
+#include <windows.h>
+#include <windowsx.h>
 
 // --- CONSTANTES DE DIMENSIONES Y POSICIONAMIENTO ---
-#define ANCHO_CONSOLA 80 // Ancho estándar de la consola
-#define ALTO_CONSOLA 25  // Alto estándar de la consola
-
-#define INICIO_TITULO_X 24
-#define INICIO_MENU_X 31
-#define INICIO_Y 12
+#define ANCHO_CONSOLA 80
+#define ALTO_CONSOLA 25
 
 // --- CONSTANTES DE COLOR (Basadas en la API de Windows) ---
 #define COLOR_NEGRO 0
-#define COLOR_AZUL_MARINO 1  // Color del Océano
-#define COLOR_VERDE_OSCURO 2 // Color de las Islas
+#define COLOR_AZUL_MARINO 1
+#define COLOR_VERDE_OSCURO 2
 #define COLOR_ROJO 4
 
 #define COLOR_AMARILLO 14
-#define COLOR_VERDE_CLARO 10 // Color de la selección
-#define COLOR_MARRON 6       // Color de la arena
+#define COLOR_VERDE_CLARO 10
+#define COLOR_MARRON 6
 #define COLOR_AMARILLO_CLARO 14
-#define COLOR_GRIS_OSCURO 8   // Color gris oscuro
+#define COLOR_GRIS_OSCURO 8
 
-#define COLOR_BLANCO        7 
-#define COLOR_GRIS_CLARO    8  // Gris brillante
+#define COLOR_BLANCO 7
+#define COLOR_GRIS_CLARO 8
 
 // Colores del Cielo y Océano
-#define COLOR_AZUL_CIELO    11 // CIAN BRILLANTE (Funciona mejor como un azul claro/cielo)
-#define COLOR_AZUL_OCEANO   1  // AZUL (El azul oscuro principal del agua)
-#define COLOR_AZUL_CLARO    9  // AZUL BRILLANTE (Para agua más clara/transparencia)
+#define COLOR_AZUL_CIELO 11
+#define COLOR_AZUL_OCEANO 1
+#define COLOR_AZUL_CLARO 9
 
 // Colores de la Arena
-#define COLOR_AMARILLO_ARENA 4  // AMARILLO OSCURO / MARRÓN (Generalmente un marrón rojizo en la paleta ANSI. Más adecuado para arena)
-#define COLOR_MARRON_GRANOS  6 
-
+#define COLOR_AMARILLO_ARENA 4
+#define COLOR_MARRON_GRANOS 6
 
 #define COLOR_PURPURA_CIELO 13
 #define COLOR_AZUL_PROFUNDO_MAR 9
@@ -46,299 +44,400 @@
 #define COLOR_MARRON_TRONCO 6
 #define COLOR_VERDE_PALMERA 10
 
-
 // --- CONSTANTES DE TECLA ---
 #define TECLA_ENTER 13
 #define TECLA_ESC 27
-#define TECLA_ESPECIAL 224 // Prefijo para flechas
+#define TECLA_ESPECIAL 224
 #define FLECHA_ARRIBA 72
 #define FLECHA_ABAJO 80
 #define TECLA_W 'w'
 #define TECLA_S 's'
 
+// --- RECURSOS ---
+// Fondo general del menú y fondo específico de instrucciones
+#define RUTA_FONDO "..\\assets\\menu_bg.bmp"
+#define RUTA_FONDO_INSTRUC "..\\assets\\menu_bg_instruc.bmp"
+
+static HBITMAP fondoBmp = NULL;
+static BITMAP infoFondo;
+static bool fondoListo = false;
+
+static HBITMAP fondoInstrucBmp = NULL;
+static BITMAP infoFondoInstruc;
+static bool fondoInstrucListo = false;
+
+// --- Estado global del menú ---
+static int gSeleccion = 0;
+static HFONT gFontTitulo = NULL;
+static HFONT gFontOpciones = NULL;
+static const char *OPCIONES_MENU[] = { "Iniciar partida", "Cargar partida", "Instrucciones", "Salir" };
+static const int OPCIONES_TOTAL = 4;
+static bool gMostrandoInstrucciones = false;
+static HWND gMenuHwnd = NULL;
+static int gMenuAccion = 0; // 0 = nueva partida, 1 = cargar partida
+
+// --- Prototipos necesarios ---
+void mostrarInstrucciones();
+
+// --- UTILIDADES DE CONSOLA Y PINTADO ---
+
+// NOTA: ya no forzamos la consola a pantalla completa; usaremos una ventana GDI propia.
+
+static void limpiarBufferTexto(void) {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE) {
+        return;
+    }
+
+    CONSOLE_SCREEN_BUFFER_INFO info;
+    if (!GetConsoleScreenBufferInfo(hOut, &info)) {
+        return;
+    }
+
+    DWORD total = (DWORD)info.dwSize.X * (DWORD)info.dwSize.Y;
+    DWORD written;
+    COORD origen = {0, 0};
+
+    FillConsoleOutputCharacterA(hOut, ' ', total, origen, &written);
+    FillConsoleOutputAttribute(hOut, info.wAttributes, total, origen, &written);
+    SetConsoleCursorPosition(hOut, origen);
+}
+
+static bool cargarFondo(void) {
+    if (fondoListo) {
+        return true;
+    }
+
+    fondoBmp = (HBITMAP)LoadImageA(NULL, RUTA_FONDO, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    if (fondoBmp == NULL) {
+        return false;
+    }
+
+    GetObject(fondoBmp, sizeof(infoFondo), &infoFondo);
+    fondoListo = true;
+    return true;
+}
+
+static bool cargarFondoInstruc(void) {
+    if (fondoInstrucListo) {
+        return true;
+    }
+
+    fondoInstrucBmp = (HBITMAP)LoadImageA(NULL, RUTA_FONDO_INSTRUC, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    if (fondoInstrucBmp == NULL) {
+        return false;
+    }
+
+    GetObject(fondoInstrucBmp, sizeof(infoFondoInstruc), &infoFondoInstruc);
+    fondoInstrucListo = true;
+    return true;
+}
+
+static void dibujarFondoBmp(HDC hdc, RECT rc) {
+    if (!cargarFondo()) {
+        HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));
+        FillRect(hdc, &rc, brush);
+        DeleteObject(brush);
+        return;
+    }
+
+    HDC mem = CreateCompatibleDC(hdc);
+    HBITMAP old = (HBITMAP)SelectObject(mem, fondoBmp);
+    StretchBlt(
+        hdc,
+        0,
+        0,
+        rc.right - rc.left,
+        rc.bottom - rc.top,
+        mem,
+        0,
+        0,
+        infoFondo.bmWidth,
+        infoFondo.bmHeight,
+        SRCCOPY);
+    SelectObject(mem, old);
+    DeleteDC(mem);
+}
+
+static void dibujarFondoBmpInstrucciones(HDC hdc, RECT rc) {
+    if (!cargarFondoInstruc()) {
+        HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));
+        FillRect(hdc, &rc, brush);
+        DeleteObject(brush);
+        return;
+    }
+
+    HDC mem = CreateCompatibleDC(hdc);
+    HBITMAP old = (HBITMAP)SelectObject(mem, fondoInstrucBmp);
+    StretchBlt(
+        hdc,
+        0,
+        0,
+        rc.right - rc.left,
+        rc.bottom - rc.top,
+        mem,
+        0,
+        0,
+        infoFondoInstruc.bmWidth,
+        infoFondoInstruc.bmHeight,
+        SRCCOPY);
+    SelectObject(mem, old);
+    DeleteDC(mem);
+}
+
+static SIZE medirTexto(HDC hdc, HFONT font, const char *texto) {
+    SIZE size = {0, 0};
+    HFONT old = (HFONT)SelectObject(hdc, font);
+    GetTextExtentPoint32A(hdc, texto, (int)strlen(texto), &size);
+    SelectObject(hdc, old);
+    return size;
+}
+
+static void dibujarTextoCentrado(HDC hdc, HFONT font, const char *texto, int xCentro, int y, COLORREF color) {
+    HFONT oldFont = (HFONT)SelectObject(hdc, font);
+    SIZE size;
+    GetTextExtentPoint32A(hdc, texto, (int)strlen(texto), &size);
+
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, color);
+    TextOutA(hdc, xCentro - size.cx / 2, y, texto, (int)strlen(texto));
+
+    SelectObject(hdc, oldFont);
+}
+
+static void dibujarOpciones(HDC hdc, HFONT font, const char *opciones[], int total, int seleccion, RECT rc) {
+    int ancho = rc.right - rc.left;
+    int alto = rc.bottom - rc.top;
+    int centroX = ancho / 2;
+
+    SIZE size = medirTexto(hdc, font, "Iniciar partida");
+    int alturaLinea = size.cy + 12;
+    int bloqueAlto = alturaLinea * total;
+    int inicioY = (alto - bloqueAlto) / 2;
+
+    for (int i = 0; i < total; i++) {
+        const char *texto = opciones[i];
+        SIZE medida = medirTexto(hdc, font, texto);
+        COLORREF color = (i == seleccion) ? RGB(120, 255, 150) : RGB(255, 255, 255);
+        dibujarTextoCentrado(hdc, font, texto, centroX, inicioY + i * alturaLinea, color);
+
+        if (i == seleccion) {
+            int highlightPadding = 18;
+            RECT highlight = {
+                centroX - medida.cx / 2 - highlightPadding,
+                inicioY + i * alturaLinea - 4,
+                centroX + medida.cx / 2 + highlightPadding,
+                inicioY + i * alturaLinea + medida.cy + 6};
+            HBRUSH brush = CreateSolidBrush(RGB(20, 80, 30));
+            FrameRect(hdc, &highlight, brush);
+            DeleteObject(brush);
+        }
+    }
+}
+
+// Render del menú en la ventana GDI (usado desde WM_PAINT)
+static void renderMenu(HWND hwnd) {
+    RECT rc;
+    GetClientRect(hwnd, &rc);
+
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(hwnd, &ps);
+    int ancho = rc.right - rc.left;
+    int alto = rc.bottom - rc.top;
+    int centroX = ancho / 2;
+    int tituloY = alto / 5;
+
+    if (gMostrandoInstrucciones) {
+        dibujarFondoBmpInstrucciones(hdc, rc);
+        // Título de instrucciones
+        dibujarTextoCentrado(hdc, gFontTitulo, "INSTRUCCIONES", centroX, tituloY, RGB(240, 240, 240));
+
+        // Cuerpo centrado
+        const char *lineas[] = {
+            "OBJETIVO: Conquistar las islas enemigas.",
+            "",
+            "Controles:",
+            "- W / Flecha Arriba: mover seleccion",
+            "- S / Flecha Abajo : mover seleccion",
+            "  - ENTER: confirmar",
+            "",
+            "ESC: Volver al menu"
+        };
+        const int n = sizeof(lineas) / sizeof(lineas[0]);
+        // Calcular altura total para centrar verticalmente
+        SIZE m = medirTexto(hdc, gFontOpciones, "Ay");
+        int alturaLinea = m.cy + 8;
+        int bloqueAlto = n * alturaLinea;
+        int inicioY = (alto - bloqueAlto) / 2;
+        for (int i = 0; i < n; i++) {
+            COLORREF color = RGB(255, 255, 255);
+            if (i == n - 1) color = RGB(255, 230, 120); // resaltar ESC
+            dibujarTextoCentrado(hdc, gFontOpciones, lineas[i], centroX, inicioY + i * alturaLinea, color);
+        }
+    } else {
+        dibujarFondoBmp(hdc, rc);
+        dibujarOpciones(hdc, gFontOpciones, OPCIONES_MENU, OPCIONES_TOTAL, gSeleccion, rc);
+    }
+
+    EndPaint(hwnd, &ps);
+}
+
+static LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    switch (msg) {
+        case WM_CREATE: {
+            // Crear fuentes para título y opciones
+            gFontTitulo = CreateFontA(48, 0, 0, 0, FW_HEAVY, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+                                    OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, FF_DONTCARE, "Segoe UI");
+            gFontOpciones = CreateFontA(28, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+                                        OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, FF_DONTCARE, "Segoe UI");
+            return 0;
+        }
+        case WM_PAINT:
+            renderMenu(hwnd);
+            return 0;
+        case WM_KEYDOWN: {
+            switch (wParam) {
+                case VK_ESCAPE:
+                    if (gMostrandoInstrucciones) {
+                        gMostrandoInstrucciones = false;
+                        InvalidateRect(hwnd, NULL, FALSE);
+                    } else {
+                        PostMessage(hwnd, WM_CLOSE, 0, 0);
+                    }
+                    break;
+                case VK_UP:
+                case 'W':
+                case 'w':
+                    if (!gMostrandoInstrucciones) {
+                        gSeleccion = (gSeleccion - 1 + OPCIONES_TOTAL) % OPCIONES_TOTAL;
+                        InvalidateRect(hwnd, NULL, FALSE);
+                    }
+                    break;
+                case VK_DOWN:
+                case 'S':
+                case 's':
+                    if (!gMostrandoInstrucciones) {
+                        gSeleccion = (gSeleccion + 1) % OPCIONES_TOTAL;
+                        InvalidateRect(hwnd, NULL, FALSE);
+                    }
+                    break;
+                case VK_RETURN:
+                    if (!gMostrandoInstrucciones) {
+                        if (gSeleccion == 0) {
+                            // Iniciar partida: cerrar ventana y volver al juego
+                            gMenuAccion = 0;
+                            PostMessage(hwnd, WM_CLOSE, 0, 0);
+                        } else if (gSeleccion == 1) {
+                            // Cargar partida
+                            gMenuAccion = 1;
+                            PostMessage(hwnd, WM_CLOSE, 0, 0);
+                        } else if (gSeleccion == 2) {
+                            mostrarInstrucciones();
+                        } else if (gSeleccion == 3) {
+                            // Salir
+                            ExitProcess(0);
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+            return 0;
+        }
+        case WM_DESTROY:
+            if (gFontTitulo) { DeleteObject(gFontTitulo); gFontTitulo = NULL; }
+            if (gFontOpciones) { DeleteObject(gFontOpciones); gFontOpciones = NULL; }
+            PostQuitMessage(0);
+            return 0;
+    }
+    return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
 // --- FUNCIONES DE CONSOLA (Implementaciones) ---
 
-/**
- * @brief Oculta el cursor de la consola.
- */
 void ocultarCursor() {
     CONSOLE_CURSOR_INFO cursorInfo;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hConsole == INVALID_HANDLE_VALUE) {
+        return;
+    }
     cursorInfo.dwSize = 1;
     cursorInfo.bVisible = FALSE;
     SetConsoleCursorInfo(hConsole, &cursorInfo);
 }
 
-/**
- * @brief Mueve el cursor a la posición (x, y).
- */
 void moverCursor(int x, int y) {
     COORD coord;
-    coord.X = x;
-    coord.Y = y;
+    coord.X = (SHORT)x;
+    coord.Y = (SHORT)y;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 }
 
-/**
- * @brief Establece los colores de fondo y texto.
- * @param fondo Código de color del fondo.
- * @param texto Código de color del texto.
- */
 void setColor(int fondo, int texto) {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    // fondo * 16 + texto (Background color << 4 | Foreground color)
-    SetConsoleTextAttribute(hConsole, fondo * 16 + texto);
-}
-
-// --- NUEVAS FUNCIONES PARA AMBIENTACIÓN ---
-
-/**
- * @brief Dibuja un marco alrededor de toda la consola (80x25).
- * Usa caracteres de doble línea ASCII extendido.
- */
-void dibujarMarco() {
-    int i;
-    setColor(COLOR_NEGRO, COLOR_AMARILLO); // Marco amarillo sobre fondo negro (o el color que haya en el fondo)
-
-    // Esquinas y líneas horizontales
-    moverCursor(0, 0);
-    printf("%c", 201); // ╔
-    for (i = 1; i < ANCHO_CONSOLA - 1; i++) {
-        printf("%c", 205); // ═
-    }
-    printf("%c", 187); // ╗
-
-    moverCursor(0, ALTO_CONSOLA - 1);
-    printf("%c", 200); // ╚
-    for (i = 1; i < ANCHO_CONSOLA - 1; i++) {
-        printf("%c", 205); // ═
-    }
-    printf("%c", 188); // ╝
-
-    // Líneas verticales
-    for (i = 1; i < ALTO_CONSOLA - 1; i++) {
-        moverCursor(0, i);
-        printf("%c", 186); // ║
-        moverCursor(ANCHO_CONSOLA - 1, i);
-        printf("%c", 186); // ║
+    if (hConsole != INVALID_HANDLE_VALUE) {
+        SetConsoleTextAttribute(hConsole, (WORD)(fondo * 16 + texto));
     }
 }
 
-/**
- * @brief Dibuja el fondo temático de océano e islas.
- * Nota: Esto también funciona como "limpiar pantalla" al pintar todo el fondo.
- */
+// --- PANTALLAS DEL JUEGO ---
 
-void dibujarFondo() {
-    int x, y;
-
-    // 1. PINTAR TODA LA CONSOLA DE NEGRO
-    // Establecemos el color de texto y el color de fondo a COLOR_NEGRO.
-    setColor(COLOR_NEGRO, COLOR_NEGRO);
-
-    // Iteramos sobre todas las filas y columnas de la consola.
-    for (y = 0; y < ALTO_CONSOLA; y++) {
-        moverCursor(0, y);
-        for (x = 0; x < ANCHO_CONSOLA; x++) {
-            // Imprimimos un espacio (" "), que se colorea con los colores
-            // de texto y fondo actualmente establecidos (ambos negros).
-            printf(" ");
-        }
-    }
-
-    // El resto del código que dibujaba el cielo, el océano, la arena, la isla,
-    // el Moai y la palmera ha sido ELIMINADO para dejar el fondo totalmente negro
-    // y sin elementos.
-
-    // 2. RESTAURAR: Devolver el color del texto a la configuración predeterminada.
-    // Usamos COLOR_BLANCO para el texto sobre COLOR_NEGRO para el fondo
-    // para que el texto de la aplicación (como el menú) sea visible.
-    setColor(COLOR_BLANCO, COLOR_NEGRO);
-    moverCursor(0, ALTO_CONSOLA - 1); // Mover el cursor al final para no interferir con el texto del menú
-}
-
-/**
- * @brief Muestra la pantalla de Instrucciones y espera la entrada del usuario para volver.
- */
 void mostrarInstrucciones() {
-    dibujarFondo(); // Dibuja el fondo
-    dibujarMarco(); // Dibuja el marco
-    ocultarCursor();
-
-    moverCursor(INICIO_TITULO_X, 6);
-    printf("||       --- INSTRUCCIONES ---   ||");
-
-    // Contenido de Instrucciones
-    setColor(COLOR_NEGRO, COLOR_BLANCO); // Texto Blanco sobre fondo (transparente)
-    moverCursor(INICIO_MENU_X - 10, 10);
-    printf("OBJETIVO: Conquistar las islas enemigas. ");
-
-    moverCursor(INICIO_MENU_X - 10, 12);
-    printf(">>> CONTROLES DE NAVEGACION <<<");
-    moverCursor(INICIO_MENU_X - 10, 13);
-    printf(" - W / Flecha Arriba: Mover seleccion arriba");
-    moverCursor(INICIO_MENU_X - 10, 14);
-    printf(" - S / Flecha Abajo: Mover seleccion abajo");
-    moverCursor(INICIO_MENU_X - 10, 15);
-    printf(" - ENTER: Seleccionar opcion");
-
-
-    // Mensaje de retorno
-    moverCursor(INICIO_MENU_X - 12, 19);
-    setColor(COLOR_VERDE_OSCURO, COLOR_BLANCO); // Texto Blanco sobre fondo Verde Oscuro
-    printf(" PRESIONA CUALQUIER TECLA PARA VOLVER ");
-
-    // Esperar entrada
-    while (!_kbhit()) {
-        Sleep(50); // Pequeña pausa
-    }
-    _getch(); // Captura la tecla
+    // Cambiar a vista de instrucciones y refrescar
+    gMostrandoInstrucciones = true;
+    if (gMenuHwnd) InvalidateRect(gMenuHwnd, NULL, TRUE);
 }
 
-/**
- * @brief Desarrolla la interfaz de menú interactiva y visual para el inicio del juego.
- * Implementa navegación por flechas/W/S y selección con ENTER.
- */
+int menuObtenerAccion() {
+    return gMenuAccion;
+}
+
 void mostrarMenu() {
-    // Array de opciones del menú
-    const char *opciones[] = {
-        "1.\tJUGAR (START NEW GAME)",
-        "2.\tINSTRUCCIONES (HELP)",
-        "3.\tSALIR (EXIT GAME)"
-    };
-    const int numOpciones = sizeof(opciones) / sizeof(opciones[0]);
-    int opcionSeleccionada = 0; // Índice actual (0, 1, 2)
-    char tecla = 0;
-    
-    // ==========================================================
-    // === PASO 1: Dibujar Elementos ESTÁTICOS (FUERA del bucle)
-    // ==========================================================
-    dibujarFondo(); // Se dibuja una sola vez.
-    dibujarMarco(); // Se dibuja una sola vez.
+    // Crear una ventana GDI dedicada para el menú a pantalla completa
     ocultarCursor();
-    
-    // --- Dibujar Título y Marco con Arte ASCII Simple ---
-    // Colores para el título: Blanco sobre el color del Océano (Azul Marino)
 
-    moverCursor(INICIO_TITULO_X, INICIO_Y - 7);
-    printf("       ISLAS EN GUERRA       ");
-    
-    // ------------------------------
-    
-    // ==========================================================
-    // === PASO 1.5: Dibujar TODAS las opciones una vez (Inicial)
-    // ==========================================================
-    // Dibujar todas las opciones inicialmente con el formato NO seleccionado.
-    // La opción '0' se redibujará inmediatamente después con el formato de selección.
-    setColor(COLOR_NEGRO, COLOR_BLANCO);
-    for (int i = 0; i < numOpciones; i++) {
-        moverCursor(INICIO_MENU_X-10, INICIO_Y + i * 2);
-        printf("       %s       ", opciones[i]);
+    HINSTANCE hInst = GetModuleHandle(NULL);
+    WNDCLASSA wc = {0};
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = MenuWndProc;
+    wc.hInstance = hInst;
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.lpszClassName = "MenuWndClass";
+    wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    RegisterClassA(&wc);
+
+    int screenW = GetSystemMetrics(SM_CXSCREEN);
+    int screenH = GetSystemMetrics(SM_CYSCREEN);
+
+    // Ocultar consola mientras se muestra el menú
+    HWND hConsole = GetConsoleWindow();
+    if (hConsole) ShowWindow(hConsole, SW_HIDE);
+
+    HWND hwnd = CreateWindowExA(
+        WS_EX_TOPMOST,
+        wc.lpszClassName,
+        "Islas en guerra - Menú",
+        WS_POPUP,
+        0, 0, screenW, screenH,
+        NULL, NULL, hInst, NULL);
+
+    if (!hwnd) {
+        // Fallback: mostrar instrucciones de error
+        MessageBoxA(NULL, "No se pudo crear la ventana de menú.", "Error", MB_OK | MB_ICONERROR);
+        return;
     }
-    
-    // Variable para saber qué opción estaba seleccionada antes del cambio
-    int opcionAnterior = -1; // Mantener para la lógica de redibujo dinámico
 
-    // ==========================================================
-    // === PASO 2: Bucle Principal (Solo Actualiza Dinámicos)
-    // ==========================================================
-    while (1) {
-        // --- Redibujar SOLO SI la opción seleccionada ha cambiado ---
-        // Este bloque ahora solo se encarga de cambiar el formato (resaltado/normal)
-        if (opcionSeleccionada != opcionAnterior) {
-            
-            // 1. Dibujar la opción ANTERIOR con formato normal (si es que existe)
-            if (opcionAnterior != -1) {
-                moverCursor(INICIO_MENU_X-10, INICIO_Y + opcionAnterior * 2);
-                // Restaurar colores para opciones no seleccionadas
-                setColor(COLOR_NEGRO, COLOR_BLANCO); 
-                printf("       %s       ", opciones[opcionAnterior]); // Quitamos los >>>> y <<<<
-            }
+    gMenuHwnd = hwnd;
+    ShowWindow(hwnd, SW_SHOW);
+    UpdateWindow(hwnd);
 
-            // 2. Dibujar la opción ACTUAL con formato de selección
-            moverCursor(INICIO_MENU_X-10, INICIO_Y + opcionSeleccionada * 2);
-            // Colores para la opción seleccionada
-            setColor(COLOR_VERDE_CLARO, COLOR_NEGRO); 
-            printf(" >>>> %s <<<< ", opciones[opcionSeleccionada]);
-            
-            // Actualizar la opción anterior para la siguiente iteración
-            opcionAnterior = opcionSeleccionada;
-        }
-        // ---------------------------------
-
-        // --- Procesar Entrada del Usuario ---
-        while (!_kbhit()) {
-            Sleep(50); // Pausa para reducir el uso de CPU
-        }
-
-        tecla = _getch();
-
-        // 1. Manejo de Flechas (Requiere doble _getch)
-        if (tecla == 0 || tecla == TECLA_ESPECIAL) {
-            tecla = _getch(); // Captura la segunda parte del código
-
-            if (tecla == FLECHA_ARRIBA) {
-                opcionSeleccionada = (opcionSeleccionada - 1 + numOpciones) % numOpciones;
-            } else if (tecla == FLECHA_ABAJO) {
-                opcionSeleccionada = (opcionSeleccionada + 1) % numOpciones;
-            }
-            continue; // Vuelve al inicio del bucle para redibujar
-        }
-
-        // 2. Manejo de W/S y ENTER
-        switch (tecla) {
-            case TECLA_W: // 'w'
-            case 'W':
-                opcionSeleccionada = (opcionSeleccionada - 1 + numOpciones) % numOpciones;
-                break;
-
-            case TECLA_S: // 's'
-            case 'S':
-                opcionSeleccionada = (opcionSeleccionada + 1) % numOpciones;
-                break;
-
-            case TECLA_ENTER: // [ENTER]
-                // ... (La lógica de ENTER sigue igual) ...
-                // 1. Jugar
-                if (opcionSeleccionada == 0) {
-                    system("cls"); // Limpia la pantalla para empezar el juego
-                    setColor(COLOR_NEGRO, COLOR_BLANCO);
-                    return; // Sale de la función para continuar con el juego.
-                }
-                // 2. Instrucciones
-                else if (opcionSeleccionada == 1) {
-                    mostrarInstrucciones();
-                    // Importante: después de Instrucciones, forzar redibujo del menú
-                    dibujarFondo(); // Redibuja estáticos que pudo haber borrado Instrucciones
-                    dibujarMarco();
-                    // Redibujar el título (ya que los colores se cambiaron para el título)
-                    // ... (Copiar/pegar el código de dibujo del título aquí) ...
-                    // Colores para el título: Blanco sobre el color del Océano (Azul Marino)
-                    moverCursor(INICIO_TITULO_X, INICIO_Y - 7);
-                    printf("       ISLAS EN GUERRA       ");
-                    
-                    // ------------------------------
-                    
-                    // ==========================================================
-                    // === PASO 1.5: Dibujar TODAS las opciones una vez (Inicial)
-                    // ==========================================================
-                    // Dibujar todas las opciones inicialmente con el formato NO seleccionado.
-                    // La opción '0' se redibujará inmediatamente después con el formato de selección.
-                    setColor(COLOR_NEGRO, COLOR_BLANCO);
-                    for (int i = 0; i < numOpciones; i++) {
-                        moverCursor(INICIO_MENU_X-10, INICIO_Y + i * 2);
-                        printf("       %s       ", opciones[i]);
-                    }
-                    opcionAnterior = -1; // Fuerza que la opción seleccionada se redibuje con el resalte.
-                }
-                // 3. Salir
-                else if (opcionSeleccionada == 2) {
-                    system("cls");
-                    setColor(COLOR_NEGRO, COLOR_BLANCO);
-                    printf("Gracias por jugar a Islas en Guerra!\n");
-                    exit(0); // Sale del programa inmediatamente.
-                }
-                break;
-        }
+    // Bucle de mensajes: se cerrará cuando el usuario elija Iniciar o Escape
+    MSG msg;
+    while (GetMessageA(&msg, NULL, 0, 0) > 0) {
+        TranslateMessage(&msg);
+        DispatchMessageA(&msg);
     }
+
+    // Volver a mostrar la consola para el juego
+    if (hConsole) ShowWindow(hConsole, SW_SHOW);
 }
