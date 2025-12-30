@@ -55,15 +55,19 @@
 
 // --- RECURSOS ---
 // Fondo general del menú y fondo específico de instrucciones
-#define RUTA_FONDO "..\\assets\\menu_bg.bmp"
-#define RUTA_FONDO_INSTRUC "..\\assets\\menu_bg_instruc.bmp"
+#define RUTA_FONDO "..\\assets\\menu\\menu_bg.bmp"
+#define RUTA_FONDO_INSTRUC "..\\assets\\menu\\menu_bg_instruc.bmp"
 
 #define RUTA_ISLA1 "..\\assets\\islas\\isla1.bmp"
 #define RUTA_ISLA1_ALT "assets/islas/isla1.bmp"
 #define RUTA_ISLA2 "..\\assets\\islas\\isla2.bmp"
+#define RUTA_FONDO_ISLAS "..\\assets\\menu\\menu_bg_islas.bmp"
+#define RUTA_FONDO_ISLAS_ALT "assets/menu/menu_bg_islas.bmp"
 #define RUTA_ISLA2_ALT "assets/islas/isla2.bmp"
 #define RUTA_ISLA3 "..\\assets\\islas\\isla3.bmp"
 #define RUTA_ISLA3_ALT "assets/islas/isla3.bmp"
+#define RUTA_MAPA_COMPLETO "..\\assets\\mapa_islas_guerra.bmp"
+#define RUTA_MAPA_COMPLETO_ALT "assets/mapa_islas_guerra.bmp"
 
 static HBITMAP fondoBmp = NULL;
 static BITMAP infoFondo;
@@ -72,6 +76,10 @@ static bool fondoListo = false;
 static HBITMAP fondoInstrucBmp = NULL;
 static BITMAP infoFondoInstruc;
 static bool fondoInstrucListo = false;
+
+static HBITMAP fondoIslasBmp = NULL;
+static BITMAP infoFondoIslas;
+static bool fondoIslasListo = false;
 
 // --- Estado global del menú ---
 static int gSeleccion = 0;
@@ -85,11 +93,11 @@ static int gMenuAccion = 0; // 0 = nueva partida, 1 = cargar partida
 static bool gMostrandoSeleccionIsla = false;
 static int gSeleccionIsla = 0;
 static int gIslaSeleccionada = 1;
-static const char *OPCIONES_ISLAS[] = { "Isla 1", "Isla 2", "Isla 3", "Volver" };
-static const int OPCIONES_ISLAS_TOTAL = 4;
+static const char *OPCIONES_ISLAS[] = { "Mapa completo", "Isla 1", "Isla 2", "Isla 3", "Volver" };
+static const int OPCIONES_ISLAS_TOTAL = 5;
 
-static HBITMAP hIslaBmp[3] = {NULL};
-static BITMAP infoIsla[3];
+static HBITMAP hIslaBmp[4] = {NULL};
+static BITMAP infoIsla[4];
 static bool islasCargadas = false;
 
 // --- Prototipos necesarios ---
@@ -150,15 +158,33 @@ static bool cargarFondoInstruc(void) {
     return true;
 }
 
+static bool cargarFondoIslas(void) {
+    if (fondoIslasListo) {
+        return true;
+    }
+
+    fondoIslasBmp = (HBITMAP)LoadImageA(NULL, RUTA_FONDO_ISLAS, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    if (fondoIslasBmp == NULL) {
+        fondoIslasBmp = (HBITMAP)LoadImageA(NULL, RUTA_FONDO_ISLAS_ALT, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    }
+    if (fondoIslasBmp == NULL) {
+        return false;
+    }
+
+    GetObject(fondoIslasBmp, sizeof(infoFondoIslas), &infoFondoIslas);
+    fondoIslasListo = true;
+    return true;
+}
+
 static bool cargarIslas(void) {
     if (islasCargadas) {
         return true;
     }
 
-    const char *rutas[] = { RUTA_ISLA1, RUTA_ISLA2, RUTA_ISLA3 };
-    const char *rutasAlt[] = { RUTA_ISLA1_ALT, RUTA_ISLA2_ALT, RUTA_ISLA3_ALT };
+    const char *rutas[] = { RUTA_MAPA_COMPLETO, RUTA_ISLA1, RUTA_ISLA2, RUTA_ISLA3 };
+    const char *rutasAlt[] = { RUTA_MAPA_COMPLETO_ALT, RUTA_ISLA1_ALT, RUTA_ISLA2_ALT, RUTA_ISLA3_ALT };
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         hIslaBmp[i] = (HBITMAP)LoadImageA(NULL, rutas[i], IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
         if (!hIslaBmp[i]) {
             hIslaBmp[i] = (HBITMAP)LoadImageA(NULL, rutasAlt[i], IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
@@ -168,7 +194,7 @@ static bool cargarIslas(void) {
         }
     }
 
-    islasCargadas = (hIslaBmp[0] && hIslaBmp[1] && hIslaBmp[2]);
+    islasCargadas = (hIslaBmp[0] && hIslaBmp[1] && hIslaBmp[2] && hIslaBmp[3]);
     return islasCargadas;
 }
 
@@ -193,6 +219,32 @@ static void dibujarFondoBmp(HDC hdc, RECT rc) {
         0,
         infoFondo.bmWidth,
         infoFondo.bmHeight,
+        SRCCOPY);
+    SelectObject(mem, old);
+    DeleteDC(mem);
+}
+
+static void dibujarFondoBmpIslas(HDC hdc, RECT rc) {
+    if (!cargarFondoIslas()) {
+        HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));
+        FillRect(hdc, &rc, brush);
+        DeleteObject(brush);
+        return;
+    }
+
+    HDC mem = CreateCompatibleDC(hdc);
+    HBITMAP old = (HBITMAP)SelectObject(mem, fondoIslasBmp);
+    StretchBlt(
+        hdc,
+        0,
+        0,
+        rc.right - rc.left,
+        rc.bottom - rc.top,
+        mem,
+        0,
+        0,
+        infoFondoIslas.bmWidth,
+        infoFondoIslas.bmHeight,
         SRCCOPY);
     SelectObject(mem, old);
     DeleteDC(mem);
@@ -314,7 +366,7 @@ static void renderMenu(HWND hwnd) {
             dibujarTextoCentrado(hdc, gFontOpciones, lineas[i], centroX, inicioY + i * alturaLinea, color);
         }
     } else if (gMostrandoSeleccionIsla) {
-        dibujarFondoBmp(hdc, rc);
+        dibujarFondoBmpIslas(hdc, rc);
         RECT rcOpc = rc;
         int ancho = rc.right - rc.left;
         rcOpc.left += ancho / 14;// padding izquierdo
@@ -379,18 +431,20 @@ static LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                     break;
                 case VK_RETURN:
                     if (gMostrandoSeleccionIsla) {
-                        if (gSeleccionIsla >= 0 && gSeleccionIsla <= 2) {
-                            gIslaSeleccionada = gSeleccionIsla + 1;
+                        if (gSeleccionIsla >= 1 && gSeleccionIsla <= 3) {
+                            gIslaSeleccionada = gSeleccionIsla;
                             gMenuAccion = 0;
                             PostMessage(hwnd, WM_CLOSE, 0, 0);
-                        } else {
+                        } else if (gSeleccionIsla == OPCIONES_ISLAS_TOTAL - 1) {
                             gMostrandoSeleccionIsla = false;
                             InvalidateRect(hwnd, NULL, FALSE);
+                        } else {
+                            // "Mapa completo" solo muestra la imagen.
                         }
                     } else if (!gMostrandoInstrucciones) {
                         if (gSeleccion == 0) {
                             gMostrandoSeleccionIsla = true;
-                            gSeleccionIsla = gIslaSeleccionada - 1;
+                            gSeleccionIsla = gIslaSeleccionada;
                             InvalidateRect(hwnd, NULL, FALSE);
                         } else if (gSeleccion == 1) {
                             // Cargar partida
@@ -412,7 +466,8 @@ static LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
         case WM_DESTROY:
             if (gFontTitulo) { DeleteObject(gFontTitulo); gFontTitulo = NULL; }
             if (gFontOpciones) { DeleteObject(gFontOpciones); gFontOpciones = NULL; }
-            for (int i = 0; i < 3; i++) {
+            if (fondoIslasBmp) { DeleteObject(fondoIslasBmp); fondoIslasBmp = NULL; }
+            for (int i = 0; i < 4; i++) {
                 if (hIslaBmp[i]) { DeleteObject(hIslaBmp[i]); hIslaBmp[i] = NULL; }
             }
             PostQuitMessage(0);
@@ -519,11 +574,15 @@ static void dibujarPreviewIsla(HDC hdc, RECT rc) {
         return;
     }
 
-    int idx = gSeleccionIsla;
-    if (idx < 0 || idx > 2) {
-        idx = gIslaSeleccionada - 1;
+    if (gSeleccionIsla == OPCIONES_ISLAS_TOTAL - 1) {
+        return; // no preview for "Volver"
     }
-    if (idx < 0 || idx > 2 || !hIslaBmp[idx]) {
+
+    int idx = gSeleccionIsla;
+    if (idx < 0 || idx > 3) {
+        idx = gIslaSeleccionada;
+    }
+    if (idx < 0 || idx > 3 || !hIslaBmp[idx]) {
         return;
     }
 
