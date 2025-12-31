@@ -3,6 +3,7 @@
 #include "mapa/menu.h"
 #include "recursos/recursos.h"
 #include "recursos/ui_compra.h"
+#include "recursos/ui_entrena.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -18,9 +19,11 @@ Camara camara = {0, 0, 1.0f};
 struct Jugador jugador1;
 bool arrastrandoCamara = false;
 POINT mouseUltimo;
-MenuCompra menuCompra; // Estado global del menú de compra
-Edificio ayuntamiento; // Edificio del ayuntamiento
-Edificio mina;         // Edificio de la mina
+MenuCompra menuCompra;               // Estado global del menú de compra
+MenuEntrenamiento menuEntrenamiento; // Estado global del menú de entrenamiento
+Edificio ayuntamiento;               // Edificio del ayuntamiento
+Edificio mina;                       // Edificio de la mina
+Edificio cuartel;                    // Edificio del cuartel
 
 // --- MOTOR DE VALIDACIÓN DE CÁMARA ---
 void corregirLimitesCamara(RECT rect) {
@@ -98,17 +101,18 @@ void seleccionarObrero(float mundoX, float mundoY) {
   // ================================================================
   Unidad *baseCaballeros = pJugador->caballeros;
   for (Unidad *c = baseCaballeros; c < baseCaballeros + 4; c++) {
+    // Si la unidad no está activa (fuera de pantalla), saltar
+    if (c->x < 0)
+      continue;
+
     float mundoXUnit = c->x;
     float mundoYUnit = c->y;
 
     bool dentro = (mundoX >= mundoXUnit && mundoX < mundoXUnit + OBRERO_SIZE &&
                    mundoY >= mundoYUnit && mundoY < mundoYUnit + OBRERO_SIZE);
 
-    if (dentro) {
-      c->seleccionado = !c->seleccionado;
-    } else {
-      c->seleccionado = false;
-    }
+    // Selección directa, igual que obreros
+    c->seleccionado = dentro;
   }
 }
 
@@ -149,6 +153,17 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     // Inicializar menú de compra
     menuCompraInicializar(&menuCompra);
 
+    // Inicializar cuartel en la parte inferior del mapa (lado opuesto a la
+    // mina) Coordenadas: (960, 1600) - centrado horizontalmente, zona inferior
+    edificioInicializar(&cuartel, EDIFICIO_CUARTEL, 1024.0f - 64.0f, 1600.0f);
+    jugador1.cuartel = &cuartel;
+
+    // Marcar el cuartel en el mapa de colisiones
+    mapaMarcarEdificio(cuartel.x, cuartel.y, cuartel.ancho, cuartel.alto);
+
+    // Inicializar menú de entrenamiento
+    menuEntrenamientoInicializar(&menuEntrenamiento);
+
     // Detectar orilla y colocar barco (192x192)
     float barcoX, barcoY;
     int barcoDir;
@@ -174,6 +189,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
       if (jugador1.mina != NULL) {
         edificioActualizar((Edificio *)jugador1.mina);
       }
+
+      // Actualizar menú de entrenamiento
+      menuEntrenamientoActualizar(&menuEntrenamiento);
 
       InvalidateRect(hwnd, NULL, FALSE);
     }
@@ -255,9 +273,18 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
       menuCompraAbrir(&menuCompra, rect.right - rect.left,
                       rect.bottom - rect.top);
     }
+    // Verificar si se hizo click sobre el cuartel
+    else if (edificioContienePunto(&cuartel, mundoX, mundoY)) {
+      // Abrir menú de entrenamiento
+      GetClientRect(hwnd, &rect);
+      menuEntrenamientoAbrir(&menuEntrenamiento, rect.right - rect.left,
+                             rect.bottom - rect.top);
+    }
     // Intentar recoger recursos de la mina
     else if (recursosIntentarRecogerMina(&jugador1, mundoX, mundoY)) {
       // Interacción con mina ya manejada
+    } else if (recursosIntentarCazar(&jugador1, mundoX, mundoY)) {
+      // Interacción con vaca ya manejada
     } else {
       // 1. Intentar acción de talar (si es árbol y hay obrero cerca)
       if (!recursosIntentarTalar(&jugador1, mundoX, mundoY)) {
@@ -313,6 +340,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     // Si el menú está abierto, procesar click en el menú
     if (menuCompraClick(&menuCompra, &jugador1, px, py)) {
       return 0; // Click procesado por el menú
+    }
+
+    // Si el menú de entrenamiento está abierto, procesar click
+    if (menuEntrenamientoClick(&menuEntrenamiento, &jugador1, px, py)) {
+      return 0; // Click procesado por el menú de entrenamiento
     }
 
     // Convertir coordenadas de pantalla a coordenadas del mundo real (0-2048)

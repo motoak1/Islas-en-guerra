@@ -2,6 +2,7 @@
 #include "../edificios/edificios.h"
 #include "../recursos/recursos.h"
 #include "../recursos/ui_compra.h"
+#include "../recursos/ui_entrena.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -768,6 +769,13 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
                     altoP);
   }
 
+  // Dibujar cuartel
+  if (pJugador->cuartel != NULL) {
+    Edificio *edificioCuartel = (Edificio *)pJugador->cuartel;
+    edificioDibujar(hdcBuffer, edificioCuartel, cam.x, cam.y, cam.zoom, anchoP,
+                    altoP);
+  }
+
   // 2. Y-SORTING: DIBUJAR FILA POR FILA (árboles + obreros mezclados)
   HDC hdcSprites = CreateCompatibleDC(hdc);
 
@@ -942,6 +950,12 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
     menuCompraDibujar(hdcBuffer, menu, pJugador);
   }
 
+  // DIBUJAR MENÚ DE ENTRENAMIENTO (si está activo)
+  extern MenuEntrenamiento menuEntrenamiento;
+  if (menuEntrenamiento.abierto) {
+    menuEntrenamientoDibujar(hdcBuffer, &menuEntrenamiento, pJugador);
+  }
+
   // Copiar el buffer COMPLETO (Juego + UI) a la pantalla de una vez
   BitBlt(hdc, 0, 0, anchoP, altoP, hdcBuffer, 0, 0, SRCCOPY);
 
@@ -964,7 +978,7 @@ int mapaObtenerTipoObjeto(int f, int c) {
     return *(*(mapaObjetos + f) + c);
   }
   return 0; // 0 = Nada
-} 
+}
 
 void mapaEliminarObjeto(int f, int c) {
   if (f >= 0 && f < GRID_SIZE && c >= 0 && c < GRID_SIZE) {

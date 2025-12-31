@@ -5,10 +5,12 @@
 
 #define imgAyuntamiento "../assets/ayuntamiento2.bmp"
 #define imgMina "../assets/mina.bmp"
+#define imgCuartel "../assets/cuartel.bmp"
 
 // Sprites globales de edificios
 HBITMAP g_spriteAyuntamiento = NULL;
 HBITMAP g_spriteMina = NULL;
+HBITMAP g_spriteCuartel = NULL;
 
 void edificioInicializar(Edificio *e, TipoEdificio tipo, float x, float y) {
   e->tipo = tipo;
@@ -30,10 +32,14 @@ void edificioInicializar(Edificio *e, TipoEdificio tipo, float x, float y) {
     e->sprite = g_spriteMina;
     break;
   case EDIFICIO_CUARTEL:
+    e->ancho = 128;
+    e->alto = 128;
+    e->sprite = g_spriteCuartel;
+    break;
   case EDIFICIO_GRANJA:
     e->ancho = 128;
     e->alto = 128;
-    e->sprite = NULL; // Por ahora solo ayuntamiento y mina
+    e->sprite = NULL; // Por ahora no implementado
     break;
   }
 
@@ -112,14 +118,27 @@ void edificiosCargarSprites() {
       break;
   }
 
-  if (g_spriteAyuntamiento && g_spriteMina) {
+  // Lista de intentos para el Cuartel
+  const char *attemptsCuartel[] = {"\\assets\\cuartel.bmp", "\\..\\assets\\cuartel.bmp",
+                                   "\\cuartel.bmp"};
+
+  g_spriteCuartel = NULL;
+  for (int i = 0; i < 3; i++) {
+    sprintf(fullPath, "%s%s", pathExe, attemptsCuartel[i]);
+    g_spriteCuartel = (HBITMAP)LoadImageA(NULL, fullPath, IMAGE_BITMAP, 128, 128,
+                                          LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    if (g_spriteCuartel)
+      break;
+  }
+
+  if (g_spriteAyuntamiento && g_spriteMina && g_spriteCuartel) {
     printf("[SISTEMA] Recursos de edificios cargados con exito.\n");
   } else {
     char errorMsg[1024];
     sprintf(errorMsg,
             "No se pudieron cargar algunos sprites de edificios.\nDirectorio "
             "del EXE: %s\n\nVerifica que la carpeta 'assets' contenga "
-            "'ayuntamiento2.bmp' y 'mina.bmp'.",
+            "'ayuntamiento2.bmp', 'mina.bmp' y 'cuartel.bmp'.",
             pathExe);
     MessageBoxA(NULL, errorMsg, "Aviso de Carga", MB_OK | MB_ICONWARNING);
   }
@@ -149,6 +168,8 @@ void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
       spriteADibujar = g_spriteAyuntamiento;
     else if (e->tipo == EDIFICIO_MINA)
       spriteADibujar = g_spriteMina;
+    else if (e->tipo == EDIFICIO_CUARTEL)
+      spriteADibujar = g_spriteCuartel;
   }
 
   // DIBUJAR SPRITE
@@ -174,10 +195,16 @@ void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
     DeleteObject(brushEdificio);
   }
 
-  // Debug: Borde fino (Verde Ayunt, Naranja Mina)
-  HPEN debugPen = CreatePen(
-      PS_SOLID, 1,
-      (e->tipo == EDIFICIO_AYUNTAMIENTO) ? RGB(0, 255, 0) : RGB(255, 165, 0));
+  // Debug: Borde fino (Verde Ayunt, Naranja Mina, Rojo Cuartel)
+  COLORREF colorBorde;
+  if (e->tipo == EDIFICIO_AYUNTAMIENTO)
+    colorBorde = RGB(0, 255, 0);
+  else if (e->tipo == EDIFICIO_CUARTEL)
+    colorBorde = RGB(255, 0, 0);
+  else
+    colorBorde = RGB(255, 165, 0);
+  
+  HPEN debugPen = CreatePen(PS_SOLID, 1, colorBorde);
   HPEN oldP = (HPEN)SelectObject(hdcBuffer, debugPen);
   HBRUSH oldB = (HBRUSH)SelectObject(hdcBuffer, GetStockObject(NULL_BRUSH));
   Rectangle(hdcBuffer, pantallaX, pantallaY, pantallaX + anchoZoom,
@@ -230,5 +257,9 @@ void edificiosLiberarSprites() {
   if (g_spriteMina) {
     DeleteObject(g_spriteMina);
     g_spriteMina = NULL;
+  }
+  if (g_spriteCuartel) {
+    DeleteObject(g_spriteCuartel);
+    g_spriteCuartel = NULL;
   }
 }

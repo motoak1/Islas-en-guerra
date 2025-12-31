@@ -89,6 +89,7 @@ struct Jugador {
   void *ayuntamiento; // Puntero a Edificio (void* para evitar dependencia
                       // circular)
   void *mina;         // Puntero a Edificio de la mina
+  void *cuartel;      // Puntero a Edificio del cuartel
 };
 
 void actualizarObreros(struct Jugador *j);
@@ -107,5 +108,11 @@ void mostrarStats(struct Jugador j, int x, int y);
 bool recursosIntentarTalar(struct Jugador *j, float mundoX, float mundoY);
 // Nueva función para recoger de la mina
 bool recursosIntentarRecogerMina(struct Jugador *j, float mundoX, float mundoY);
+// Nueva función para cazar vacas
+bool recursosIntentarCazar(struct Jugador *j, float mundoX, float mundoY);
+
+// Funciones de entrenamiento de tropas
+bool entrenarObrero(struct Jugador *j, float x, float y);
+bool entrenarCaballero(struct Jugador *j, float x, float y);
 
 #endif

@@ -263,20 +263,30 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
   j->Oro = 100;
   j->Madera = 150;
   j->Piedra = 100;
+  // Inicializar solo 3 OBREROS (indices 0,1,2), dejar libres 3,4,5
   for (int i = 0; i < 6; i++) {
-    j->obreros[i].x = 400.0f + (i * 70.0f);
-    j->obreros[i].y = 400.0f;
+    if (i < 3) {
+      // OBREROS ACTIVOS
+      j->obreros[i].x = 400.0f + (i * 70.0f);
+      j->obreros[i].y = 400.0f;
+    } else {
+      // OBREROS INACTIVOS (Fuera de pantalla)
+      j->obreros[i].x = -5000.0f;
+      j->obreros[i].y = -5000.0f;
+    }
+
     j->obreros[i].moviendose = false;
     j->obreros[i].seleccionado = false;
     j->obreros[i].celdaFila = -1;
     j->obreros[i].celdaCol = -1;
     j->obreros[i].rutaCeldas = NULL;
-    j->obreros[i].tipo = TIPO_OBRERO; // Asignar tipo
+    j->obreros[i].tipo = TIPO_OBRERO;
     j->obreros[i].animActual = animPorDireccion(DIR_FRONT);
   }
 
   // ================================================================
   // INICIALIZAR CABALLEROS (NUEVO)
+  // Inicializar solo 1 CABALLERO (indice 0), dejar libres 1,2,3
   // ================================================================
   struct {
     int x, y;
@@ -288,10 +298,20 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
   };
 
   for (int i = 0; i < 4; i++) {
-    j->caballeros[i].x = posCaballeros[i].x;
-    j->caballeros[i].y = posCaballeros[i].y;
-    j->caballeros[i].destinoX = j->caballeros[i].x;
-    j->caballeros[i].destinoY = j->caballeros[i].y;
+    if (i < 1) {
+      // CABALLERO ACTIVO
+      j->caballeros[i].x = posCaballeros[i].x;
+      j->caballeros[i].y = posCaballeros[i].y;
+      j->caballeros[i].destinoX = j->caballeros[i].x;
+      j->caballeros[i].destinoY = j->caballeros[i].y;
+    } else {
+      // CABALLEROS INACTIVOS (Fuera de pantalla)
+      j->caballeros[i].x = -5000.0f;
+      j->caballeros[i].y = -5000.0f;
+      j->caballeros[i].destinoX = -5000.0f;
+      j->caballeros[i].destinoY = -5000.0f;
+    }
+
     j->caballeros[i].moviendose = false;
     j->caballeros[i].seleccionado = false;
     j->caballeros[i].dir = DIR_FRONT;
@@ -299,7 +319,7 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
     j->caballeros[i].celdaFila = -1;
     j->caballeros[i].celdaCol = -1;
     j->caballeros[i].rutaCeldas = NULL;
-    j->caballeros[i].tipo = TIPO_CABALLERO; // Asignar tipo
+    j->caballeros[i].tipo = TIPO_CABALLERO;
   }
 
   printf("[DEBUG] %d caballeros inicializados\n", 4);
@@ -323,6 +343,10 @@ void actualizarObreros(struct Jugador *j) {
 
   for (int i = 0; i < 6; i++) {
     Unidad *o = &j->obreros[i];
+
+    // IGNORAR UNIDADES INACTIVAS (Fuera de pantalla)
+    if (o->x < 0)
+      continue;
 
     // 1. Sincronización inicial de la huella en la matriz (2x2 celdas)
     if (o->celdaFila == -1) {
@@ -721,6 +745,17 @@ void rtsComandarMovimiento(struct Jugador *j, float mundoX, float mundoY) {
     targetC =
         (targetC < 0) ? 0 : ((targetC >= GRID_SIZE) ? GRID_SIZE - 1 : targetC);
 
+    // ============================================================
+    // VALIDACIÓN DE DESTINO (NUEVO)
+    // ============================================================
+    int valorCelda = *(*(col + targetF) + targetC);
+    if (valorCelda == 1 || valorCelda == 2) {
+      // La celda está bloqueada, buscar alternativa
+      if (!buscarCeldaLibreCerca(col, targetF, targetC, &targetF, &targetC)) {
+        continue; // No hay celda libre, esta unidad no se mueve
+      }
+    }
+
     // Pathfinding
     int *path = NULL;
     int len = 0;
@@ -878,4 +913,258 @@ void rtsLiberarMovimientoJugador(struct Jugador *j) {
   for (int i = 0; i < 4; i++) {
     obreroLiberarRuta(&j->caballeros[i]);
   }
+}
+
+// ============================================================================
+// FUNCIONES DE ENTRENAMIENTO DE TROPAS
+// ============================================================================
+
+bool entrenarObrero(struct Jugador *j, float x, float y) {
+  // Buscar un espacio disponible en el array de obreros
+  for (int i = 0; i < 6; i++) {
+    // Si el obrero está fuera de pantalla, está libre
+    if (j->obreros[i].x < 0) {
+      // Obtener la posición del cuartel
+      if (j->cuartel == NULL)
+        return false;
+
+      Edificio *cuartel = (Edificio *)j->cuartel;
+
+      // Generar posición cerca del cuartel (offset aleatorio pequeño)
+      // Generar posición base cerca del cuartel
+      float offsetX = (float)((i % 3) * 70);
+      float offsetY = (float)((i / 3) * 70);
+      float baseX = cuartel->x + offsetX;
+      float baseY = cuartel->y + cuartel->alto + 20 + offsetY;
+
+      j->obreros[i].x = baseX;
+      j->obreros[i].y = baseY;
+
+      // VALIDAR POSICIÓN DE SPAWN (Evitar mar/obstáculos)
+      int **col = mapaObtenerCollisionMap();
+      if (col) {
+        int cX = (int)(j->obreros[i].x / 32.0f);
+        int cY = (int)(j->obreros[i].y / 32.0f);
+
+        // Si la posición inicial es inválida (no es 0), buscar vecino libre
+        if (cY < 0 || cY >= GRID_SIZE || cX < 0 || cX >= GRID_SIZE ||
+            col[cY][cX] != 0) {
+          bool encontrado = false;
+          // Buscar en un radio creciente alrededor del cuartel
+          int centroCX = (int)((cuartel->x + 64) / 32.0f);
+          int centroCY = (int)((cuartel->y + 64) / 32.0f);
+
+          for (int r = 2; r < 8; r++) { // Radio 2 a 8 tiles
+            for (int dy = -r; dy <= r; dy++) {
+              for (int dx = -r; dx <= r; dx++) {
+                int ny = centroCY + dy;
+                int nx = centroCX + dx;
+                if (ny >= 0 && ny < GRID_SIZE && nx >= 0 && nx < GRID_SIZE) {
+                  if (col[ny][nx] == 0) { // Celda libre encontrada
+                    j->obreros[i].x = nx * 32.0f;
+                    j->obreros[i].y = ny * 32.0f;
+                    encontrado = true;
+                    break;
+                  }
+                }
+              }
+              if (encontrado)
+                break;
+            }
+            if (encontrado)
+              break;
+          }
+        }
+      }
+
+      j->obreros[i].destinoX = j->obreros[i].x;
+      j->obreros[i].destinoY = j->obreros[i].y;
+      j->obreros[i].moviendose = false;
+      j->obreros[i].seleccionado = false;
+      j->obreros[i].dir = DIR_FRONT;
+      j->obreros[i].frame = 0;
+      j->obreros[i].celdaFila = -1;
+      j->obreros[i].celdaCol = -1;
+      j->obreros[i].rutaCeldas = NULL;
+      j->obreros[i].tipo = TIPO_OBRERO;
+      j->obreros[i].animActual = animPorDireccion(DIR_FRONT);
+
+      printf("[CUARTEL] Nuevo obrero entrenado en posición (%.1f, %.1f)\n",
+             j->obreros[i].x, j->obreros[i].y);
+      return true;
+    }
+  }
+
+  // No hay espacio disponible
+  return false;
+}
+
+bool entrenarCaballero(struct Jugador *j, float x, float y) {
+  // Buscar un espacio disponible en el array de caballeros
+  for (int i = 0; i < 4; i++) {
+    // Si el caballero está fuera de pantalla, está libre
+    if (j->caballeros[i].x < 0) {
+      // Obtener la posición del cuartel
+      if (j->cuartel == NULL)
+        return false;
+
+      Edificio *cuartel = (Edificio *)j->cuartel;
+
+      // Generar posición cerca del cuartel
+      float offsetX = (float)((i % 2) * 70);
+      float offsetY = (float)((i / 2) * 70);
+      float baseX = cuartel->x + offsetX;
+      float baseY = cuartel->y + cuartel->alto + 20 + offsetY;
+
+      j->caballeros[i].x = baseX;
+      j->caballeros[i].y = baseY;
+
+      // VALIDAR POSICIÓN DE SPAWN (Evitar mar/obstáculos)
+      int **col = mapaObtenerCollisionMap();
+      if (col) {
+        int cX = (int)(j->caballeros[i].x / 32.0f);
+        int cY = (int)(j->caballeros[i].y / 32.0f);
+
+        // Si la posición inicial es inválida, buscar vecino libre
+        if (cY < 0 || cY >= GRID_SIZE || cX < 0 || cX >= GRID_SIZE ||
+            col[cY][cX] != 0) {
+          bool encontrado = false;
+          // Buscar en un radio creciente alrededor del cuartel
+          int centroCX = (int)((cuartel->x + 64) / 32.0f);
+          int centroCY = (int)((cuartel->y + 64) / 32.0f);
+
+          for (int r = 2; r < 8; r++) {
+            for (int dy = -r; dy <= r; dy++) {
+              for (int dx = -r; dx <= r; dx++) {
+                int ny = centroCY + dy;
+                int nx = centroCX + dx;
+                if (ny >= 0 && ny < GRID_SIZE && nx >= 0 && nx < GRID_SIZE) {
+                  if (col[ny][nx] == 0) { // Celda libre
+                    j->caballeros[i].x = nx * 32.0f;
+                    j->caballeros[i].y = ny * 32.0f;
+                    encontrado = true;
+                    break;
+                  }
+                }
+              }
+              if (encontrado)
+                break;
+            }
+            if (encontrado)
+              break;
+          }
+        }
+      }
+
+      j->caballeros[i].destinoX = j->caballeros[i].x;
+      j->caballeros[i].destinoY = j->caballeros[i].y;
+      j->caballeros[i].moviendose = false;
+      j->caballeros[i].seleccionado = false;
+      j->caballeros[i].dir = DIR_FRONT;
+      j->caballeros[i].frame = 0;
+      j->caballeros[i].celdaFila = -1;
+      j->caballeros[i].celdaCol = -1;
+      j->caballeros[i].rutaCeldas = NULL;
+      j->caballeros[i].tipo = TIPO_CABALLERO;
+      j->caballeros[i].animActual = animPorDireccion(DIR_FRONT);
+
+      printf("[CUARTEL] Nuevo caballero entrenado en posición (%.1f, %.1f)\n",
+             j->caballeros[i].x, j->caballeros[i].y);
+      return true;
+    }
+  }
+
+  // No hay espacio disponible
+  return false;
+}
+
+bool recursosIntentarCazar(struct Jugador *j, float mundoX, float mundoY) {
+  // 1. Verificar qué objeto hay en el mapa (coordenadas mundo -> celda)
+  int clickF = (int)(mundoY / TILE_SIZE);
+  int clickC = (int)(mundoX / TILE_SIZE);
+
+  // Buscar en la celda clickeada y sus vecinas (arriba/izquierda)
+  // porque la vaca mide 2x2 tiles pero solo se registra en la esquina superior
+  // izquierda.
+  int targets[4][2] = {{0, 0}, {0, -1}, {-1, 0}, {-1, -1}};
+  int tipoObjeto = 0;
+  int f = -1, c = -1;
+
+  for (int k = 0; k < 4; k++) {
+    int tf = clickF + targets[k][0];
+    int tc = clickC + targets[k][1];
+
+    if (tf >= 0 && tf < GRID_SIZE && tc >= 0 && tc < GRID_SIZE) {
+      int t = mapaObtenerTipoObjeto(tf, tc);
+      if (t >= 5 && t <= 8) {
+        tipoObjeto = t;
+        f = tf;
+        c = tc;
+        break; // Vaca encontrada
+      }
+    }
+  }
+
+  // Las vacas son tipos 5 a 8 (Front, Back, Left, Right)
+  if (tipoObjeto >= 5 && tipoObjeto <= 8) {
+    printf("[DEBUG] Cazar: Click (o vecindad) en vaca (tipo %d) anclada en "
+           "Celda[%d][%d]\n",
+           tipoObjeto, f, c);
+
+    // 2. Buscar si hay algún obrero O caballero SELECCIONADO cerca
+    bool tropaCercana = false;
+    const float DISTANCIA_MAXIMA = 200.0f; // Aumentado un poco por seguridad
+
+    // Revisar Obreros
+    for (int i = 0; i < 6; i++) {
+      Unidad *o = &j->obreros[i];
+      if (!o->seleccionado)
+        continue;
+      float dx = (o->x + 32.0f) - mundoX;
+      float dy = (o->y + 32.0f) - mundoY;
+      float dist = sqrtf(dx * dx + dy * dy);
+      if (dist < DISTANCIA_MAXIMA) {
+        tropaCercana = true;
+        break;
+      }
+    }
+
+    // Revisar Caballeros (si no se encontró obrero)
+    if (!tropaCercana) {
+      for (int i = 0; i < 4; i++) {
+        Unidad *cab = &j->caballeros[i];
+        if (!cab->seleccionado)
+          continue;
+        float dx = (cab->x + 32.0f) - mundoX;
+        float dy = (cab->y + 32.0f) - mundoY;
+        float dist = sqrtf(dx * dx + dy * dy);
+        if (dist < DISTANCIA_MAXIMA) {
+          tropaCercana = true;
+          break;
+        }
+      }
+    }
+
+    if (tropaCercana) {
+      // 3. Confirmación
+      int respuesta = MessageBox(NULL, "¿Quieres cazar esta vaca por comida?",
+                                 "Cazar Vaca", MB_YESNO | MB_ICONQUESTION);
+
+      if (respuesta == IDYES) {
+        // Eliminar objeto de la matriz
+        mapaEliminarObjeto(f, c);
+        j->Comida += 100;
+        MessageBox(NULL, "¡Vaca cazada! +100 Comida", "Recursos",
+                   MB_OK | MB_ICONINFORMATION);
+      }
+      return true; // Click manejado
+    }
+
+    // Si no hay tropa cerca, retornamos FALSE para que el click pase a la
+    // logica de movimiento y la unidad camine hacia la vaca.
+    return false;
+  }
+
+  // No era una vaca
+  return false;
 }

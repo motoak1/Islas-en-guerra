@@ -51,5 +51,6 @@ void edificiosLiberarSprites();
 // Sprites globales de edificios (se cargan una vez)
 extern HBITMAP g_spriteAyuntamiento;
 extern HBITMAP g_spriteMina;
+extern HBITMAP g_spriteCuartel;
 
 #endif

@@ -1,0 +1,6 @@
+
+recursos/ui_entrena.o: recursos/ui_entrena.c
+	$(CC) -c recursos/ui_entrena.c -o recursos/ui_entrena.o $(CFLAGS)
+
+batallas/batallas.o: batallas/batallas.c
+	$(CC) -c batallas/batallas.c -o batallas/batallas.o $(CFLAGS)
