@@ -11,9 +11,29 @@ typedef struct MenuEmbarque MenuEmbarque;
 
 // --- CONSTANTES DE DIMENSIÓN ---
 #define MAPA_SIZE 2048
-#define TILE_SIZE 32                      // Tamaño lógico (celda de matriz)
-#define GRID_SIZE (MAPA_SIZE / TILE_SIZE) 
+#define TILE_SIZE 64                      // Tamaño lógico (celda de matriz) - coincide con sprites 64x64
+#define GRID_SIZE (MAPA_SIZE / TILE_SIZE) // 2048/64 = 32x32 celdas
 #define SPRITE_ARBOL 128                  // Tamaño visual del BMP de árbol
+
+// ============================================================================
+// SIMBOLOGÍA DE OBJETOS EN EL MAPA (REQUISITO ACADÉMICO)
+// ============================================================================
+#define SIMBOLO_AGUA      '~'  // Agua (no transitable)
+#define SIMBOLO_VACIO     '.'  // Terreno vacío (tierra transitable)
+#define SIMBOLO_ARBOL     'A'  // Árbol (obstáculo)
+#define SIMBOLO_OBRERO    'O'  // Obrero (worker)
+#define SIMBOLO_CABALLERO 'C'  // Caballero (cavalry)
+#define SIMBOLO_GUERRERO  'G'  // Guerrero (warrior)
+#define SIMBOLO_VACA      'V'  // Vaca (recurso móvil)
+#define SIMBOLO_BARCO     'B'  // Barco
+#define SIMBOLO_EDIFICIO  'E'  // Edificio (ayuntamiento)
+#define SIMBOLO_MINA      'M'  // Mina
+#define SIMBOLO_RECURSO   '$'  // Recurso (para futuro uso)
+#define SIMBOLO_JUGADOR   'P'  // Posición base del jugador
+// ============================================================================
+
+// Matriz lógica de objetos (accesible desde otros módulos)
+extern char mapaObjetos[GRID_SIZE][GRID_SIZE];
 
 typedef struct {
   int x;      // Posicion X en el mapa 2048
@@ -41,6 +61,26 @@ void mapaDetectarOrilla(float *outX, float *outY, int *outDir);
 // Libera la memoria del collisionMap dinámico.
 void mapaLiberarCollisionMap(void);
 
+// --- FUNCIONES REQUERIDAS POR ESPECIFICACIÓN ACADÉMICA ---
+// Inicializa la matriz de caracteres con terreno vacío
+void inicializarMapa(char mapa[GRID_SIZE][GRID_SIZE]);
+// Muestra el mapa en la consola (debug/demo)
+void mostrarMapa(char mapa[GRID_SIZE][GRID_SIZE]);
+// Permite explorar celdas del mapa (con validación de límites)
+void explorarMapa(char mapa[GRID_SIZE][GRID_SIZE]);
+// Obtiene el contenido de una celda usando punteros
+char obtenerContenidoCelda(char *celda);
+
+// --- FUNCIONES DE SINCRONIZACIÓN ---
+// Registra un objeto en mapaObjetos (conversión píxeles -> celda)
+void mapaRegistrarObjeto(float pixelX, float pixelY, char simbolo);
+// Mueve un objeto en mapaObjetos (limpia celda vieja, marca celda nueva)
+void mapaMoverObjeto(float viejoX, float viejoY, float nuevoX, float nuevoY, char simbolo);
+// Verifica si una celda está ocupada
+bool mapaEstaOcupada(int fila, int columna);
+// Limpia una celda (marca como vacía)
+void mapaLimpiarCelda(int fila, int columna);
+
 // --- FUNCIONES DE VACAS ---
 // Actualiza la posición de las vacas (movimiento automático)
 void mapaActualizarVacas(void);
@@ -49,8 +89,10 @@ Vaca* mapaObtenerVacas(int *cantidad);
 
 // Dibuja el mundo (terreno, árboles, obreros) en el DC especificado
 // Ahora acepta el menú para dibujarlo dentro del mismo buffer (evitar parpadeo)
+// highlightFila/Col: celda a resaltar (-1 = ninguna)
 void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
-                  struct MenuCompra *menu, MenuEmbarque *menuEmb);
+                  struct MenuCompra *menu, MenuEmbarque *menuEmb,
+                  int highlightFila, int highlightCol);
 
 // Dibuja vista de mapa global (solo mapa y barco, sin zoom)
 void dibujarMapaGlobal(HDC hdc, RECT rect, struct Jugador *pJugador);

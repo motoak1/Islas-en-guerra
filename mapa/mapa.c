@@ -89,8 +89,8 @@ static HBITMAP hArboles[4] = {NULL};
 static char gRutaMapaPrincipal[MAX_PATH] = RUTA_MAPA;
 static char gRutaMapaAlterna[MAX_PATH] = RUTA_MAPA_ALT;
 
-// Matriz lógica 32x32
-int mapaObjetos[GRID_SIZE][GRID_SIZE] = {0};
+// Matriz lógica de objetos - ahora usa CARACTERES (32x32 con celdas de 64px)
+char mapaObjetos[GRID_SIZE][GRID_SIZE] = {0};
 
 // --- COLISIONES (matriz dinámica int**)
 // 0 = libre, 1 = ocupado (árboles u obstáculos)
@@ -151,12 +151,13 @@ void mapaReconstruirCollisionMap(void) {
     collisionMapAllocIfNeeded();
     collisionMapClear(0); 
 
-    // mapaObjetos es 32x32 (árboles), pero la colisión es 64x64
-    for (int f = 0; f < 32; f++) {
-        for (int c = 0; c < 32; c++) {
-            if (mapaObjetos[f][c] > 0) {
-                // Un árbol de la matriz original ahora ocupa 4x4 celdas de 32px
-                mapaMarcarArea(f * 2, c * 2, 4, 4, 1); 
+    // mapaObjetos ahora es 32x32 chars, collision map también es 32x32
+    // Mapeo 1:1 entre mapaObjetos y collisionMap (cada celda = 64px)
+    for (int f = 0; f < GRID_SIZE; f++) {
+        for (int c = 0; c < GRID_SIZE; c++) {
+            // Si hay un árbol en esta celda, marcar como obstáculo en collision map
+            if (mapaObjetos[f][c] == SIMBOLO_ARBOL) {
+                gCollisionMap[f][c] = 1; // Bloquear celda
             }
         }
     }
@@ -360,6 +361,7 @@ static void detectarAguaEnMapa(void) {
       if (esAgua) {
         // ES AGUA - marcar como impasable
         *(fila + c) = 1;
+        mapaObjetos[f][c] = SIMBOLO_AGUA;  // NUEVO: Marcar con '~' en mapaObjetos
         contadorAgua++;
         
         // Debug primeras 5 escrituras
@@ -564,7 +566,7 @@ void generarBosqueAutomatico() {
   HBITMAP hOldBmp = (HBITMAP)SelectObject(hdcMem, hMapaBmp);
 
   // Requisito: Aritmética de punteros para manejar la matriz
-  int (*ptrMatriz)[GRID_SIZE] = mapaObjetos;
+  char (*ptrMatriz)[GRID_SIZE] = mapaObjetos;
   srand((unsigned int)time(NULL));
   
   // REQUISITO CRÍTICO: Colocar exactamente 40 árboles (no por probabilidad)
@@ -578,8 +580,8 @@ void generarBosqueAutomatico() {
     int col = rand() % GRID_SIZE;
     
     // Verificar que la celda esté vacía (no haya otro árbol)
-    if (*(*(ptrMatriz + fila) + col) != 0) {
-      continue; // Ya hay un árbol aquí, intentar otra posición
+    if (*(*(ptrMatriz + fila) + col) != SIMBOLO_VACIO && *(*(ptrMatriz + fila) + col) != 0) {
+      continue; // Ya hay algo aquí, intentar otra posición
     }
     
     // Calcular píxel central de la celda para verificar el color del suelo
@@ -598,8 +600,8 @@ void generarBosqueAutomatico() {
     // Solo colocar en tierra (verde domina), no en agua (azul domina)
     // CRITERIO MÁS ESTRICTO: verde debe dominar claramente y azul debe ser bajo
     if (g > r && g > b && g > 70 && b < 80 && r < 100) {
-      // Colocar árbol aleatorio (tipo 1-4) usando aritmética de punteros
-      *(*(ptrMatriz + fila) + col) = (rand() % 4) + 1;
+      // Colocar árbol usando aritmética de punteros y símbolo de caracter
+      *(*(ptrMatriz + fila) + col) = SIMBOLO_ARBOL;
       contador++;
     }
   }
@@ -909,7 +911,8 @@ Vaca* mapaObtenerVacas(int *cantidad) {
 // ============================================================================
 
 void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
-                  struct MenuCompra *menu, MenuEmbarque *menuEmb) {
+                  struct MenuCompra *menu, MenuEmbarque *menuEmb,
+                  int highlightFila, int highlightCol) {
   if (!hMapaBmp)
     return;
 
@@ -941,39 +944,33 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
     edificioDibujar(hdcBuffer, edificioMina, cam.x, cam.y, cam.zoom, anchoP, altoP);
   }
 
-  // 2. Y-SORTING: DIBUJAR FILA POR FILA (árboles + obreros mezclados)
   HDC hdcSprites = CreateCompatibleDC(hdc);
 
   // Puntero a la matriz de objetos para aritmética de punteros
-  int (*ptrMatriz)[GRID_SIZE] = mapaObjetos;
+  char (*ptrMatriz)[GRID_SIZE] = mapaObjetos;
 
   // Recorrer cada fila del mapa (0 a GRID_SIZE-1)
   for (int f = 0; f < GRID_SIZE; f++) {
-    // Puntero a la fila actual
-    int *filaActual = *(ptrMatriz + f);
-
     // ================================================================
     // A) DIBUJAR ÁRBOLES DE ESTA FILA
     // ================================================================
     for (int c = 0; c < GRID_SIZE; c++) {
-      // Lectura mediante aritmética de punteros
-      int tipo = *(filaActual + c);
-
-      if (tipo >= 1 && tipo <= 4 && hArboles[tipo - 1] != NULL) {
+      // Obtener el contenido de la celda usando aritmética de punteros
+      char celdaContenido = *(*(ptrMatriz + f) + c);
+      
+      // Si hay un árbol en esta celda, dibujarlo
+      if (celdaContenido == SIMBOLO_ARBOL) {
         int mundoX = c * TILE_SIZE;
         int mundoY = f * TILE_SIZE;
 
-        // Ajuste visual (centrar 128x128 sobre 64x64)
-        int dibX = mundoX - (SPRITE_ARBOL - TILE_SIZE) / 2;
-        int dibY = mundoY - (SPRITE_ARBOL - TILE_SIZE);
-
-        int pantX = (int)((dibX - cam.x) * cam.zoom);
-        int pantY = (int)((dibY - cam.y) * cam.zoom);
+        int pantX = (int)((mundoX - cam.x) * cam.zoom);
+        int pantY = (int)((mundoY - cam.y) * cam.zoom);
         int tamZoom = (int)(SPRITE_ARBOL * cam.zoom);
 
         if (pantX + tamZoom > 0 && pantX < anchoP && pantY + tamZoom > 0 &&
             pantY < altoP) {
-          SelectObject(hdcSprites, hArboles[tipo - 1]);
+          // Usar el primer sprite de árbol (índice 0)
+          SelectObject(hdcSprites, hArboles[0]);
           TransparentBlt(hdcBuffer, pantX, pantY, tamZoom, tamZoom, hdcSprites,
                          0, 0, SPRITE_ARBOL, SPRITE_ARBOL, RGB(255, 255, 255));
         }
@@ -1132,6 +1129,46 @@ for (Unidad *g = baseGuerreros; g < baseGuerreros + 2; g++) {
   if (menuEmb != NULL && menuEmb->activo) {
     menuEmbarqueDibujar(hdcBuffer, menuEmb, pJugador);
   }
+  
+  // ============================================================================
+  // RESALTAR CELDA BAJO EL CURSOR (DEBUG/VISUAL AID)
+  // ============================================================================
+  if (highlightFila >= 0 && highlightCol >= 0) {
+    // Calcular coordenadas en píxeles del mundo
+    int mundoX = highlightCol * TILE_SIZE;
+    int mundoY = highlightFila * TILE_SIZE;
+    
+    // Convertir a coordenadas de pantalla
+    int pantallaX = (int)((mundoX - cam.x) * cam.zoom);
+    int pantallaY = (int)((mundoY - cam.y) * cam.zoom);
+    int tamZoom = (int)(TILE_SIZE * cam.zoom);
+    
+    // Dibujar rectángulo semi-transparente amarillo
+    HPEN hPen = CreatePen(PS_SOLID, 2, RGB(255, 255, 0));  // Amarillo brillante
+    HPEN hOldPen = (HPEN)SelectObject(hdcBuffer, hPen);
+    HBRUSH hBrush = CreateSolidBrush(RGB(255, 255, 0));
+    HBRUSH hOldBrush = (HBRUSH)SelectObject(hdcBuffer, hBrush);
+    
+    // Dibujar con transparencia (solo borde)
+    SelectObject(hdcBuffer, GetStockObject(NULL_BRUSH));
+    Rectangle(hdcBuffer, pantallaX, pantallaY, 
+              pantallaX + tamZoom, pantallaY + tamZoom);
+    
+    // Dibujar información de la celda
+    char info[128];
+    sprintf(info, "Celda [%d][%d] | %dx%dpx", 
+            highlightFila, highlightCol, TILE_SIZE, TILE_SIZE);
+    
+    SetTextColor(hdcBuffer, RGB(255, 255, 0));
+    SetBkMode(hdcBuffer, TRANSPARENT);
+    TextOutA(hdcBuffer, pantallaX + 5, pantallaY + 5, info, strlen(info));
+    
+    // Restaurar
+    SelectObject(hdcBuffer, hOldPen);
+    SelectObject(hdcBuffer, hOldBrush);
+    DeleteObject(hPen);
+    DeleteObject(hBrush);
+  }
 
   // Copiar el buffer COMPLETO (Juego + UI) a la pantalla de una vez
   BitBlt(hdc, 0, 0, anchoP, altoP, hdcBuffer, 0, 0, SRCCOPY);
@@ -1239,3 +1276,135 @@ void dibujarMapaGlobal(HDC hdc, RECT rect, struct Jugador *pJugador) {
   DeleteDC(hdcBuffer);
 }
 
+
+
+// ============================================================================
+// FUNCIONES REQUERIDAS POR ESPECIFICACI\u00d3N ACAD\u00c9MICA
+// ============================================================================
+
+void inicializarMapa(char mapa[GRID_SIZE][GRID_SIZE]) {
+  char (*ptrFila)[GRID_SIZE] = mapa;
+  printf("[DEBUG] Inicializando mapa logico %dx%d...\n", GRID_SIZE, GRID_SIZE);
+  for (int f = 0; f < GRID_SIZE; f++) {
+    char *ptrCelda = *(ptrFila + f);
+    for (int c = 0; c < GRID_SIZE; c++) {
+      *(ptrCelda + c) = SIMBOLO_VACIO;
+    }
+  }
+  printf("[DEBUG] Mapa inicializado\n");
+}
+
+void mostrarMapa(char mapa[GRID_SIZE][GRID_SIZE]) {
+  printf("\n");
+  printf("==========================================================================\n");
+  printf("                    MAPA LOGICO %dx%d (cada celda = %dpx)\n", 
+         GRID_SIZE, GRID_SIZE, TILE_SIZE);
+  printf("==========================================================================\n");
+  printf("Leyenda: . =Vacio  A=Arbol  O=Obrero  C=Caballero  G=Guerrero\n");
+  printf("         V=Vaca    B=Barco  E=Edificio  M=Mina\n");
+  printf("==========================================================================\n\n");
+  
+  char (*ptrFila)[GRID_SIZE] = mapa;
+  
+  // Encabezado de columnas (solo números 0-9 repetidos)
+  printf("      ");
+  for (int c = 0; c < GRID_SIZE; c++) {
+    printf("%d ", c % 10);
+  }
+  printf("\n");
+  
+  printf("     +");
+  for (int c = 0; c < GRID_SIZE; c++) printf("--");
+  printf("+\n");
+  
+  // Filas con contenido
+  for (int f = 0; f < GRID_SIZE; f++) {
+    printf(" %2d  |", f);
+    
+    char *ptrCelda = *(ptrFila + f);
+    for (int c = 0; c < GRID_SIZE; c++) {
+      char simbolo = *(ptrCelda + c);
+      printf("%c ", (simbolo == 0) ? '.' : simbolo);
+    }
+    printf("|\n");
+  }
+  
+  printf("     +");
+  for (int c = 0; c < GRID_SIZE; c++) printf("--");
+  printf("+\n\n");
+}
+
+void explorarMapa(char mapa[GRID_SIZE][GRID_SIZE]) {
+  int fila, columna;
+  printf("\n=== EXPLORAR MAPA ===\n");
+  printf("Fila (0-%d): ", GRID_SIZE - 1);
+  scanf("%d", &fila);
+  printf("Columna (0-%d): ", GRID_SIZE - 1);
+  scanf("%d", &columna);
+  
+  if (fila < 0 || fila >= GRID_SIZE || columna < 0 || columna >= GRID_SIZE) {
+    printf("[ERROR] Coordenadas fuera del mapa\n");
+    return;
+  }
+  
+  char (*ptrFila)[GRID_SIZE] = mapa;
+  char *celda = (*(ptrFila + fila)) + columna;
+  char contenido = *celda;
+  
+  printf("[EXPLORACION] Celda [%d][%d]: ", fila, columna);
+  switch(contenido) {
+    case SIMBOLO_ARBOL: printf("ARBOL\n"); break;
+    case SIMBOLO_VACIO: printf("Vacio\n"); break;
+    default: printf("%c\n", contenido);
+  }
+}
+
+char obtenerContenidoCelda(char *celda) {
+  if (celda == NULL) return '\0';
+  return *celda;
+}
+// ============================================================================
+// FUNCIONES DE SINCRONIZACIÓN: mapaObjetos <-> Estado del Juego
+// ============================================================================
+// Mantienen mapaObjetos actualizado con las posiciones reales de los objetos
+
+void mapaRegistrarObjeto(float pixelX, float pixelY, char simbolo) {
+  int fila = (int)(pixelY / TILE_SIZE);
+  int columna = (int)(pixelX / TILE_SIZE);
+  
+  if (fila >= 0 && fila < GRID_SIZE && columna >= 0 && columna < GRID_SIZE) {
+    mapaObjetos[fila][columna] = simbolo;
+  }
+}
+
+void mapaMoverObjeto(float viejoX, float viejoY, float nuevoX, float nuevoY, char simbolo) {
+  int viejaFila = (int)(viejoY / TILE_SIZE);
+  int viejaCol = (int)(viejoX / TILE_SIZE);
+  int nuevaFila = (int)(nuevoY / TILE_SIZE);
+  int nuevaCol = (int)(nuevoX / TILE_SIZE);
+  
+  if (viejaFila != nuevaFila || viejaCol != nuevaCol) {
+    if (viejaFila >= 0 && viejaFila < GRID_SIZE && viejaCol >= 0 && viejaCol < GRID_SIZE) {
+      mapaObjetos[viejaFila][viejaCol] = SIMBOLO_VACIO;
+    }
+    
+    if (nuevaFila >= 0 && nuevaFila < GRID_SIZE && nuevaCol >= 0 && nuevaCol < GRID_SIZE) {
+      mapaObjetos[nuevaFila][nuevaCol] = simbolo;
+    }
+  }
+}
+
+bool mapaEstaOcupada(int fila, int columna) {
+  if (fila < 0 || fila >= GRID_SIZE || columna < 0 || columna >= GRID_SIZE) {
+    return true;
+  }
+  
+  char contenido = mapaObjetos[fila][columna];
+  return (contenido != SIMBOLO_VACIO && contenido != 0);
+}
+
+void mapaLimpiarCelda(int fila, int columna) {
+  if (fila >= 0 && fila < GRID_SIZE && columna >= 0 && columna < GRID_SIZE) {
+    mapaObjetos[fila][columna] = SIMBOLO_VACIO;
+  }
+}

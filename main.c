@@ -25,6 +25,10 @@ MenuEmbarque menuEmbarque; // Menú de embarque de tropas
 Edificio ayuntamiento; // Edificio del ayuntamiento
 Edificio mina;         // Edificio de la mina
 
+// Variables para resaltar celda bajo el cursor
+int mouseFilaHover = -1;  // Fila de la celda bajo el cursor (-1 = ninguna)
+int mouseColHover = -1;   // Columna de la celda bajo el cursor
+
 // --- MOTOR DE VALIDACIÓN DE CÁMARA ---
 void corregirLimitesCamara(RECT rect) {
   int anchoV = rect.right - rect.left;
@@ -155,6 +159,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     // Marcar el ayuntamiento en el mapa de colisiones
     mapaMarcarEdificio(ayuntamiento.x, ayuntamiento.y, ayuntamiento.ancho,
                        ayuntamiento.alto);
+    
+    // Registrar en mapaObjetos
+    mapaRegistrarObjeto(ayuntamiento.x, ayuntamiento.y, SIMBOLO_EDIFICIO);
 
     // Inicializar mina en la parte superior de la isla (zona verde)
     // Coordenadas ajustables: (x, y)
@@ -165,6 +172,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 
     // Marcar la mina en el mapa de colisiones
     mapaMarcarEdificio(mina.x, mina.y, mina.ancho, mina.alto);
+    
+    // Registrar en mapaObjetos
+    mapaRegistrarObjeto(mina.x, mina.y, SIMBOLO_MINA);
 
     // Inicializar menú de compra
     menuCompraInicializar(&menuCompra);
@@ -184,6 +194,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     
     printf("[DEBUG] Barco colocado en orilla: (%.1f, %.1f), dir=%d\n", 
            barcoX, barcoY, barcoDir);
+    
+    // Registrar barco en mapaObjetos
+    mapaRegistrarObjeto(jugador1.barco.x, jugador1.barco.y, SIMBOLO_BARCO);
 
     // Timer para actualizar física a 60 FPS (16ms)
     SetTimer(hwnd, IDT_TIMER_JUEGO, 16, NULL);
@@ -294,6 +307,29 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
       mouseUltimo.x = curX;
       mouseUltimo.y = curY;
     }
+    
+    // NUEVO: Actualizar celda bajo el cursor
+    if (jugador1.vistaActual == VISTA_LOCAL) {
+      int px = GET_X_LPARAM(lParam);
+      int py = GET_Y_LPARAM(lParam);
+      
+      // Convertir coordenadas de pantalla a mundo
+      float mundoX = (px / camara.zoom) + camara.x;
+      float mundoY = (py / camara.zoom) + camara.y;
+      
+      // Convertir a celda de la matriz
+      mouseFilaHover = (int)(mundoY / TILE_SIZE);
+      mouseColHover = (int)(mundoX / TILE_SIZE);
+      
+      // Validar límites
+      if (mouseFilaHover < 0 || mouseFilaHover >= GRID_SIZE || 
+          mouseColHover < 0 || mouseColHover >= GRID_SIZE) {
+        mouseFilaHover = -1;
+        mouseColHover = -1;
+      }
+      
+      InvalidateRect(hwnd, NULL, FALSE); // Redibujar para mostrar highlight
+    }
     return 0;
 
   case WM_LBUTTONUP:
@@ -302,7 +338,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     return 0;
 
   case WM_KEYDOWN:
-    // Teclas de control (futuro uso)
+    // Tecla 'M' para mostrar matriz en consola (debug)
+    if (wParam == 'M') {
+      mostrarMapa(mapaObjetos);
+    }
     return 0;
 
   case WM_ERASEBKGND:
@@ -313,7 +352,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     HDC hdc = BeginPaint(hwnd, &ps);
 
     // Solo vista local: mapa con zoom, personajes, edificios, etc.
-    dibujarMundo(hdc, rect, camara, &jugador1, &menuCompra, &menuEmbarque);
+    dibujarMundo(hdc, rect, camara, &jugador1, &menuCompra, &menuEmbarque, 
+                 mouseFilaHover, mouseColHover);
 
     EndPaint(hwnd, &ps);
     return 0;
