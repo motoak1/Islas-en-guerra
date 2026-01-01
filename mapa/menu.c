@@ -104,29 +104,6 @@ static bool islasCargadas = false;
 void mostrarInstrucciones();
 static void dibujarPreviewIsla(HDC hdc, RECT rc);
 
-// --- UTILIDADES DE CONSOLA Y PINTADO ---
-
-// NOTA: ya no forzamos la consola a pantalla completa; usaremos una ventana GDI propia.
-
-static void limpiarBufferTexto(void) {
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hOut == INVALID_HANDLE_VALUE) {
-        return;
-    }
-
-    CONSOLE_SCREEN_BUFFER_INFO info;
-    if (!GetConsoleScreenBufferInfo(hOut, &info)) {
-        return;
-    }
-
-    DWORD total = (DWORD)info.dwSize.X * (DWORD)info.dwSize.Y;
-    DWORD written;
-    COORD origen = {0, 0};
-
-    FillConsoleOutputCharacterA(hOut, ' ', total, origen, &written);
-    FillConsoleOutputAttribute(hOut, info.wAttributes, total, origen, &written);
-    SetConsoleCursorPosition(hOut, origen);
-}
 
 static bool cargarFondo(void) {
     if (fondoListo) {
@@ -487,20 +464,6 @@ void ocultarCursor() {
     cursorInfo.dwSize = 1;
     cursorInfo.bVisible = FALSE;
     SetConsoleCursorInfo(hConsole, &cursorInfo);
-}
-
-void moverCursor(int x, int y) {
-    COORD coord;
-    coord.X = (SHORT)x;
-    coord.Y = (SHORT)y;
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-}
-
-void setColor(int fondo, int texto) {
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hConsole != INVALID_HANDLE_VALUE) {
-        SetConsoleTextAttribute(hConsole, (WORD)(fondo * 16 + texto));
-    }
 }
 
 // --- PANTALLAS DEL JUEGO ---

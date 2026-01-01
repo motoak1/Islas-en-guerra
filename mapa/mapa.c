@@ -168,22 +168,6 @@ void mapaReconstruirCollisionMap(void) {
     detectarAguaEnMapa(); 
 }
 
-// Asegúrate de que mapaMarcarArea no esté marcada como static si la declaraste normal
-void mapaMarcarArea(int f_inicio, int c_inicio, int ancho_celdas, int alto_celdas, int valor) {
-    int **col = mapaObtenerCollisionMap();
-    if (!col) return;
-    for (int f = 0; f < alto_celdas; f++) {
-        int fila_idx = f_inicio + f;
-        if (fila_idx >= GRID_SIZE) continue;
-        int *fila_ptr = *(col + fila_idx);
-        for (int c = 0; c < ancho_celdas; c++) {
-            int col_idx = c_inicio + c;
-            if (col_idx >= GRID_SIZE) continue;
-            *(fila_ptr + col_idx) = valor;
-        }
-    }
-}
-
 // Función auxiliar para marcar edificios en el collision map
 void mapaMarcarEdificio(float x, float y, int ancho, int alto) {
   collisionMapAllocIfNeeded();
@@ -894,8 +878,19 @@ void mapaActualizarVacas(void) {
         bool celdaVacia = (simboloDestino == SIMBOLO_VACIO || simboloDestino == 0);
         
         if (colisionLibre && celdaVacia) {
+          // Calcular celda actual de la vaca ANTES de moverse
+          int viejaCeldaX = (int)(v->x / TILE_SIZE);
+          int viejaCeldaY = (int)(v->y / TILE_SIZE);
+          
           // Sincronizar movimiento con mapaObjetos
           mapaMoverObjeto(v->x, v->y, nuevoX, nuevoY, SIMBOLO_VACA);
+          
+          // NUEVO: Sincronizar gCollisionMap (limpiar vieja celda, marcar nueva)
+          if (viejaCeldaY >= 0 && viejaCeldaY < GRID_SIZE && 
+              viejaCeldaX >= 0 && viejaCeldaX < GRID_SIZE) {
+            *(*(gCollisionMap + viejaCeldaY) + viejaCeldaX) = 0; // Liberar celda anterior
+          }
+          *(*(gCollisionMap + celdaY) + celdaX) = 3; // Marcar nueva celda como ocupada
           
           // Actualizar posicion y direccion
           v->x = nuevoX;
@@ -908,17 +903,6 @@ void mapaActualizarVacas(void) {
       }
     }
   }
-}
-
-// ============================================================================
-// OBTENER ARRAY DE VACAS PARA RENDERIZADO
-// ============================================================================
-// Retorna el puntero al array de vacas y escribe la cantidad en el parámetro
-// de salida. Esto permite que dibujarMundo() itere sobre las vacas dinámicas.
-// ============================================================================
-Vaca* mapaObtenerVacas(int *cantidad) {
-  *cantidad = gNumVacas;
-  return gVacas;
 }
 
 // ============================================================================
@@ -1206,102 +1190,6 @@ for (Unidad *g = baseGuerreros; g < baseGuerreros + 2; g++) {
   DeleteDC(hdcBuffer);
 }
 
-
-// ============================================================================
-// VISTA DE MAPA GLOBAL
-// ============================================================================
-// Dibuja el mapa completo sin zoom, mostrando solo el terreno y el barco.
-// No se muestran árboles, personajes, edificios ni vacas.
-// Esta vista se usa para navegar entre islas.
-// ============================================================================
-
-void dibujarMapaGlobal(HDC hdc, RECT rect, struct Jugador *pJugador) {
-  // CRÍTICO: Usar mapa global (mapaDemo2.bmp) no el mapa de isla individual
-  if (!hMapaGlobalBmp) return;
-  
-  int anchoP = rect.right - rect.left;
-  int altoP = rect.bottom - rect.top;
-  
-  // Crear buffer de doble renderizado
-  HDC hdcBuffer = CreateCompatibleDC(hdc);
-  HBITMAP hbmBuffer = CreateCompatibleBitmap(hdc, anchoP, altoP);
-  HBITMAP hOldBuffer = (HBITMAP)SelectObject(hdcBuffer, hbmBuffer);
-  
-  HDC hdcMapa = CreateCompatibleDC(hdc);
-  // IMPORTANTE: Usar hMapaGlobalBmp en lugar de hMapaBmp
-  HBITMAP hOldMapa = (HBITMAP)SelectObject(hdcMapa, hMapaGlobalBmp);
-  
-  // Dibujar el mapa completo escalado para llenar la ventana
-  SetStretchBltMode(hdcBuffer, HALFTONE);
-  StretchBlt(hdcBuffer, 0, 0, anchoP, altoP, 
-             hdcMapa, 0, 0, MAPA_SIZE, MAPA_SIZE, SRCCOPY);
-  
-  // Calcular factor de escala del mapa
-  float escalaX = (float)anchoP / (float)MAPA_SIZE;
-  float escalaY = (float)altoP / (float)MAPA_SIZE;
-  
-  // Dibujar el barco en su posición actual
-  if (pJugador->barco.activo) {
-    HDC hdcSprites = CreateCompatibleDC(hdc);
-    
-    Barco *b = &pJugador->barco;
-    
-    // Convertir posición del barco a coordenadas de pantalla
-    int pantX = (int)(b->x * escalaX);
-    int pantY = (int)(b->y * escalaY);
-    int tam = (int)(192 * escalaX); // Escalar tamaño del barco
-    
-    SelectObject(hdcSprites, hBarcoBmp[b->dir]);
-    TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
-                   192, 192, RGB(255, 255, 255));
-    
-    DeleteDC(hdcSprites);
-  }
-  
-  // Dibujar marcadores de islas (opcional)
-  // Esto ayuda al jugador a identificar las islas
-  SetBkMode(hdcBuffer, TRANSPARENT);
-  SetTextColor(hdcBuffer, RGB(255, 255, 0));
-  
-  HFONT hFont = CreateFontA(24, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
-                            DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-                            CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
-                            DEFAULT_PITCH | FF_SWISS, "Arial");
-  HFONT hOldFont = (HFONT)SelectObject(hdcBuffer, hFont);
-  
-  // Instrucciones para el usuario
-  RECT rectInstrucciones = {10, 10, anchoP - 10, 100};
-  DrawTextA(hdcBuffer, "MODO NAVEGACION - Haz click en el mapa para viajar", -1,
-            &rectInstrucciones, DT_LEFT | DT_TOP | DT_WORDBREAK);
-  
-  RECT rectTropas = {10, 50, anchoP - 10, 100};
-  char bufferTropas[100];
-  snprintf(bufferTropas, sizeof(bufferTropas), "Tropas a bordo: %d", 
-           pJugador->barco.numTropas);
-  DrawTextA(hdcBuffer, bufferTropas, -1, &rectTropas, DT_LEFT | DT_TOP);
-  
-  // Instrucción para volver a vista local
-  RECT rectVolver = {10, altoP - 40, anchoP - 10, altoP - 10};
-  SetTextColor(hdcBuffer, RGB(200, 200, 200));
-  DrawTextA(hdcBuffer, "Presiona 'M' para volver a vista local", -1,
-            &rectVolver, DT_LEFT | DT_TOP);
-  
-  SelectObject(hdcBuffer, hOldFont);
-  DeleteObject(hFont);
-  
-  // Copiar buffer a pantalla
-  BitBlt(hdc, 0, 0, anchoP, altoP, hdcBuffer, 0, 0, SRCCOPY);
-  
-  // Limpieza
-  SelectObject(hdcMapa, hOldMapa);
-  DeleteDC(hdcMapa);
-  SelectObject(hdcBuffer, hOldBuffer);
-  DeleteObject(hbmBuffer);
-  DeleteDC(hdcBuffer);
-}
-
-
-
 // ============================================================================
 // FUNCIONES REQUERIDAS POR ESPECIFICACI\u00d3N ACAD\u00c9MICA
 // ============================================================================
@@ -1415,20 +1303,5 @@ void mapaMoverObjeto(float viejoX, float viejoY, float nuevoX, float nuevoY, cha
     if (nuevaFila >= 0 && nuevaFila < GRID_SIZE && nuevaCol >= 0 && nuevaCol < GRID_SIZE) {
       mapaObjetos[nuevaFila][nuevaCol] = simbolo;
     }
-  }
-}
-
-bool mapaEstaOcupada(int fila, int columna) {
-  if (fila < 0 || fila >= GRID_SIZE || columna < 0 || columna >= GRID_SIZE) {
-    return true;
-  }
-  
-  char contenido = mapaObjetos[fila][columna];
-  return (contenido != SIMBOLO_VACIO && contenido != 0);
-}
-
-void mapaLimpiarCelda(int fila, int columna) {
-  if (fila >= 0 && fila < GRID_SIZE && columna >= 0 && columna < GRID_SIZE) {
-    mapaObjetos[fila][columna] = SIMBOLO_VACIO;
   }
 }

@@ -46,10 +46,6 @@ static float celdaCentroPixel(int celda) {
     return (float)(celda * TILE_SIZE) + (float)(TILE_SIZE / 2);
 }
 
-static float celdaAPixel(int celda) {
-    return (float)(celda * TILE_SIZE);
-}
-
 static int obreroFilaActual(const Unidad *o) {
     return pixelACelda(o->y + (TILE_SIZE / 2));  // Centro de la celda, no hardcoded 32
 }
@@ -77,21 +73,6 @@ static void ocupacionActualizarUnidad(int **collision, Unidad *o, int nuevaF, in
     marcarHuellaObrero(collision, nuevaF, nuevaC, 3);
 }
 
-static bool buscarCeldaLibreCerca(int **collision, int startF, int startC, int *outF, int *outC) {
-    for (int r = 1; r <= 5; r++) {
-        for (int df = -r; df <= r; df++) {
-            for (int dc = -r; dc <= r; dc++) {
-                int f = startF + df, c = startC + dc;
-                if (f >= 0 && f < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
-                    if (collision[f][c] == 0) {
-                        *outF = f; *outC = c; return true;
-                    }
-                }
-            }
-        }
-    }
-    return false;
-}
 
 static void obreroLiberarRuta(Unidad *o) {
     if (o->rutaCeldas) free(o->rutaCeldas);
@@ -382,38 +363,40 @@ void actualizarPersonajes(struct Jugador *j) {
             continue;
         }
 
-        // 3. VALIDACIÓN DE CELDA DESTINO (1x1 - UNA SOLA CELDA)
-        // Revisamos si la celda destino está libre
-        bool bloqueadoPermanente = false;  // Agua/Árbol/Edificio (cancelar ruta)
-        bool bloqueadoTemporal = false;    // Otro personaje (esperar)
+        // 3. VALIDACION DE CELDA DESTINO (1x1 - UNA SOLA CELDA)
+        // Revisamos si la celda destino esta libre
+        bool bloqueadoPermanente = false;  // Agua/Arbol/Edificio (cancelar ruta)
+        bool bloqueadoTemporal = false;    // Otro personaje en celda FINAL (esperar)
         
-        // Verificar límites del mapa
+        // Verificar limites del mapa
         if (nextF >= GRID_SIZE || nextC >= GRID_SIZE) { 
             bloqueadoPermanente = true;
         } else {
-            // Aritmética de punteros para obtener el valor de la celda
+            // Aritmetica de punteros para obtener el valor de la celda
             int valor = *(*(col + nextF) + nextC);
 
-            // Bloqueado PERMANENTEMENTE si es Agua/Árbol (1) o Edificio (2)
+            // Bloqueado PERMANENTEMENTE si es Agua/Arbol (1) o Edificio (2)
             if (valor == 1 || valor == 2) { 
                 bloqueadoPermanente = true;
             }
 
-            // Bloqueado TEMPORALMENTE si es OTRO Obrero (3)
-            if (valor == 3 && (nextF != o->celdaFila || nextC != o->celdaCol)) {
+            // MODIFICADO: Solo bloquear por otro personaje si es la ULTIMA celda de la ruta
+            // Esto permite atravesar personajes durante el transito
+            bool esUltimaCelda = (o->rutaIdx + 1 >= o->rutaLen);
+            if (esUltimaCelda && valor == 3 && (nextF != o->celdaFila || nextC != o->celdaCol)) {
                 bloqueadoTemporal = true;
             }
         }
 
-        // Si hay obstáculo PERMANENTE (agua/edificio), cancelar movimiento
+        // Si hay obstaculo PERMANENTE (agua/edificio), cancelar movimiento
         if (bloqueadoPermanente) {
             o->moviendose = false;
             obreroLiberarRuta(o);
             continue;
         }
 
-        // Si hay obstáculo TEMPORAL (otro personaje), ESPERAR sin cancelar ruta
-        // El personaje mantiene su ruta y volverá a intentar en el siguiente frame
+        // Si hay obstaculo TEMPORAL en celda FINAL, ESPERAR sin cancelar ruta
+        // El personaje mantiene su ruta y volvera a intentar en el siguiente frame
         if (bloqueadoTemporal) {
             continue; // Esperar, NO cancelar la ruta
         }
@@ -517,7 +500,9 @@ void actualizarPersonajes(struct Jugador *j) {
                 bloqueadoPermanente = true;
             }
 
-            if (valor == 3 && (nextF != u->celdaFila || nextC != u->celdaCol)) {
+            // MODIFICADO: Solo bloquear si es la ULTIMA celda de la ruta
+            bool esUltimaCelda = (u->rutaIdx + 1 >= u->rutaLen);
+            if (esUltimaCelda && valor == 3 && (nextF != u->celdaFila || nextC != u->celdaCol)) {
                 bloqueadoTemporal = true;
             }
         }
@@ -614,7 +599,9 @@ void actualizarPersonajes(struct Jugador *j) {
                 bloqueadoPermanente = true;
             }
 
-            if (valor == 3 && (nextF != u->celdaFila || nextC != u->celdaCol)) {
+            // MODIFICADO: Solo bloquear si es la ULTIMA celda de la ruta
+            bool esUltimaCelda = (u->rutaIdx + 1 >= u->rutaLen);
+            if (esUltimaCelda && valor == 3 && (nextF != u->celdaFila || nextC != u->celdaCol)) {
                 bloqueadoTemporal = true;
             }
         }
