@@ -1085,7 +1085,8 @@ bool recursosIntentarCazar(struct Jugador *j, float mundoX, float mundoY) {
 
     if (tf >= 0 && tf < GRID_SIZE && tc >= 0 && tc < GRID_SIZE) {
       int t = mapaObtenerTipoObjeto(tf, tc);
-      if (t >= 5 && t <= 8) {
+      // Las vacas se identifican con el símbolo 'V' (SIMBOLO_VACA)
+      if (t == SIMBOLO_VACA) {
         tipoObjeto = t;
         f = tf;
         c = tc;
@@ -1094,8 +1095,8 @@ bool recursosIntentarCazar(struct Jugador *j, float mundoX, float mundoY) {
     }
   }
 
-  // Las vacas son tipos 5 a 8 (Front, Back, Left, Right)
-  if (tipoObjeto >= 5 && tipoObjeto <= 8) {
+  // Las vacas se identifican con SIMBOLO_VACA ('V')
+  if (tipoObjeto == SIMBOLO_VACA) {
     printf("[DEBUG] Cazar: Click (o vecindad) en vaca (tipo %d) anclada en "
            "Celda[%d][%d]\n",
            tipoObjeto, f, c);
@@ -1173,8 +1174,8 @@ bool recursosIntentarTalar(struct Jugador *j, float mundoX, float mundoY) {
 
   int tipoObjeto = mapaObtenerTipoObjeto(f, c);
 
-  // Los árboles son tipos 1 a 4
-  if (tipoObjeto >= 1 && tipoObjeto <= 4) {
+  // Los árboles se identifican con SIMBOLO_ARBOL ('A')
+  if (tipoObjeto == SIMBOLO_ARBOL) {
     printf("[DEBUG] Talar: Click en arbol tipo %d en Celda[%d][%d]\n",
            tipoObjeto, f, c);
 
