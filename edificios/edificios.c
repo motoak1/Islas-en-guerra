@@ -218,24 +218,6 @@ void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
     DeleteObject(brushEdificio);
   }
 
-  // Debug: Borde fino (Verde Ayunt, Naranja Mina, Rojo Cuartel)
-  COLORREF colorBorde;
-  if (e->tipo == EDIFICIO_AYUNTAMIENTO)
-    colorBorde = RGB(0, 255, 0);
-  else if (e->tipo == EDIFICIO_CUARTEL)
-    colorBorde = RGB(255, 0, 0);
-  else
-    colorBorde = RGB(255, 165, 0);
-
-  HPEN debugPen = CreatePen(PS_SOLID, 1, colorBorde);
-  HPEN oldP = (HPEN)SelectObject(hdcBuffer, debugPen);
-  HBRUSH oldB = (HBRUSH)SelectObject(hdcBuffer, GetStockObject(NULL_BRUSH));
-  Rectangle(hdcBuffer, pantallaX, pantallaY, pantallaX + anchoZoom,
-            pantallaY + altoZoom);
-  SelectObject(hdcBuffer, oldB);
-  SelectObject(hdcBuffer, oldP);
-  DeleteObject(debugPen);
-
   // --- SEÑALIZACIÓN DE RECURSOS (Mina) ---
   if (e->tipo == EDIFICIO_MINA &&
       (e->oroAcumulado > 0 || e->piedraAcumulada > 0)) {
