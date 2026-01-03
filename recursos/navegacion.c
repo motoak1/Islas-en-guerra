@@ -53,6 +53,24 @@ static bool areaLibre(int celdaX, int celdaY, int ancho, int alto) {
   return true;
 }
 
+// Determina si la celda es tierra pegada al agua (orilla)
+static bool esTierraOrilla(int cx, int cy, int **col) {
+  if (cx < 0 || cy < 0 || cx >= GRID_SIZE || cy >= GRID_SIZE) return false;
+  if (!mapaCeldaEsTierra(cy, cx)) return false;
+
+  const int dx[4] = {1, -1, 0, 0};
+  const int dy[4] = {0, 0, 1, -1};
+  for (int k = 0; k < 4; k++) {
+    int nx = cx + dx[k];
+    int ny = cy + dy[k];
+    if (nx < 0 || ny < 0 || nx >= GRID_SIZE || ny >= GRID_SIZE) continue;
+    int v2 = *(*(col + ny) + nx);
+    char s2 = mapaObjetos[ny][nx];
+    if (v2 == 1 || s2 == SIMBOLO_AGUA) return true;
+  }
+  return false;
+}
+
 // Busca la mejor celda disponible alrededor de una preferencia
 static bool buscarCeldaLibreCerca(int preferX, int preferY, int ancho, int alto,
                                   int radioMax, int *outX, int *outY) {
@@ -240,25 +258,6 @@ void desembarcarTropas(Barco* barco, struct Jugador* j) {
   int tierraX = -1, tierraY = -1;
   bool tierraEncontrada = false;
 
-  auto esTierraOrilla = [&](int cx, int cy) {
-    if (cx < 0 || cy < 0 || cx >= GRID_SIZE || cy >= GRID_SIZE) return false;
-    // Verificar tierra con colisión, símbolo y color (fallback anti-agua)
-    if (!mapaCeldaEsTierra(cy, cx)) return false;
-
-    // Orilla: al menos un vecino cardinal es agua conocida
-    const int dx[4] = {1,-1,0,0};
-    const int dy[4] = {0,0,1,-1};
-    for (int k = 0; k < 4; k++) {
-      int nx = cx + dx[k];
-      int ny = cy + dy[k];
-      if (nx < 0 || ny < 0 || nx >= GRID_SIZE || ny >= GRID_SIZE) continue;
-      int v2 = *(*(col + ny) + nx);
-      char s2 = mapaObjetos[ny][nx];
-      if (v2 == 1 || s2 == SIMBOLO_AGUA) return true;
-    }
-    return false;
-  };
-
   // Buscar en radio creciente alrededor del barco (hasta 12 celdas)
   for (int radio = 1; radio <= 12 && !tierraEncontrada; radio++) {
     for (int dy = -radio; dy <= radio && !tierraEncontrada; dy++) {
@@ -266,7 +265,7 @@ void desembarcarTropas(Barco* barco, struct Jugador* j) {
         int celdaX = barcoCeldaX + dx;
         int celdaY = barcoCeldaY + dy;
         if (celdaX < 0 || celdaX >= GRID_SIZE || celdaY < 0 || celdaY >= GRID_SIZE) continue;
-        if (esTierraOrilla(celdaX, celdaY)) {
+        if (esTierraOrilla(celdaX, celdaY, col)) {
           tierraX = celdaX;
           tierraY = celdaY;
           tierraEncontrada = true;
