@@ -1287,3 +1287,163 @@ bool recursosIntentarRecogerMina(struct Jugador *j, float mundoX,
 
   return false;
 }
+
+// ============================================================================
+// PANEL HUD DE RECURSOS (Esquina superior derecha)
+// ============================================================================
+// Dibuja un panel con los recursos actuales del jugador y conteo de unidades.
+// Se renderiza sobre el buffer para evitar parpadeo.
+// Estilo visual: Medieval (pergamino, cuero, bronce)
+// ============================================================================
+void panelRecursosDibujar(HDC hdcBuffer, struct Jugador *j, int anchoPantalla) {
+  if (!j) return;
+  
+  // ================================================================
+  // CONFIGURACIÓN DEL PANEL
+  // ================================================================
+  const int PANEL_ANCHO = 230;
+  const int PANEL_ALTO = 165;  // Aumentado para que quepa la fila de unidades
+  const int MARGEN = 10;
+  const int ESPACIADO_LINEA = 22;
+  
+  // Posición: Esquina superior DERECHA con margen
+  int panelX = anchoPantalla - PANEL_ANCHO - MARGEN;
+  int panelY = MARGEN;
+  
+  // ================================================================
+  // FONDO DEL PANEL (Estilo medieval: cuero/pergamino oscuro)
+  // ================================================================
+  // Fondo principal: Marrón cuero oscuro
+  HBRUSH brushFondo = CreateSolidBrush(RGB(60, 40, 25));
+  HBRUSH oldBrush = (HBRUSH)SelectObject(hdcBuffer, brushFondo);
+  
+  // Borde exterior: Bronce oscuro
+  HPEN penBordeExt = CreatePen(PS_SOLID, 3, RGB(140, 100, 55));
+  HPEN oldPen = (HPEN)SelectObject(hdcBuffer, penBordeExt);
+  
+  // Dibujar rectángulo con esquinas redondeadas
+  RoundRect(hdcBuffer, panelX, panelY, 
+            panelX + PANEL_ANCHO, panelY + PANEL_ALTO, 12, 12);
+  
+  // Borde interior: Dorado para efecto de relieve
+  SelectObject(hdcBuffer, oldBrush);
+  DeleteObject(brushFondo);
+  
+  HPEN penBordeInt = CreatePen(PS_SOLID, 1, RGB(180, 140, 60));
+  SelectObject(hdcBuffer, penBordeInt);
+  
+  // Marco interior decorativo
+  HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+  SelectObject(hdcBuffer, nullBrush);
+  RoundRect(hdcBuffer, panelX + 4, panelY + 4,
+            panelX + PANEL_ANCHO - 4, panelY + PANEL_ALTO - 4, 8, 8);
+  
+  // Limpiar pens
+  SelectObject(hdcBuffer, oldPen);
+  DeleteObject(penBordeExt);
+  DeleteObject(penBordeInt);
+  
+  // ================================================================
+  // CONFIGURACIÓN DE TEXTO
+  // ================================================================
+  SetBkMode(hdcBuffer, TRANSPARENT);
+  
+  // Fuente para el título (estilo medieval)
+  HFONT fontTitulo = CreateFont(18, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+                                 DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                                 CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+                                 DEFAULT_PITCH | FF_SWISS, "Times New Roman");
+  
+  // Fuente para los valores
+  HFONT fontValor = CreateFont(15, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                                DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                                CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+                                DEFAULT_PITCH | FF_SWISS, "Arial");
+  
+  HFONT oldFont = (HFONT)SelectObject(hdcBuffer, fontTitulo);
+  
+  // ================================================================
+  // TÍTULO "RECURSOS" (Dorado brillante)
+  // ================================================================
+  SetTextColor(hdcBuffer, RGB(255, 200, 80)); // Dorado cálido
+  TextOutA(hdcBuffer, panelX + 12, panelY + 10, "RECURSOS", 8);
+  
+  // Línea separadora bajo el título (bronce)
+  HPEN penSeparador = CreatePen(PS_SOLID, 1, RGB(160, 120, 60));
+  SelectObject(hdcBuffer, penSeparador);
+  MoveToEx(hdcBuffer, panelX + 12, panelY + 32, NULL);
+  LineTo(hdcBuffer, panelX + PANEL_ANCHO - 12, panelY + 32);
+  DeleteObject(penSeparador);
+  
+  // ================================================================
+  // RECURSOS (con colores distintivos sobre fondo cuero)
+  // ================================================================
+  SelectObject(hdcBuffer, fontValor);
+  
+  char buffer[64];
+  int yPos = panelY + 40;
+  
+  // Oro (amarillo dorado brillante)
+  SetTextColor(hdcBuffer, RGB(255, 215, 50));
+  sprintf(buffer, "Oro:       %d", j->Oro);
+  TextOutA(hdcBuffer, panelX + 18, yPos, buffer, strlen(buffer));
+  yPos += ESPACIADO_LINEA;
+  
+  // Madera (marrón claro/arena)
+  SetTextColor(hdcBuffer, RGB(230, 180, 100));
+  sprintf(buffer, "Madera:    %d", j->Madera);
+  TextOutA(hdcBuffer, panelX + 18, yPos, buffer, strlen(buffer));
+  yPos += ESPACIADO_LINEA;
+  
+  // Piedra (gris piedra caliza)
+  SetTextColor(hdcBuffer, RGB(200, 195, 180));
+  sprintf(buffer, "Piedra:    %d", j->Piedra);
+  TextOutA(hdcBuffer, panelX + 18, yPos, buffer, strlen(buffer));
+  yPos += ESPACIADO_LINEA;
+  
+  // Comida (verde trigo/hierba)
+  SetTextColor(hdcBuffer, RGB(150, 220, 100));
+  sprintf(buffer, "Comida:    %d", j->Comida);
+  TextOutA(hdcBuffer, panelX + 18, yPos, buffer, strlen(buffer));
+  yPos += ESPACIADO_LINEA + 8;
+  
+  // ================================================================
+  // CONTEO DE UNIDADES (parte inferior)
+  // ================================================================
+  // Línea separadora (bronce)
+  HPEN penSep2 = CreatePen(PS_SOLID, 1, RGB(160, 120, 60));
+  SelectObject(hdcBuffer, penSep2);
+  MoveToEx(hdcBuffer, panelX + 12, yPos - 5, NULL);
+  LineTo(hdcBuffer, panelX + PANEL_ANCHO - 12, yPos - 5);
+  DeleteObject(penSep2);
+  
+  // Contar unidades usando aritmética de punteros
+  int numObreros = 0, numCaballeros = 0, numGuerreros = 0;
+  
+  // Contar obreros activos
+  Unidad *ptrOb = j->obreros;
+  for (int i = 0; i < 6; i++, ptrOb++) {
+    numObreros++;
+  }
+  
+  // Contar caballeros
+  Unidad *ptrCab = j->caballeros;
+  for (int i = 0; i < 4; i++, ptrCab++) {
+    numCaballeros++;
+  }
+  
+  // Contar guerreros (solo 2 activos según IniciacionRecursos)
+  numGuerreros = 2;
+  
+  // Mostrar conteo de unidades (color pergamino claro)
+  SetTextColor(hdcBuffer, RGB(240, 220, 180));
+  sprintf(buffer, "Ob:%d  Cab:%d  Gue:%d", numObreros, numCaballeros, numGuerreros);
+  TextOutA(hdcBuffer, panelX + 18, yPos + 3, buffer, strlen(buffer));
+  
+  // ================================================================
+  // LIMPIEZA DE RECURSOS GDI
+  // ================================================================
+  SelectObject(hdcBuffer, oldFont);
+  DeleteObject(fontTitulo);
+  DeleteObject(fontValor);
+}

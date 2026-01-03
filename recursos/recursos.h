@@ -139,4 +139,13 @@ bool recursosIntentarCazar(struct Jugador *j, float mundoX, float mundoY);
 bool entrenarObrero(struct Jugador *j, float x, float y);
 bool entrenarCaballero(struct Jugador *j, float x, float y);
 
+// ============================================================================
+// PANEL HUD DE RECURSOS (Esquina superior derecha)
+// ============================================================================
+// Dibuja un panel con los recursos actuales del jugador (Oro, Madera, Piedra,
+// Comida) y el conteo de unidades. Se renderiza directamente sobre el buffer
+// para evitar parpadeo.
+// ============================================================================
+void panelRecursosDibujar(HDC hdcBuffer, struct Jugador *j, int anchoPantalla);
+
 #endif

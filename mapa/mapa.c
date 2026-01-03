@@ -1234,6 +1234,10 @@ for (Unidad *g = baseGuerreros; g < baseGuerreros + 2; g++) {
     menuEmbarqueDibujar(hdcBuffer, menuEmb, pJugador);
   }
   
+  // PANEL HUD DE RECURSOS (esquina superior derecha)
+  // Se dibuja siempre que el jugador esté en vista local
+  panelRecursosDibujar(hdcBuffer, pJugador, anchoP);
+  
   // ============================================================================
   // RESALTAR CELDA BAJO EL CURSOR (DEBUG/VISUAL AID)
   // ============================================================================
