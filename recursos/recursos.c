@@ -1413,22 +1413,32 @@ void panelRecursosDibujar(HDC hdcBuffer, struct Jugador *j, int anchoPantalla) {
   DeleteObject(penSep2);
   
   // Contar unidades usando aritmética de punteros
+  // IMPORTANTE: Solo contar unidades ACTIVAS (posición >= 0 significa visible en mapa)
   int numObreros = 0, numCaballeros = 0, numGuerreros = 0;
   
-  // Contar obreros activos
+  // Contar obreros activos (posición x >= 0 y y >= 0)
   Unidad *ptrOb = j->obreros;
   for (int i = 0; i < 6; i++, ptrOb++) {
-    numObreros++;
+    if (ptrOb->x >= 0 && ptrOb->y >= 0) {
+      numObreros++;
+    }
   }
   
-  // Contar caballeros
+  // Contar caballeros activos (posición x >= 0 y y >= 0)
   Unidad *ptrCab = j->caballeros;
   for (int i = 0; i < 4; i++, ptrCab++) {
-    numCaballeros++;
+    if (ptrCab->x >= 0 && ptrCab->y >= 0) {
+      numCaballeros++;
+    }
   }
   
-  // Contar guerreros (solo 2 activos según IniciacionRecursos)
-  numGuerreros = 2;
+  // Contar guerreros activos (posición x >= 0 y y >= 0)
+  Unidad *ptrGue = j->guerreros;
+  for (int i = 0; i < 4; i++, ptrGue++) {
+    if (ptrGue->x >= 0 && ptrGue->y >= 0) {
+      numGuerreros++;
+    }
+  }
   
   // Mostrar conteo de unidades (color pergamino claro)
   SetTextColor(hdcBuffer, RGB(240, 220, 180));
