@@ -5,8 +5,41 @@
 #include <stdio.h>
 #include <windows.h>
 
+// Una unidad disponible está visible en el mapa y no está ocupada moviéndose
+static bool unidadDisponible(const Unidad* u) {
+  return u && u->x >= 0 && u->y >= 0 && !u->moviendose;
+}
+
+// Requiere que la unidad esté en la orilla junto al barco (zona corta de abordaje)
+static bool unidadCercaDeBarco(const Unidad* u, const Barco* barco) {
+  if (!u || !barco) return false;
+  if (u->x < 0 || u->y < 0) return false;
+
+  const float BARCO_SIZE = 192.0f;
+  const float RADIO_EMBARQUE = 490.0f; // ~1.5 tiles desde el casco
+
+  // Distancia mínima desde la unidad al rectángulo del barco
+  float nearestX = u->x;
+  if (u->x < barco->x) nearestX = barco->x;
+  else if (u->x > barco->x + BARCO_SIZE) nearestX = barco->x + BARCO_SIZE;
+
+  float nearestY = u->y;
+  if (u->y < barco->y) nearestY = barco->y;
+  else if (u->y > barco->y + BARCO_SIZE) nearestY = barco->y + BARCO_SIZE;
+
+  float dx = u->x - nearestX;
+  float dy = u->y - nearestY;
+
+  return (dx * dx + dy * dy) <= (RADIO_EMBARQUE * RADIO_EMBARQUE);
+}
+
+static bool unidadListaParaEmbarcar(const Unidad* u, const Barco* barco) {
+  return unidadDisponible(u) && unidadCercaDeBarco(u, barco);
+}
+
 void menuEmbarqueInicializar(MenuEmbarque* menu) {
   menu->activo = false;
+  menu->eligiendoIsla = false;
   menu->obrerosSeleccionados = 0;
   menu->caballerosSeleccionados = 0;
   menu->guerrerosSeleccionados = 0;
@@ -19,6 +52,7 @@ void menuEmbarqueInicializar(MenuEmbarque* menu) {
 
 void menuEmbarqueAbrir(MenuEmbarque* menu, int anchoVentana, int altoVentana) {
   menu->activo = true;
+  menu->eligiendoIsla = false;
   menu->obrerosSeleccionados = 0;
   menu->caballerosSeleccionados = 0;
   menu->guerrerosSeleccionados = 0;
@@ -55,6 +89,46 @@ void menuEmbarqueDibujar(HDC hdc, MenuEmbarque* menu, struct Jugador* j) {
   SetBkMode(hdc, TRANSPARENT);
   SetTextColor(hdc, RGB(255, 255, 255));
   RECT rectTitulo = {menu->x, menu->y + 10, menu->x + menu->ancho, menu->y + 40};
+  if (menu->eligiendoIsla) {
+    DrawTextA(hdc, "SELECCIONA ISLA", -1, &rectTitulo, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+    int opciones[3];
+    int total = 0;
+    for (int i = 1; i <= 3; i++) {
+      if (i != j->islaActual) {
+        opciones[total++] = i;
+      }
+    }
+
+    int btnWidth = 260;
+    int btnHeight = 50;
+    int startY = menu->y + 100;
+    int startX = menu->x + (menu->ancho - btnWidth) / 2;
+
+    for (int i = 0; i < total; i++) {
+      RECT btn = {startX, startY + i * (btnHeight + 20), startX + btnWidth, startY + i * (btnHeight + 20) + btnHeight};
+      HBRUSH hBrushIsla = CreateSolidBrush(RGB(0, 80, 140));
+      HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrushIsla);
+      Rectangle(hdc, btn.left, btn.top, btn.right, btn.bottom);
+      SelectObject(hdc, hOldBrush);
+      DeleteObject(hBrushIsla);
+
+      char label[64];
+      snprintf(label, sizeof(label), "Viajar a Isla %d", opciones[i]);
+      DrawTextA(hdc, label, -1, &btn, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    }
+
+    // Botón cancelar
+    RECT btnCancelar = {menu->x + 50, menu->y + menu->alto - 60, menu->x + menu->ancho - 50, menu->y + menu->alto - 20};
+    HBRUSH hBrushCancelar = CreateSolidBrush(RGB(120, 0, 0));
+    HBRUSH hOldBrush2 = (HBRUSH)SelectObject(hdc, hBrushCancelar);
+    Rectangle(hdc, btnCancelar.left, btnCancelar.top, btnCancelar.right, btnCancelar.bottom);
+    SelectObject(hdc, hOldBrush2);
+    DeleteObject(hBrushCancelar);
+    DrawTextA(hdc, "CANCELAR", -1, &btnCancelar, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    return;
+  }
+
   DrawTextA(hdc, "EMBARCAR TROPAS", -1, &rectTitulo, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
   
   // Contador de tropas
@@ -73,13 +147,13 @@ void menuEmbarqueDibujar(HDC hdc, MenuEmbarque* menu, struct Jugador* j) {
   int guerrerosDisponibles = 0;
   
   for (int i = 0; i < 6; i++) {
-    if (j->obreros[i].x >= 0 && j->obreros[i].y >= 0) obrerosDisponibles++;
+    if (unidadListaParaEmbarcar(&j->obreros[i], &j->barco)) obrerosDisponibles++;
   }
   for (int i = 0; i < 4; i++) {
-    if (j->caballeros[i].x >= 0 && j->caballeros[i].y >= 0) caballerosDisponibles++;
+    if (unidadListaParaEmbarcar(&j->caballeros[i], &j->barco)) caballerosDisponibles++;
   }
   for (int i = 0; i < 4; i++) {
-    if (j->guerreros[i].x >= 0 && j->guerreros[i].y >= 0) guerrerosDisponibles++;
+    if (unidadListaParaEmbarcar(&j->guerreros[i], &j->barco)) guerrerosDisponibles++;
   }
   
   // Obreros
@@ -176,6 +250,40 @@ bool menuEmbarqueClick(MenuEmbarque* menu, struct Jugador* j, int x, int y) {
       y < menu->y || y > menu->y + menu->alto) {
     return false;
   }
+
+  if (menu->eligiendoIsla) {
+    int opciones[3];
+    int total = 0;
+    for (int i = 1; i <= 3; i++) {
+      if (i != j->islaActual) {
+        opciones[total++] = i;
+      }
+    }
+
+    int btnWidth = 260;
+    int btnHeight = 50;
+    int startY = menu->y + 100;
+    int startX = menu->x + (menu->ancho - btnWidth) / 2;
+
+    for (int i = 0; i < total; i++) {
+      RECT btn = {startX, startY + i * (btnHeight + 20), startX + btnWidth, startY + i * (btnHeight + 20) + btnHeight};
+      if (x >= btn.left && x <= btn.right && y >= btn.top && y <= btn.bottom) {
+        menu->activo = false;
+        menu->eligiendoIsla = false;
+        viajarAIsla(j, opciones[i]);
+        return true;
+      }
+    }
+
+    // Botón cancelar
+    RECT btnCancelar = {menu->x + 50, menu->y + menu->alto - 60, menu->x + menu->ancho - 50, menu->y + menu->alto - 20};
+    if (x >= btnCancelar.left && x <= btnCancelar.right && y >= btnCancelar.top && y <= btnCancelar.bottom) {
+      menuEmbarqueCerrar(menu);
+      menu->eligiendoIsla = false;
+      return true;
+    }
+    return true;
+  }
   
   int yOffset = 90;
   int lineHeight = 60;
@@ -186,13 +294,13 @@ bool menuEmbarqueClick(MenuEmbarque* menu, struct Jugador* j, int x, int y) {
   int guerrerosDisponibles = 0;
   
   for (int i = 0; i < 6; i++) {
-    if (j->obreros[i].x >= 0 && j->obreros[i].y >= 0) obrerosDisponibles++;
+    if (unidadListaParaEmbarcar(&j->obreros[i], &j->barco)) obrerosDisponibles++;
   }
   for (int i = 0; i < 4; i++) {
-    if (j->caballeros[i].x >= 0 && j->caballeros[i].y >= 0) caballerosDisponibles++;
+    if (unidadListaParaEmbarcar(&j->caballeros[i], &j->barco)) caballerosDisponibles++;
   }
   for (int i = 0; i < 4; i++) {
-    if (j->guerreros[i].x >= 0 && j->guerreros[i].y >= 0) guerrerosDisponibles++;
+    if (unidadListaParaEmbarcar(&j->guerreros[i], &j->barco)) guerrerosDisponibles++;
   }
   
   // Botones de obreros
@@ -288,7 +396,7 @@ void menuEmbarqueEmbarcar(MenuEmbarque* menu, struct Jugador* j) {
   // Embarcar obreros
   int obrerosEmbarcados = 0;
   for (int i = 0; i < 6 && obrerosEmbarcados < menu->obrerosSeleccionados; i++) {
-    if (j->obreros[i].x >= 0 && j->obreros[i].y >= 0) {
+    if (unidadListaParaEmbarcar(&j->obreros[i], &j->barco) && j->barco.numTropas < 6) {
       // Guardar puntero en el barco
       j->barco.tropas[j->barco.numTropas++] = &j->obreros[i];
       
@@ -303,7 +411,7 @@ void menuEmbarqueEmbarcar(MenuEmbarque* menu, struct Jugador* j) {
   // Embarcar caballeros
   int caballerosEmbarcados = 0;
   for (int i = 0; i < 4 && caballerosEmbarcados < menu->caballerosSeleccionados; i++) {
-    if (j->caballeros[i].x >= 0 && j->caballeros[i].y >= 0) {
+    if (unidadListaParaEmbarcar(&j->caballeros[i], &j->barco) && j->barco.numTropas < 6) {
       j->barco.tropas[j->barco.numTropas++] = &j->caballeros[i];
       j->caballeros[i].x = -1000;
       j->caballeros[i].y = -1000;
@@ -314,7 +422,7 @@ void menuEmbarqueEmbarcar(MenuEmbarque* menu, struct Jugador* j) {
   // Embarcar guerreros
   int guerrerosEmbarcados = 0;
   for (int i = 0; i < 4 && guerrerosEmbarcados < menu->guerrerosSeleccionados; i++) {
-    if (j->guerreros[i].x >= 0 && j->guerreros[i].y >= 0) {
+    if (unidadListaParaEmbarcar(&j->guerreros[i], &j->barco) && j->barco.numTropas < 6) {
       j->barco.tropas[j->barco.numTropas++] = &j->guerreros[i];
       j->guerreros[i].x = -1000;
       j->guerreros[i].y = -1000;
@@ -322,20 +430,9 @@ void menuEmbarqueEmbarcar(MenuEmbarque* menu, struct Jugador* j) {
     }
   }
   
-  printf("[DEBUG] Tropas embarcadas: %d obreros, %d caballeros, %d guerreros (Total: %d)\n",
-         obrerosEmbarcados, caballerosEmbarcados, guerrerosEmbarcados, j->barco.numTropas);
-  
-  menuEmbarqueCerrar(menu);
-  
-  // NUEVO FLUJO: Mostrar menú de selección de isla
-  printf("[DEBUG] Mostrando menu de seleccion de isla...\n");
-  
-  // Llamar al menú de isla (consola)
-  mostrarMenu();
-  int islaSeleccionada = menuObtenerIsla();
-  
-  printf("[DEBUG] Isla seleccionada: %d\n", islaSeleccionada);
-  
-  // Viajar directamente a la isla (sin animación)
-  viajarAIsla(j, islaSeleccionada);
+    printf("[DEBUG] Tropas embarcadas: %d obreros, %d caballeros, %d guerreros (Total: %d)\n",
+      obrerosEmbarcados, caballerosEmbarcados, guerrerosEmbarcados, j->barco.numTropas);
+
+    // Abrir selección de isla dentro del juego
+    menu->eligiendoIsla = true;
 }

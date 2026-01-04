@@ -255,6 +255,8 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
     for (int i = 0; i < 6; i++) {
         j->obreros[i].x = 900.0f + (i * 64.0f);
         j->obreros[i].y = 900.0f;
+        j->obreros[i].destinoX = j->obreros[i].x;
+        j->obreros[i].destinoY = j->obreros[i].y;
         j->obreros[i].moviendose = false;
         j->obreros[i].seleccionado = false;
         j->obreros[i].celdaFila = -1;
@@ -264,43 +266,32 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
         j->obreros[i].animActual = animPorDireccion(DIR_FRONT);
     }
 
+    // No generar guerreros ni caballeros al inicio
+    for (int i = 0; i < 4; i++) {
+      j->caballeros[i].x = -1000.0f;
+      j->caballeros[i].y = -1000.0f;
+      j->caballeros[i].destinoX = j->caballeros[i].x;
+      j->caballeros[i].destinoY = j->caballeros[i].y;
+      j->caballeros[i].moviendose = false;
+      j->caballeros[i].seleccionado = false;
+      j->caballeros[i].celdaFila = -1;
+      j->caballeros[i].celdaCol = -1;
+      j->caballeros[i].rutaCeldas = NULL;
+      j->caballeros[i].tipo = TIPO_CABALLERO;
+    }
 
-
-for (int i = 0; i < 2; i++) {
-  j->guerreros[i].x = 900.0f + (i * 64.0f);
-  j->guerreros[i].y = 850.0f;
-  j->guerreros[i].destinoX = j->guerreros[i].x;
-  j->guerreros[i].destinoY = j->guerreros[i].y;
-  j->guerreros[i].moviendose = false;
-  j->guerreros[i].seleccionado = false;
-  j->guerreros[i].dir = DIR_FRONT;
-  j->guerreros[i].frame = 0;
-  j->guerreros[i].celdaFila = -1;
-  j->guerreros[i].celdaCol = -1;
-  j->guerreros[i].rutaCeldas = NULL;
-  j->guerreros[i].tipo = TIPO_GUERRERO;
-}
-printf("[DEBUG] %d guerreros inicializados\\n", 2);
-
-  // ================================================================
-  // INICIALIZAR CABALLEROS (NUEVO)
-  // ================================================================
-  for (int i = 0; i < 4; i++) {
-    j->caballeros[i].x = 900.0f + (i * 64.0f);
-    j->caballeros[i].y = 800.0f;
-    j->caballeros[i].destinoX = j->caballeros[i].x;
-    j->caballeros[i].destinoY = j->caballeros[i].y;
-    j->caballeros[i].moviendose = false;
-    j->caballeros[i].seleccionado = false;
-    j->caballeros[i].dir = DIR_FRONT;
-    j->caballeros[i].frame = 0;
-    j->caballeros[i].celdaFila = -1;
-    j->caballeros[i].celdaCol = -1;
-    j->caballeros[i].rutaCeldas = NULL;
-    j->caballeros[i].tipo = TIPO_CABALLERO;  // Asignar tipo
-  }
-  
-  printf("[DEBUG] %d caballeros inicializados\n", 4);
+    for (int i = 0; i < 4; i++) {
+      j->guerreros[i].x = -1000.0f;
+      j->guerreros[i].y = -1000.0f;
+      j->guerreros[i].destinoX = j->guerreros[i].x;
+      j->guerreros[i].destinoY = j->guerreros[i].y;
+      j->guerreros[i].moviendose = false;
+      j->guerreros[i].seleccionado = false;
+      j->guerreros[i].celdaFila = -1;
+      j->guerreros[i].celdaCol = -1;
+      j->guerreros[i].rutaCeldas = NULL;
+      j->guerreros[i].tipo = TIPO_GUERRERO;
+    }
 
   // ================================================================
   // INICIALIZAR BARCO EN LA ORILLA (192x192px)
@@ -325,13 +316,17 @@ printf("[DEBUG] %d guerreros inicializados\\n", 2);
   
   // Registrar caballeros
   for (int i = 0; i < 4; i++) {
-    mapaRegistrarObjeto(j->caballeros[i].x, j->caballeros[i].y, SIMBOLO_CABALLERO);
+    if (j->caballeros[i].x >= 0 && j->caballeros[i].y >= 0) {
+      mapaRegistrarObjeto(j->caballeros[i].x, j->caballeros[i].y, SIMBOLO_CABALLERO);
+    }
   }
   printf("[DEBUG] %d caballeros registrados en matriz\n", 4);
   
   // Registrar guerreros
   for (int i = 0; i < 2; i++) {
-    mapaRegistrarObjeto(j->guerreros[i].x, j->guerreros[i].y, SIMBOLO_GUERRERO);
+    if (j->guerreros[i].x >= 0 && j->guerreros[i].y >= 0) {
+      mapaRegistrarObjeto(j->guerreros[i].x, j->guerreros[i].y, SIMBOLO_GUERRERO);
+    }
   }
   printf("[DEBUG] %d guerreros registrados en matriz\n", 2);
 }

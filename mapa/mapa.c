@@ -107,6 +107,15 @@ static int **gCollisionMap = NULL;
 static Vaca gVacas[10];
 static int gNumVacas = 0; // Cantidad de vacas activas
 
+// ---------------------------------------------------------------------------
+// PERSISTENCIA EN MEMORIA POR ISLA (1..3)
+// ---------------------------------------------------------------------------
+static bool gIslaGuardada[4] = {false};
+static char gMapaObjetosIsla[4][GRID_SIZE][GRID_SIZE];
+static int gCollisionIsla[4][GRID_SIZE][GRID_SIZE];
+static Vaca gVacasIsla[4][10];
+static int gNumVacasIsla[4] = {0};
+
 static void detectarAguaEnMapa(void);
 void mapaMarcarArea(int f_inicio, int c_inicio, int ancho_celdas, int alto_celdas, int valor);
 
@@ -140,6 +149,19 @@ static void collisionMapClear(int value) {
     int *row = *(gCollisionMap + i);
     for (int j = 0; j < GRID_SIZE; j++) {
       *(row + j) = value;
+    }
+  }
+}
+
+// Limpia completamente mapaObjetos y collisionMap (deja todo en 0/vacío)
+void mapaLimpiarObjetosYColision(void) {
+  collisionMapAllocIfNeeded();
+  for (int f = 0; f < GRID_SIZE; f++) {
+    for (int c = 0; c < GRID_SIZE; c++) {
+      mapaObjetos[f][c] = 0;
+      if (gCollisionMap) {
+        gCollisionMap[f][c] = 0;
+      }
     }
   }
 }
@@ -213,6 +235,72 @@ void mapaLiberarCollisionMap(void) {
   }
   free(gCollisionMap);
   gCollisionMap = NULL;
+}
+
+// ---------------------------------------------------------------------------
+// PERSISTENCIA DE ESTADO POR ISLA (MEMORIA)
+// ---------------------------------------------------------------------------
+static bool islaValida(int isla) {
+  return isla >= 1 && isla <= 3;
+}
+
+void mapaGuardarEstadoIsla(int isla) {
+  if (!islaValida(isla)) return;
+  collisionMapAllocIfNeeded();
+
+  // Copiar mapaObjetos
+  for (int f = 0; f < GRID_SIZE; f++) {
+    for (int c = 0; c < GRID_SIZE; c++) {
+      gMapaObjetosIsla[isla][f][c] = mapaObjetos[f][c];
+    }
+  }
+
+  // Copiar collision map (si existe)
+  if (gCollisionMap) {
+    for (int f = 0; f < GRID_SIZE; f++) {
+      for (int c = 0; c < GRID_SIZE; c++) {
+        gCollisionIsla[isla][f][c] = *(*(gCollisionMap + f) + c);
+      }
+    }
+  }
+
+  // Copiar vacas
+  gNumVacasIsla[isla] = gNumVacas;
+  for (int i = 0; i < gNumVacas; i++) {
+    gVacasIsla[isla][i] = gVacas[i];
+  }
+
+  gIslaGuardada[isla] = true;
+  printf("[DEBUG] Estado de isla %d guardado en memoria\n", isla);
+}
+
+void mapaRestaurarEstadoIsla(int isla) {
+  if (!islaValida(isla) || !gIslaGuardada[isla]) return;
+  collisionMapAllocIfNeeded();
+
+  // Restaurar mapaObjetos
+  for (int f = 0; f < GRID_SIZE; f++) {
+    for (int c = 0; c < GRID_SIZE; c++) {
+      mapaObjetos[f][c] = gMapaObjetosIsla[isla][f][c];
+    }
+  }
+
+  // Restaurar collision map
+  if (gCollisionMap) {
+    for (int f = 0; f < GRID_SIZE; f++) {
+      for (int c = 0; c < GRID_SIZE; c++) {
+        *(*(gCollisionMap + f) + c) = gCollisionIsla[isla][f][c];
+      }
+    }
+  }
+
+  // Restaurar vacas
+  gNumVacas = gNumVacasIsla[isla];
+  for (int i = 0; i < gNumVacas; i++) {
+    gVacas[i] = gVacasIsla[isla][i];
+  }
+
+  printf("[DEBUG] Estado de isla %d restaurado desde memoria\n", isla);
 }
 
 // ============================================================================
@@ -562,6 +650,9 @@ void generarBosqueAutomatico() {
   HDC hdcMem = CreateCompatibleDC(hdcPantalla);
   HBITMAP hOldBmp = (HBITMAP)SelectObject(hdcMem, hMapaBmp);
 
+  // Limpiar objetos y colisiones antes de regenerar (para nuevas islas)
+  mapaLimpiarObjetosYColision();
+
   // Requisito: Aritmética de punteros para manejar la matriz
   char (*ptrMatriz)[GRID_SIZE] = mapaObjetos;
   srand((unsigned int)time(NULL));
@@ -631,10 +722,12 @@ void generarBosqueAutomatico() {
     BYTE g = GetGValue(color);
     BYTE b = GetBValue(color);
     
+    bool esAgua = (b > r + 20 && b > g + 20) || (*(*(ptrMatriz + fila) + col) == SIMBOLO_AGUA);
+
     // Verificar que el suelo sea verde (tierra válida para árbol)
     // Solo colocar en tierra (verde domina), no en agua (azul domina)
     // CRITERIO MÁS ESTRICTO: verde debe dominar claramente y azul debe ser bajo
-    if (g > r && g > b && g > 70 && b < 80 && r < 100) {
+    if (!esAgua && g > r && g > b && g > 70 && b < 80 && r < 100) {
       // Colocar árbol usando aritmética de punteros y símbolo de caracter
       *(*(ptrMatriz + fila) + col) = SIMBOLO_ARBOL;
       contador++;
@@ -669,8 +762,10 @@ void generarBosqueAutomatico() {
     BYTE g = GetGValue(color);
     BYTE b = GetBValue(color);
     
+    bool esAgua = (b > r + 20 && b > g + 20) || (*(*(ptrMatriz + fila) + col) == SIMBOLO_AGUA);
+
     // Solo en tierra verde (mismo criterio estricto que árboles)
-    if (g > r && g > b && g > 70 && b < 80 && r < 100) {
+    if (!esAgua && g > r && g > b && g > 70 && b < 80 && r < 100) {
       // Inicializar vaca en el array dinámico
       Vaca *v = &gVacas[gNumVacas];
       
@@ -1447,4 +1542,47 @@ void mapaMoverObjeto(float viejoX, float viejoY, float nuevoX, float nuevoY, cha
       mapaObjetos[nuevaFila][nuevaCol] = simbolo;
     }
   }
+}
+
+// Retorna true si la celda es tierra transitable; false si es agua u obstáculo.
+bool mapaCeldaEsTierra(int fila, int col) {
+  if (fila < 0 || col < 0 || fila >= GRID_SIZE || col >= GRID_SIZE) return false;
+
+  collisionMapAllocIfNeeded();
+
+  int valor = 0;
+  if (gCollisionMap) {
+    valor = *(*(gCollisionMap + fila) + col);
+  }
+
+  char simb = mapaObjetos[fila][col];
+
+  // Bloquear cualquier cosa marcada como colisión u océano conocido
+  if (valor != 0) return false;
+  if (simb == SIMBOLO_AGUA) return false;
+
+  // Validación adicional por color directo del mapa (por si el agua no fue marcada)
+  if (hMapaBmp) {
+    BITMAP bm;
+    if (GetObject(hMapaBmp, sizeof(BITMAP), &bm)) {
+      int px = (col * TILE_SIZE) + (TILE_SIZE / 2);
+      int py = (fila * TILE_SIZE) + (TILE_SIZE / 2);
+      if (px >= 0 && px < bm.bmWidth && py >= 0 && py < bm.bmHeight) {
+        HDC memDC = CreateCompatibleDC(NULL);
+        HBITMAP oldBmp = (HBITMAP)SelectObject(memDC, hMapaBmp);
+        COLORREF color = GetPixel(memDC, px, py);
+        SelectObject(memDC, oldBmp);
+        DeleteDC(memDC);
+        if (color != CLR_INVALID) {
+          BYTE r = GetRValue(color);
+          BYTE g = GetGValue(color);
+          BYTE b = GetBValue(color);
+          bool agua = (b > r + 20 && b > g + 20 && b > 60) || (b > r && b > g && b > 100);
+          if (agua) return false;
+        }
+      }
+    }
+  }
+
+  return true;
 }

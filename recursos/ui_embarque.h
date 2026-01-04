@@ -6,6 +6,7 @@
 
 typedef struct MenuEmbarque {
   bool activo;
+  bool eligiendoIsla;
   int obrerosSeleccionados;
   int caballerosSeleccionados;
   int guerrerosSeleccionados;

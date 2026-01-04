@@ -110,6 +110,13 @@ void mapaSeleccionarIsla(int isla);
 int mapaObtenerTipoObjeto(int f, int c);
 void mapaEliminarObjeto(int f, int c);
 
+// Verifica si una celda es tierra transitable (no agua) usando colisiones y color del mapa
+bool mapaCeldaEsTierra(int fila, int col);
+
+// Persistencia de estado por isla (memoria)
+void mapaGuardarEstadoIsla(int isla);   // Almacena mapaObjetos, colisiones y vacas de la isla actual
+void mapaRestaurarEstadoIsla(int isla); // Restaura el estado previamente guardado
+
 // Serialización
 void mapaGuardar(FILE *f);
 void mapaCargar(FILE *f);

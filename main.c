@@ -239,69 +239,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     }
     return 0;
 
-    // ============================================================================
-    // SISTEMA DE GUARDAR / CARGAR (PERSISTENCIA)
-    // ============================================================================
-    void GuardarJuego() {
-      FILE *f = fopen("savegame.dat", "wb");
-      if (!f) {
-        MessageBox(NULL, "No se pudo crear el archivo de guardado.", "Error",
-                   MB_OK | MB_ICONERROR);
-        return;
-      }
-
-      // 1. Guardar datos del jugador (Recursos, unidades, etc.)
-      fwrite(&jugador1, sizeof(struct Jugador), 1, f);
-
-      // 2. Guardar estado del mapa (Árboles cortados, etc.)
-      mapaGuardar(f);
-
-      fclose(f);
-      MessageBox(NULL, "Partida Guardada Exitosamente!", "Sistema", MB_OK);
-    }
-
-    void CargarJuego() {
-      FILE *f = fopen("savegame.dat", "rb");
-      if (!f) {
-        MessageBox(NULL, "No existe archivo de guardado.", "Error",
-                   MB_OK | MB_ICONWARNING);
-        return;
-      }
-
-      // 1. Cargar datos del jugador
-      fread(&jugador1, sizeof(struct Jugador), 1, f);
-
-      // 2. Cargar mapa
-      mapaCargar(f);
-
-      // 3. Reconstrucción post-carga
-      // Los punteros internos (como rutas o sprites) no se guardan válidos.
-      // Hay que reinicializarlos.
-
-      // Reiniciar punteros de unidades
-      for (int i = 0; i < 6; i++) {
-        jugador1.obreros[i].rutaCeldas = NULL; // Evitar crash por puntero viejo
-        jugador1.obreros[i].animActual = NULL; // Se reasigna en update
-                                               // Reiniciar animaciones básicas
-      }
-      for (int i = 0; i < 4; i++) {
-        jugador1.caballeros[i].rutaCeldas = NULL;
-      }
-
-      // Reconectar punteros de edificios
-      jugador1.ayuntamiento =
-          &ayuntamiento; // Asumimos que ayuntamiento es estático
-      jugador1.mina = &mina;
-
-      // Reconstruir mapa de colisiones basado en nuevas posiciones
-      mapaReconstruirCollisionMap();
-
-      fclose(f);
-      MessageBox(NULL, "Partida Cargada!", "Sistema", MB_OK);
-    }
-
-    // ...
-
   case WM_RBUTTONDOWN: {
     int px = GET_X_LPARAM(lParam);
     int py = GET_Y_LPARAM(lParam);
@@ -349,9 +286,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
   }
 
   case WM_KEYDOWN:
-    if (wParam == VK_F6) {
-      CargarJuego();
-    }
     if (wParam == 'C') {
       // Centrar cámara en el Ayuntamiento (1024, 1024)
       // Restamos la mitad de la pantalla (aprox 640x360) para que quede al
