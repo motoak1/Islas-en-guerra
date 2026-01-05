@@ -20,6 +20,20 @@ typedef struct {
 } EstadoIsla;
 
 static EstadoIsla sIslas[4];
+static int sIslaInicial = 1;
+static bool sIslaInicialDefinida = false;
+static bool sOmitirBatalla = false;
+static bool sBatallaPendiente = false;
+static int sIslaPendiente = 0;
+static int sIslaOrigen = 1;
+
+static int contarIslasConquistadas(void) {
+  int total = 0;
+  for (int i = 1; i <= 3; i++) {
+    if (sIslas[i].inicializado) total++;
+  }
+  return total;
+}
 
 // Limpia un rectángulo de celdas en mapaObjetos y collision map
 static void limpiarAreaCeldas(int celdaX, int celdaY, int ancho, int alto) {
@@ -34,6 +48,12 @@ static void limpiarAreaCeldas(int celdaX, int celdaY, int ancho, int alto) {
       }
     }
   }
+}
+
+void navegacionRegistrarIslaInicial(int isla) {
+  sIslaInicial = (isla >= 1 && isla <= 3) ? isla : 1;
+  sIslaInicialDefinida = true;
+  sIslaOrigen = sIslaInicial;
 }
 
 // Verifica si un rectángulo de celdas está libre en collision map y no es agua
@@ -375,6 +395,12 @@ void reiniciarIslaDesconocida(struct Jugador* j) {
 
 void viajarAIsla(struct Jugador* j, int islaDestino) {
   printf("[DEBUG] Viajando directamente a isla %d\n", islaDestino);
+  if (!sIslaInicialDefinida) {
+    sIslaInicial = j->islaActual;
+    sIslaInicialDefinida = true;
+    sIslaOrigen = sIslaInicial;
+  }
+  sIslaOrigen = j->islaActual;
   
   // Si es la misma isla, desembarcar y listo
   if (islaDestino == j->islaActual) {
@@ -383,17 +409,38 @@ void viajarAIsla(struct Jugador* j, int islaDestino) {
     return;
   }
   
+  bool islaYaVisitada = (islaDestino >= 1 && islaDestino <= 3) && sIslas[islaDestino].inicializado;
+  bool islaNuevaHostil = (!islaYaVisitada && islaDestino != sIslaInicial);
+
+  // Batalla previa si es isla nueva (no la inicial) y no estamos forzando omisión
+  if (!sOmitirBatalla) {
+    bool requiereBatalla = islaNuevaHostil;
+    if (requiereBatalla) {
+      int conquistadas = contarIslasConquistadas();
+      if (batallasPrepararDesdeViaje(j, islaDestino, conquistadas, false)) {
+        sBatallaPendiente = true;
+        sIslaPendiente = islaDestino;
+        printf("[DEBUG] Batalla iniciada en isla %d (conquistadas=%d)\n", islaDestino, conquistadas);
+        return; // Esperar resolución en el loop principal
+      } else {
+        printf("[DEBUG] No se pudo iniciar batalla (sin tropas o error).\n");
+        return;
+      }
+    }
+  }
+
   // Guardar estado de la isla actual antes de salir
   guardarEstadoIslaJugador(j);
   mapaGuardarEstadoIsla(j->islaActual);
 
   // Cambiar isla activa
   j->islaActual = islaDestino;
-  bool islaYaVisitada = (islaDestino >= 1 && islaDestino <= 3) && sIslas[islaDestino].inicializado;
   
   // Cambiar mapa de isla y recargar gráficos PRIMERO
   mapaSeleccionarIsla(islaDestino);
-  cargarRecursosGraficos(); // Esto crea el nuevo mapa de colisión
+  mapaSetGenerarRecursos(!islaNuevaHostil);
+  cargarRecursosGraficos(); // Esto crea el nuevo mapa de colisión (sin recursos si hostil)
+  mapaSetGenerarRecursos(true);
 
   // Si la isla ya tiene estado guardado, restaurarlo
   if (islaYaVisitada) {
@@ -402,10 +449,9 @@ void viajarAIsla(struct Jugador* j, int islaDestino) {
   } else {
     // Primera vez en la isla: resetear y generar base
     reiniciarIslaDesconocida(j);
-    inicializarEstructurasIslaBase(j, &sIslas[islaDestino]);
     sIslas[islaDestino].inicializado = true;
-    vaciarUnidades(j); // No generar tropas nuevas en islas visitadas en barco
-    guardarEstadoIslaJugador(j); // Guardar snapshot inicial de recursos/edificios
+    vaciarUnidades(j); // Solo tropas desembarcadas estarán presentes
+    guardarEstadoIslaJugador(j); // Guardar snapshot inicial
   }
   
   // Posicionar barco en orilla de la nueva isla
@@ -423,5 +469,24 @@ void viajarAIsla(struct Jugador* j, int islaDestino) {
   desembarcarTropas(&j->barco, j);
   
   printf("[DEBUG] Viaje completado\n");
+}
+
+// Resultado de batalla: si ganó, completar viaje; si perdió, se queda en isla origen
+void navegacionProcesarResultadoBatalla(struct Jugador* j, BatallaResultado r,
+                                        int islaDestino) {
+  if (!sBatallaPendiente || islaDestino != sIslaPendiente) return;
+  sBatallaPendiente = false;
+  sIslaPendiente = 0;
+
+  if (r == BATALLA_RESULTADO_VICTORIA) {
+    sOmitirBatalla = true; // evitar reentrada de batalla
+    viajarAIsla(j, islaDestino);
+    sOmitirBatalla = false;
+  } else if (r == BATALLA_RESULTADO_DERROTA) {
+    // Limpiar barco
+    for (int i = 0; i < 6; i++) j->barco.tropas[i] = NULL;
+    j->barco.numTropas = 0;
+    printf("[DEBUG] Batalla perdida: permaneces en isla %d\n", sIslaOrigen);
+  }
 }
 

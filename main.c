@@ -6,6 +6,7 @@
 #include "recursos/ui_embarque.h"
 #include "recursos/navegacion.h"
 #include "recursos/ui_entrena.h"
+#include "batallas/batallas.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -150,9 +151,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
   case WM_CREATE:
     // Inicializar recursos del jugador y obreros
     IniciacionRecursos(&jugador1, "Jugador 1");
+    batallasInicializar();
     
     // NUEVO: Guardar isla inicial seleccionada
     jugador1.islaActual = menuObtenerIsla(); // 1, 2, o 3
+    navegacionRegistrarIslaInicial(jugador1.islaActual);
 
     // Inicializar ayuntamiento en el centro del mapa (1024, 1024)
     // Tamaño 128x128, centrado en el mapa de 2048x2048
@@ -222,19 +225,28 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 
   case WM_TIMER:
     if (wParam == IDT_TIMER_JUEGO) {
-      actualizarPersonajes(&jugador1);
-      mapaActualizarVacas();           // NUEVO: Actualizar vacas (movimiento automático)
-      menuCompraActualizar(&menuCompra);
+      if (batallasEnCurso()) {
+        batallasActualizar(0.016f);
+      } else {
+        actualizarPersonajes(&jugador1);
+        mapaActualizarVacas();           // NUEVO: Actualizar vacas (movimiento automático)
+        menuCompraActualizar(&menuCompra);
 
-      // Actualizar mina si existe
-      if (jugador1.mina != NULL) {
-        edificioActualizar((Edificio *)jugador1.mina);
+        // Actualizar mina si existe
+        if (jugador1.mina != NULL) {
+          edificioActualizar((Edificio *)jugador1.mina);
+        }
+
+        // Actualizar menú de entrenamiento
+        menuEntrenamientoActualizar(&menuEntrenamiento);
       }
 
-      // Actualizar menú de entrenamiento
-      menuEntrenamientoActualizar(&menuEntrenamiento);
+      BatallaResultado res;
+      int islaRes;
+      if (batallasObtenerResultado(&res, &islaRes)) {
+        navegacionProcesarResultadoBatalla(&jugador1, res, islaRes);
+      }
 
-      
       InvalidateRect(hwnd, NULL, FALSE);
     }
     return 0;
@@ -413,12 +425,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     // Asegurar que el rect esté actualizado para el culling de los edificios
     GetClientRect(hwnd, &rect);
 
-    // Asegurar que el rect esté actualizado para el culling de los edificios
-    GetClientRect(hwnd, &rect);
-
-    // Solo vista local: mapa con zoom, personajes, edificios, etc.
-    dibujarMundo(hdc, rect, camara, &jugador1, &menuCompra, &menuEmbarque, 
-                 mouseFilaHover, mouseColHover);
+    if (batallasEnCurso()) {
+      batallasRender(hdc, rect, camara);
+    } else {
+      dibujarMundo(hdc, rect, camara, &jugador1, &menuCompra, &menuEmbarque, 
+                   mouseFilaHover, mouseColHover);
+    }
 
     EndPaint(hwnd, &ps);
     return 0;

@@ -2,6 +2,7 @@
 #define NAVEGACION_H
 
 #include "recursos.h"
+#include "../batallas/batallas.h"
 #include <windows.h>
 
 // Verifica si un punto está dentro del barco (para detección de clicks)
@@ -15,6 +16,11 @@ void reiniciarIslaDesconocida(struct Jugador* j);
 
 // NUEVO: Viaja directamente a una isla sin animación
 void viajarAIsla(struct Jugador* j, int islaDestino);
+
+// Registrar la isla inicial (nunca genera batalla) y recibir resultados
+void navegacionRegistrarIslaInicial(int isla);
+void navegacionProcesarResultadoBatalla(struct Jugador* j, BatallaResultado r,
+										int islaDestino);
 
 #endif
 

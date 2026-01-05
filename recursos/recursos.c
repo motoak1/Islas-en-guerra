@@ -266,7 +266,7 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
         j->obreros[i].animActual = animPorDireccion(DIR_FRONT);
     }
 
-    // No generar guerreros ni caballeros al inicio
+    // Caballeros (2 activos para pruebas, 2 fuera del mapa)
     for (int i = 0; i < 4; i++) {
       j->caballeros[i].x = -1000.0f;
       j->caballeros[i].y = -1000.0f;
@@ -279,7 +279,15 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
       j->caballeros[i].rutaCeldas = NULL;
       j->caballeros[i].tipo = TIPO_CABALLERO;
     }
+    // Ubicar 2 caballeros cerca del ayuntamiento
+    j->caballeros[0].x = 1080.0f; j->caballeros[0].y = 1040.0f;
+    j->caballeros[0].destinoX = j->caballeros[0].x;
+    j->caballeros[0].destinoY = j->caballeros[0].y;
+    j->caballeros[1].x = 1144.0f; j->caballeros[1].y = 1040.0f;
+    j->caballeros[1].destinoX = j->caballeros[1].x;
+    j->caballeros[1].destinoY = j->caballeros[1].y;
 
+    // Guerreros (2 activos, 2 fuera del mapa)
     for (int i = 0; i < 4; i++) {
       j->guerreros[i].x = -1000.0f;
       j->guerreros[i].y = -1000.0f;
@@ -292,6 +300,12 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
       j->guerreros[i].rutaCeldas = NULL;
       j->guerreros[i].tipo = TIPO_GUERRERO;
     }
+    j->guerreros[0].x = 1040.0f; j->guerreros[0].y = 1120.0f;
+    j->guerreros[0].destinoX = j->guerreros[0].x;
+    j->guerreros[0].destinoY = j->guerreros[0].y;
+    j->guerreros[1].x = 1104.0f; j->guerreros[1].y = 1120.0f;
+    j->guerreros[1].destinoX = j->guerreros[1].x;
+    j->guerreros[1].destinoY = j->guerreros[1].y;
 
   // ================================================================
   // INICIALIZAR BARCO EN LA ORILLA (192x192px)

@@ -68,6 +68,7 @@ static HBITMAP hBarcoBmp[4] = {NULL};     // Front, Back, Left, Right (192x192)
 static HBITMAP hGuerreroBmp[4] = {NULL}; // Front, Back, Left, Right
 
 static HBITMAP hVacaBmp[4] = {NULL};
+static bool gGenerarRecursos = true;
 
 // Definiciones para obrerro fallback
 #define OBRERO_F_ALT "assets/obrero/obrero_front.bmp"
@@ -164,6 +165,10 @@ void mapaLimpiarObjetosYColision(void) {
       }
     }
   }
+}
+
+void mapaSetGenerarRecursos(bool habilitar) {
+  gGenerarRecursos = habilitar;
 }
 
 int **mapaObtenerCollisionMap(void) {
@@ -930,10 +935,14 @@ void cargarRecursosGraficos() {
           hVacaBmp[i] = (HBITMAP)LoadImageA(NULL, rutasVacaAlt[i], IMAGE_BITMAP,
                                             64, 64, LR_LOADFROMFILE);
       }
-      printf("[%s] Vaca BMP %d cargado.\\n", hVacaBmp[i] ? "OK" : "ERROR", i);
+      printf("[%s] Vaca BMP %d cargado.\n", hVacaBmp[i] ? "OK" : "ERROR", i);
   }
 
-  generarBosqueAutomatico();
+  if (gGenerarRecursos) {
+    generarBosqueAutomatico();
+  } else {
+    mapaReconstruirCollisionMap();
+  }
 }
 
 // ============================================================================
