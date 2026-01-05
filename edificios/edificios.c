@@ -46,6 +46,7 @@ void edificioInicializar(Edificio *e, TipoEdificio tipo, float x, float y) {
   // Inicializar acumuladores de recursos
   e->oroAcumulado = 0;
   e->piedraAcumulada = 0;
+  e->hierroAcumulado = 0;
   e->ultimoTickGeneracion = GetTickCount();
 }
 
@@ -70,12 +71,14 @@ void edificioActualizar(Edificio *e) {
       e->oroAcumulado += 20;
     if (e->piedraAcumulada < 100)
       e->piedraAcumulada += 20;
+    if (e->hierroAcumulado < 100)
+      e->hierroAcumulado += 10; // Hierro es mas escaso
 
     e->ultimoTickGeneracion = tickActual;
 
     // Debug para consola
-    printf("[MINA] Recursos generados: Oro=%d, Piedra=%d\n", e->oroAcumulado,
-           e->piedraAcumulada);
+    printf("[MINA] Recursos generados: Oro=%d, Piedra=%d, Hierro=%d\n",
+           e->oroAcumulado, e->piedraAcumulada, e->hierroAcumulado);
   }
 }
 
@@ -156,9 +159,8 @@ void edificiosCargarSprites() {
   }
 
   // Cargar sprite de la mina
-  g_spriteMina =
-      (HBITMAP)LoadImageA(NULL, imgMina, IMAGE_BITMAP, 128, 128,
-                          LR_LOADFROMFILE);
+  g_spriteMina = (HBITMAP)LoadImageA(NULL, imgMina, IMAGE_BITMAP, 128, 128,
+                                     LR_LOADFROMFILE);
 
   if (!g_spriteMina) {
     printf("[ERROR] No se pudo cargar mina desde: %s\n", imgMina);

@@ -24,6 +24,7 @@ typedef struct {
   // --- Lógica de Recursos (Mina) ---
   int oroAcumulado;
   int piedraAcumulada;
+  int hierroAcumulado;
   DWORD ultimoTickGeneracion;
 } Edificio;
 

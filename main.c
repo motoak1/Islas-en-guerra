@@ -1,17 +1,16 @@
 #include "edificios/edificios.h"
 #include "mapa/mapa.h"
 #include "mapa/menu.h"
+#include "recursos/navegacion.h"
 #include "recursos/recursos.h"
 #include "recursos/ui_compra.h"
 #include "recursos/ui_embarque.h"
-#include "recursos/navegacion.h"
 #include "recursos/ui_entrena.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <windows.h>
 #include <windowsx.h>
-#include <stdio.h>
 
 // --- CONFIGURACIÓN ---
 #define ZOOM_MAXIMO 6.0f
@@ -23,15 +22,15 @@ struct Jugador jugador1;
 bool arrastrandoCamara = false;
 POINT mouseUltimo;
 MenuCompra menuCompra;               // Estado global del menú de compra
-MenuEmbarque menuEmbarque; // Menú de embarque de tropas
+MenuEmbarque menuEmbarque;           // Menú de embarque de tropas
 MenuEntrenamiento menuEntrenamiento; // Estado global del menú de entrenamiento
 Edificio ayuntamiento;               // Edificio del ayuntamiento
-Edificio mina;         // Edificio de la mina
+Edificio mina;                       // Edificio de la mina
 
 // Variables para resaltar celda bajo el cursor
-int mouseFilaHover = -1;  // Fila de la celda bajo el cursor (-1 = ninguna)
-int mouseColHover = -1;   // Columna de la celda bajo el cursor
-Edificio cuartel;                    // Edificio del cuartel
+int mouseFilaHover = -1; // Fila de la celda bajo el cursor (-1 = ninguna)
+int mouseColHover = -1;  // Columna de la celda bajo el cursor
+Edificio cuartel;        // Edificio del cuartel
 
 // --- MOTOR DE VALIDACIÓN DE CÁMARA ---
 void corregirLimitesCamara(RECT rect) {
@@ -71,7 +70,7 @@ void corregirLimitesCamara(RECT rect) {
 void seleccionarPersonaje(float mundoX, float mundoY) {
   // Puntero a la estructura del jugador
   struct Jugador *pJugador = &jugador1;
-  
+
   // ================================================================
   // CONSTANTE: Tamaño de hitbox de las unidades (64x64px)
   // ================================================================
@@ -89,7 +88,7 @@ void seleccionarPersonaje(float mundoX, float mundoY) {
     // están dentro del rectángulo del obrero:
     //   - Esquina superior izquierda: (o->x, o->y)
     //   - Esquina inferior derecha: (o->x + 64, o->y + 64)
-    // 
+    //
     // CRÍTICO: El obrero mide 64x64px, NO 32x32px (TILE_SIZE)
     // ================================================================
 
@@ -103,12 +102,12 @@ void seleccionarPersonaje(float mundoX, float mundoY) {
     // Esto funciona INDEPENDIENTEMENTE de qué se haya dibujado encima
     o->seleccionado = (dentroX && dentroY);
   }
-  
-  // ================================================================
-  // SELECCIONAR CABALLEROS (NUEVO)
-  // ================================================================
+
+  // SELECCIONAR CABALLEROS CON ESCUDO
   Unidad *baseCaballeros = pJugador->caballeros;
   for (Unidad *c = baseCaballeros; c < baseCaballeros + 4; c++) {
+    if (c->x < 0)
+      continue;
     float mundoXUnit = c->x;
     float mundoYUnit = c->y;
 
@@ -122,19 +121,39 @@ void seleccionarPersonaje(float mundoX, float mundoY) {
     }
   }
 
-  // SELECCIONAR GUERREROS (NUEVO)
-    Unidad *baseGuerreros = pJugador->guerreros;
-    for (Unidad *g = baseGuerreros; g < baseGuerreros + 2; g++) {
-      float mundoXUnit = g->x;
-      float mundoYUnit = g->y;
-      bool dentro = (mundoX >= mundoXUnit && mundoX < mundoXUnit + OBRERO_SIZE &&
-                    mundoY >= mundoYUnit && mundoY < mundoYUnit + OBRERO_SIZE);
-      if (dentro) {
-        g->seleccionado = !g->seleccionado;
-      } else {
-        g->seleccionado = false;
-      }
+  // SELECCIONAR CABALLEROS SIN ESCUDO
+  Unidad *baseCSE = pJugador->caballerosSinEscudo;
+  for (Unidad *c = baseCSE; c < baseCSE + 4; c++) {
+    if (c->x < 0)
+      continue;
+    float mundoXUnit = c->x;
+    float mundoYUnit = c->y;
+
+    bool dentro = (mundoX >= mundoXUnit && mundoX < mundoXUnit + OBRERO_SIZE &&
+                   mundoY >= mundoYUnit && mundoY < mundoYUnit + OBRERO_SIZE);
+
+    if (dentro) {
+      c->seleccionado = !c->seleccionado;
+    } else {
+      c->seleccionado = false;
     }
+  }
+
+  // SELECCIONAR GUERREROS
+  Unidad *baseGuerreros = pJugador->guerreros;
+  for (Unidad *g = baseGuerreros; g < baseGuerreros + 4; g++) {
+    if (g->x < 0)
+      continue;
+    float mundoXUnit = g->x;
+    float mundoYUnit = g->y;
+    bool dentro = (mundoX >= mundoXUnit && mundoX < mundoXUnit + OBRERO_SIZE &&
+                   mundoY >= mundoYUnit && mundoY < mundoYUnit + OBRERO_SIZE);
+    if (dentro) {
+      g->seleccionado = !g->seleccionado;
+    } else {
+      g->seleccionado = false;
+    }
+  }
 }
 
 void comandarMovimiento(float mundoX, float mundoY) {
@@ -150,7 +169,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
   case WM_CREATE:
     // Inicializar recursos del jugador y obreros
     IniciacionRecursos(&jugador1, "Jugador 1");
-    
+
     // NUEVO: Guardar isla inicial seleccionada
     jugador1.islaActual = menuObtenerIsla(); // 1, 2, o 3
 
@@ -163,7 +182,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     // Marcar el ayuntamiento en el mapa de colisiones
     mapaMarcarEdificio(ayuntamiento.x, ayuntamiento.y, ayuntamiento.ancho,
                        ayuntamiento.alto);
-    
+
     // Registrar en mapaObjetos
     mapaRegistrarObjeto(ayuntamiento.x, ayuntamiento.y, SIMBOLO_EDIFICIO);
 
@@ -176,13 +195,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 
     // Marcar la mina en el mapa de colisiones
     mapaMarcarEdificio(mina.x, mina.y, mina.ancho, mina.alto);
-    
+
     // Registrar en mapaObjetos
     mapaRegistrarObjeto(mina.x, mina.y, SIMBOLO_MINA);
 
     // Inicializar menú de compra
     menuCompraInicializar(&menuCompra);
-    
+
     // Inicializar menú de embarque
     menuEmbarqueInicializar(&menuEmbarque);
 
@@ -195,10 +214,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     jugador1.barco.dir = (Direccion)barcoDir;
     jugador1.barco.activo = true;
     jugador1.barco.numTropas = 0;
-    
-    printf("[DEBUG] Barco colocado en orilla: (%.1f, %.1f), dir=%d\n", 
-           barcoX, barcoY, barcoDir);
-    
+
+    printf("[DEBUG] Barco colocado en orilla: (%.1f, %.1f), dir=%d\n", barcoX,
+           barcoY, barcoDir);
+
     // Registrar barco en mapaObjetos
     mapaRegistrarObjeto(jugador1.barco.x, jugador1.barco.y, SIMBOLO_BARCO);
 
@@ -209,7 +228,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 
     // Marcar el cuartel en el mapa de colisiones
     mapaMarcarEdificio(cuartel.x, cuartel.y, cuartel.ancho, cuartel.alto);
-    
+
     // Registrar cuartel en mapaObjetos
     mapaRegistrarObjeto(cuartel.x, cuartel.y, SIMBOLO_CUARTEL);
 
@@ -223,7 +242,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
   case WM_TIMER:
     if (wParam == IDT_TIMER_JUEGO) {
       actualizarPersonajes(&jugador1);
-      mapaActualizarVacas();           // NUEVO: Actualizar vacas (movimiento automático)
+      mapaActualizarVacas(); // NUEVO: Actualizar vacas (movimiento automático)
+      mapaActualizarArboles(); // NUEVO: Regeneración de árboles
       menuCompraActualizar(&menuCompra);
 
       // Actualizar mina si existe
@@ -234,7 +254,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
       // Actualizar menú de entrenamiento
       menuEntrenamientoActualizar(&menuEntrenamiento);
 
-      
       InvalidateRect(hwnd, NULL, FALSE);
     }
     return 0;
@@ -242,7 +261,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
   case WM_RBUTTONDOWN: {
     int px = GET_X_LPARAM(lParam);
     int py = GET_Y_LPARAM(lParam);
-    
+
     // Solo procesar en vista local
     if (jugador1.vistaActual == VISTA_LOCAL) {
       float mundoX = (px / camara.zoom) + camara.x;
@@ -257,29 +276,42 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
       }
       // Verificar si se hizo click sobre el ayuntamiento
       else if (edificioContienePunto(&ayuntamiento, mundoX, mundoY)) {
-        // Abrir menú de compra
-        GetClientRect(hwnd, &rect);
-        menuCompraAbrir(&menuCompra, rect.right - rect.left,
-                        rect.bottom - rect.top);
-      }
-    // Verificar si se hizo click sobre el cuartel
-    else if (edificioContienePunto(&cuartel, mundoX, mundoY)) {
-      // Abrir menú de entrenamiento
-      GetClientRect(hwnd, &rect);
-      menuEntrenamientoAbrir(&menuEntrenamiento, rect.right - rect.left,
-                             rect.bottom - rect.top);
-    }
-    // Intentar recoger recursos de la mina
-    else if (recursosIntentarRecogerMina(&jugador1, mundoX, mundoY)) {
-      // Interacción con mina ya manejada
-    } else if (recursosIntentarCazar(&jugador1, mundoX, mundoY)) {
-      // Interacción con vaca ya manejada
-    } else {
-        // 1. Intentar acción de talar (si es árbol y hay obrero cerca)
-      if (!recursosIntentarTalar(&jugador1, mundoX, mundoY)) {
-        // 2. Comandar movimiento normal
+        // RESTRICCIÓN: Solo obreros pueden interactuar con el ayuntamiento
+        if (recursosObreroCercaDePunto(&jugador1, mundoX, mundoY, 150.0f)) {
+          // Abrir menú de compra
+          GetClientRect(hwnd, &rect);
+          menuCompraAbrir(&menuCompra, rect.right - rect.left,
+                          rect.bottom - rect.top);
+        } else {
+          // No hay obrero cerca O no es obrero, mandarlo a caminar
           rtsComandarMovimiento(&jugador1, mundoX, mundoY);
+        }
       }
+      // Verificar si se hizo click sobre el cuartel
+      else if (edificioContienePunto(&cuartel, mundoX, mundoY)) {
+        // RESTRICCIÓN: Todos pueden interactuar con el cuartel
+        if (recursosCualquierTropaCercaDePunto(&jugador1, mundoX, mundoY,
+                                               150.0f)) {
+          // Abrir menú de entrenamiento
+          GetClientRect(hwnd, &rect);
+          menuEntrenamientoAbrir(&menuEntrenamiento, rect.right - rect.left,
+                                 rect.bottom - rect.top);
+        } else {
+          // Mandar a caminar
+          rtsComandarMovimiento(&jugador1, mundoX, mundoY);
+        }
+      }
+      // Intentar recoger recursos de la mina
+      else if (recursosIntentarRecogerMina(&jugador1, mundoX, mundoY)) {
+        // Interacción con mina ya manejada
+      } else if (recursosIntentarCazar(&jugador1, mundoX, mundoY)) {
+        // Interacción con vaca ya manejada
+      } else {
+        // 1. Intentar acción de talar (si es árbol y hay obrero cerca)
+        if (!recursosIntentarTalar(&jugador1, mundoX, mundoY)) {
+          // 2. Comandar movimiento normal
+          rtsComandarMovimiento(&jugador1, mundoX, mundoY);
+        }
       }
     }
     return 0;
@@ -371,27 +403,27 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
       mouseUltimo.x = curX;
       mouseUltimo.y = curY;
     }
-    
+
     // NUEVO: Actualizar celda bajo el cursor
     if (jugador1.vistaActual == VISTA_LOCAL) {
       int px = GET_X_LPARAM(lParam);
       int py = GET_Y_LPARAM(lParam);
-      
+
       // Convertir coordenadas de pantalla a mundo
       float mundoX = (px / camara.zoom) + camara.x;
       float mundoY = (py / camara.zoom) + camara.y;
-      
+
       // Convertir a celda de la matriz
       mouseFilaHover = (int)(mundoY / TILE_SIZE);
       mouseColHover = (int)(mundoX / TILE_SIZE);
-      
+
       // Validar límites
-      if (mouseFilaHover < 0 || mouseFilaHover >= GRID_SIZE || 
+      if (mouseFilaHover < 0 || mouseFilaHover >= GRID_SIZE ||
           mouseColHover < 0 || mouseColHover >= GRID_SIZE) {
         mouseFilaHover = -1;
         mouseColHover = -1;
       }
-      
+
       InvalidateRect(hwnd, NULL, FALSE); // Redibujar para mostrar highlight
     }
     return 0;
@@ -400,8 +432,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     arrastrandoCamara = false;
     ReleaseCapture();
     return 0;
-
-
 
   case WM_ERASEBKGND:
     return 1; // Indicar que nosotros manejamos el fondo para evitar parpadeo
@@ -417,7 +447,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     GetClientRect(hwnd, &rect);
 
     // Solo vista local: mapa con zoom, personajes, edificios, etc.
-    dibujarMundo(hdc, rect, camara, &jugador1, &menuCompra, &menuEmbarque, 
+    dibujarMundo(hdc, rect, camara, &jugador1, &menuCompra, &menuEmbarque,
                  mouseFilaHover, mouseColHover);
 
     EndPaint(hwnd, &ps);
