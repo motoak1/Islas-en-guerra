@@ -31,15 +31,15 @@
 #define obrero_left "../assets/obrero/obrero_left.bmp"
 #define obrero_right "../assets/obrero/obrero_right.bmp"
 
-#define caballero_front "../assets/caballero/caballero_front.bmp"
-#define caballero_back "../assets/caballero/caballero_back.bmp"
-#define caballero_left "../assets/caballero/caballero_left.bmp"
-#define caballero_right "../assets/caballero/caballero_right.bmp"
+#define caballero_front "../assets/caballero/caballero_shield_front.bmp"
+#define caballero_back "../assets/caballero/caballero_shield_back.bmp"
+#define caballero_left "../assets/caballero/caballero_shield_left.bmp"
+#define caballero_right "../assets/caballero/caballero_shield_right.bmp"
 
-#define CABALLO_F_ALT "assets/caballero/caballero_front.bmp"
-#define CABALLO_B_ALT "assets/caballero/caballero_back.bmp"
-#define CABALLO_L_ALT "assets/caballero/caballero_walkLeft3.bmp"
-#define CABALLO_R_ALT "assets/caballero/caballero_walkRight3.bmp"
+#define caballeroSinEscudo_front "../assets/caballero/caballero_front.bmp"
+#define caballeroSinEscudo_back "../assets/caballero/caballero_back.bmp"
+#define caballeroSinEscudo_left "../assets/caballero/caballero_left.bmp"
+#define caballeroSinEscudo_right "../assets/caballero/caballero_right.bmp"
 
 #define guerrero_front "../assets/guerrero/guerrero_front.bmp"
 #define guerrero_back "../assets/guerrero/guerrero_back.bmp"
@@ -63,6 +63,7 @@
 
 static HBITMAP hObreroBmp[4] = {NULL};    // Front, Back, Left, Right
 static HBITMAP hCaballeroBmp[4] = {NULL}; // Front, Back, Left, Right (NUEVO)
+static HBITMAP hCaballeroSinEscudoBmp[4] = {NULL}; // Front, Back, Left, Right (NUEVO)
 static HBITMAP hBarcoBmp[4] = {NULL};     // Front, Back, Left, Right (192x192)
 
 static HBITMAP hGuerreroBmp[4] = {NULL}; // Front, Back, Left, Right
@@ -896,18 +897,30 @@ void cargarRecursosGraficos() {
 
   const char *rutasCab[] = {caballero_front, caballero_back, caballero_left,
                             caballero_right};
-  const char *rutasCabAlt[] = {CABALLO_F_ALT, CABALLO_B_ALT, CABALLO_L_ALT,
-                               CABALLO_R_ALT};
+  
 
   for (int i = 0; i < 4; i++) {
     hCaballeroBmp[i] = (HBITMAP)LoadImageA(NULL, rutasCab[i], IMAGE_BITMAP, 64,
                                            64, LR_LOADFROMFILE);
-    if (!hCaballeroBmp[i]) {
-      hCaballeroBmp[i] = (HBITMAP)LoadImageA(NULL, rutasCabAlt[i], IMAGE_BITMAP,
-                                             64, 64, LR_LOADFROMFILE);
-    }
 
     if (!hCaballeroBmp[i]) {
+      printf("[ERROR] No se pudo cargar caballero[%d]\n", i);
+    } else {
+      printf("[OK] Caballero BMP %d cargado correctamente.\n", i);
+    }
+  }
+
+  //Caballero sin escudo
+
+  const char *rutasCabSinEscudo[] = {caballeroSinEscudo_front, caballeroSinEscudo_back, caballeroSinEscudo_left,
+                               caballeroSinEscudo_right};
+
+  for (int i = 0; i < 4; i++) {
+    hCaballeroSinEscudoBmp[i] = (HBITMAP)LoadImageA(NULL, rutasCabSinEscudo[i], IMAGE_BITMAP, 64,
+                                           64, LR_LOADFROMFILE);
+
+
+    if (!hCaballeroSinEscudoBmp[i]) {
       printf("[ERROR] No se pudo cargar caballero[%d]\n", i);
     } else {
       printf("[OK] Caballero BMP %d cargado correctamente.\n", i);
@@ -1288,7 +1301,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
 
         if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 &&
             pantY < altoP) {
-          SelectObject(hdcSprites, hCaballeroBmp[c->dir]);
+          SelectObject(hdcSprites, hCaballeroSinEscudoBmp[c->dir]);
           TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
                          64, 64, RGB(255, 255, 255));
 
