@@ -1,8 +1,23 @@
-// recursos/recursos.h
 #ifndef RECURSOS_H
 #define RECURSOS_H
 #include <stdbool.h>
 #include <windows.h> // Necesario para COORD en gotoxy
+
+// --- CONSTANTES DE STATS ---
+#define CABALLERO_VIDA 150
+#define CABALLERO_DANO 35
+#define CABALLERO_CRITICO 15
+#define CABALLERO_DEFENSA 25
+
+#define CABALLERO_SIN_ESCUDO_VIDA 100
+#define CABALLERO_SIN_ESCUDO_DANO 35
+#define CABALLERO_SIN_ESCUDO_CRITICO 20
+#define CABALLERO_SIN_ESCUDO_DEFENSA 5
+
+#define GUERRERO_VIDA 120
+#define GUERRERO_DANO 30
+#define GUERRERO_CRITICO 10
+#define GUERRERO_DEFENSA 20
 
 // --- ESTRUCTURAS ---
 
@@ -21,6 +36,7 @@ struct Tropa {
 typedef enum {
   TIPO_OBRERO,
   TIPO_CABALLERO,
+  TIPO_CABALLERO_SIN_ESCUDO,
   TIPO_GUERRERO,
   TIPO_BARCO
 } TipoUnidad;
@@ -61,31 +77,39 @@ typedef struct {
   // --- Animación por puntero a estado ---
   const Animation *animActual;
   int animTick;
-  
+
   // --- Tipo de unidad ---
-  TipoUnidad tipo;  // TIPO_OBRERO o TIPO_CABALLERO
+  TipoUnidad tipo; // TIPO_OBRERO o TIPO_CABALLERO
+
+  // --- Stats de combate ---
+  int vida;
+  int vidaMax;
+  int damage;
+  int critico; // Probabilidad de crítico (0-100)
+  int defensa;
+  int alcance;
 } Unidad;
 
 // Estado de vista del juego
 typedef enum {
-  VISTA_LOCAL,   // Vista normal de la isla con zoom
-  VISTA_GLOBAL   // Mapa completo con todas las islas
+  VISTA_LOCAL, // Vista normal de la isla con zoom
+  VISTA_GLOBAL // Mapa completo con todas las islas
 } EstadoVista;
 
 // Estructura para el barco (192x192 píxeles)
 typedef struct {
-  float x, y;          // Posición en el mapa
-  Direccion dir;       // Orientación del barco
-  bool activo;         // Si el barco está colocado
-  
+  float x, y;    // Posición en el mapa
+  Direccion dir; // Orientación del barco
+  bool activo;   // Si el barco está colocado
+
   // === Sistema de tropas ===
-  Unidad* tropas[6];   // Punteros a las tropas embarcadas (máximo 6)
-  int numTropas;       // Cantidad actual de tropas en el barco
-  
+  Unidad *tropas[6]; // Punteros a las tropas embarcadas (máximo 6)
+  int numTropas;     // Cantidad actual de tropas en el barco
+
   // === Sistema de navegación ===
-  bool navegando;      // Si está en ruta a otra isla
+  bool navegando;           // Si está en ruta a otra isla
   float destinoX, destinoY; // Coordenadas del destino
-  float velocidad;     // Velocidad de navegación (px/frame)
+  float velocidad;          // Velocidad de navegación (px/frame)
 } Barco;
 
 struct Jugador {
@@ -94,11 +118,13 @@ struct Jugador {
   int Oro;
   int Madera;
   int Piedra;
+  int Hierro;
   struct Tropa *Ejercito;
-  Unidad obreros[6];       // Trabajadores
-  Unidad caballeros[4];    // Caballeros (NUEVO)
-  Unidad guerreros[4];     // Guerreros (NUEVO)
-  Barco barco;             // Barco en la orilla (192x192px)
+  Unidad obreros[6];             // Trabajadores
+  Unidad caballeros[4];          // Caballeros con escudo
+  Unidad caballerosSinEscudo[4]; // Caballeros sin escudo
+  Unidad guerreros[4];           // Guerreros
+  Barco barco;                   // Barco en la orilla (192x192px)
   int CantidadEspadas;
   int CantidadArqueros;
   int CantidadPicas;
@@ -112,8 +138,8 @@ struct Jugador {
   // Estado de vista
   EstadoVista vistaActual; // Vista actual (local o global)
   int islaActual;          // Isla donde está el jugador (1, 2, o 3)
-  void *mina;         // Puntero a Edificio de la mina
-  void *cuartel;      // Puntero a Edificio del cuartel
+  void *mina;              // Puntero a Edificio de la mina
+  void *cuartel;           // Puntero a Edificio del cuartel
 };
 
 void actualizarPersonajes(struct Jugador *j);
@@ -138,6 +164,15 @@ bool recursosIntentarCazar(struct Jugador *j, float mundoX, float mundoY);
 // Funciones de entrenamiento de tropas
 bool entrenarObrero(struct Jugador *j, float x, float y);
 bool entrenarCaballero(struct Jugador *j, float x, float y);
+bool entrenarCaballeroSinEscudo(struct Jugador *j, float x, float y);
+bool entrenarGuerrero(struct Jugador *j, float x, float y);
+
+// Verifica si hay algun obrero seleccionado cerca de un punto
+bool recursosObreroCercaDePunto(struct Jugador *j, float x, float y,
+                                float distMax);
+// Verifica si hay CUALQUIER tropa seleccionada cerca de un punto
+bool recursosCualquierTropaCercaDePunto(struct Jugador *j, float x, float y,
+                                        float distMax);
 
 // ============================================================================
 // PANEL HUD DE RECURSOS (Esquina superior derecha)

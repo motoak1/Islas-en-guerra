@@ -13,17 +13,30 @@
 #define COSTO_CABALLERO_ORO 50
 #define COSTO_CABALLERO_COMIDA 40
 #define COSTO_CABALLERO_MADERA 30
+#define COSTO_CABALLERO_HIERRO 40
+
+#define COSTO_CABALLERO_SIN_ESCUDO_ORO 40
+#define COSTO_CABALLERO_SIN_ESCUDO_COMIDA 30
+#define COSTO_CABALLERO_SIN_ESCUDO_MADERA 20
+#define COSTO_CABALLERO_SIN_ESCUDO_HIERRO 0
+
+#define COSTO_GUERRERO_ORO 40
+#define COSTO_GUERRERO_COMIDA 30
+#define COSTO_GUERRERO_MADERA 20
+#define COSTO_GUERRERO_HIERRO 20
 
 // --- ESTRUCTURA DEL MENÚ DE ENTRENAMIENTO ---
 typedef struct MenuEntrenamiento {
   bool abierto;
-  int pantallaX, pantallaY; // Posición en pantalla del menú
-  int ancho, alto;          // Dimensiones del menú
-  RECT botonObrero;         // Botón para entrenar obrero
-  RECT botonCaballero;      // Botón para entrenar caballero
-  RECT botonCerrar;         // Rectángulo del botón cerrar
-  char mensajeError[100];   // Mensaje de error si recursos insuficientes
-  int tiempoError;          // Contador para mostrar error temporalmente
+  int pantallaX, pantallaY;     // Posición en pantalla del menú
+  int ancho, alto;              // Dimensiones del menú
+  RECT botonObrero;             // Botón para entrenar obrero
+  RECT botonCaballero;          // Botón para entrenar caballero
+  RECT botonCaballeroSinEscudo; // Botón para entrenar caballero sin escudo
+  RECT botonGuerrero;           // Botón para entrenar guerrero
+  RECT botonCerrar;             // Rectángulo del botón cerrar
+  char mensajeError[100];       // Mensaje de error si recursos insuficientes
+  int tiempoError;              // Contador para mostrar error temporalmente
 } MenuEntrenamiento;
 
 // --- FUNCIONES DEL MENÚ ---
