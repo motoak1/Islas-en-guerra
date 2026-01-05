@@ -95,180 +95,140 @@ static void obreroLiberarRuta(Unidad *o) {
   o->rutaIdx = 0;
 }
 
-// PATHFINDING MEJORADO: Explora múltiples rutas para encontrar caminos
-// alternativos Usa backtracking cuando se atasca, permitiendo encontrar rutas
-// aunque haya obstáculos CRÍTICO: Valida bloques de 2x2 celdas (64x64px) para
-// el obrero.
+// ============================================================================
+// PATHFINDING BFS - RUTA MÁS CORTA GARANTIZADA
+// ============================================================================
+// Implementación de Breadth-First Search usando SOLO arrays básicos.
+// Garantiza encontrar la ruta más corta explorando nivel por nivel.
+// NO usa colas, heaps, ni estructuras avanzadas - solo arrays planos.
+// ============================================================================
 static bool pathfindSimple(int startF, int startC, int goalF, int goalC,
                            int **collision, int **outRuta, int *outLen) {
   if (startF == goalF && startC == goalC)
     return false;
 
-  const int MAX_PASOS = GRID_SIZE * 4; // Más pasos para rutas complejas
-
-  int *rutaTemp = (int *)malloc(MAX_PASOS * sizeof(int));
-  if (!rutaTemp)
-    return false;
-
-  // Matriz de visitados para evitar ciclos
-  char *visitado = (char *)calloc(GRID_SIZE * GRID_SIZE, sizeof(char));
-  if (!visitado) {
-    free(rutaTemp);
-    return false;
-  }
-
-  // Matriz de distancias (para A*)
-  int *distancias = (int *)malloc(GRID_SIZE * GRID_SIZE * sizeof(int));
-  if (!distancias) {
-    free(rutaTemp);
-    free(visitado);
+  const int TOTAL_CELDAS = GRID_SIZE * GRID_SIZE;
+  
+  // Arrays para BFS - solo arrays básicos, sin estructuras avanzadas
+  int *padreIdx = (int *)malloc(TOTAL_CELDAS * sizeof(int));  // De donde vino cada celda
+  int *bufferBFS = (int *)malloc(TOTAL_CELDAS * sizeof(int)); // Buffer de exploración
+  
+  if (!padreIdx || !bufferBFS) {
+    if (padreIdx) free(padreIdx);
+    if (bufferBFS) free(bufferBFS);
     return false;
   }
-
-  // Inicializar distancias
-  for (int i = 0; i < GRID_SIZE * GRID_SIZE; i++)
-    distancias[i] = 999999;
-
-  int pasos = 0;
-  int actualF = startF;
-  int actualC = startC;
-
-  visitado[actualF * GRID_SIZE + actualC] = 1;
-  distancias[actualF * GRID_SIZE + actualC] = 0;
-
+  
+  // Inicializar: -1 significa no visitado
+  for (int i = 0; i < TOTAL_CELDAS; i++) {
+    *(padreIdx + i) = -1;
+  }
+  
   // Direcciones: arriba, abajo, izquierda, derecha
   int dF[4] = {-1, 1, 0, 0};
   int dC[4] = {0, 0, -1, 1};
-
-  int intentosFallidos = 0;
-  const int MAX_REINTENTOS = 5;
-
-  while (pasos < MAX_PASOS) {
-    if (actualF == goalF && actualC == goalC) {
-      break; // ¡Llegamos!
+  
+  // BFS usando dos índices sobre el buffer (simula cola sin estructuras)
+  int inicioBuffer = 0;  // Índice de lectura
+  int finBuffer = 0;     // Índice de escritura
+  
+  // Agregar posición inicial al buffer
+  int startIdx = startF * GRID_SIZE + startC;
+  int goalIdx = goalF * GRID_SIZE + goalC;
+  
+  *(bufferBFS + finBuffer) = startIdx;
+  finBuffer++;
+  *(padreIdx + startIdx) = startIdx; // Se apunta a sí mismo (marca como visitado)
+  
+  bool encontrado = false;
+  
+  // Explorar nivel por nivel (BFS garantiza ruta más corta)
+  while (inicioBuffer < finBuffer) {
+    // Obtener siguiente celda a procesar
+    int actualIdx = *(bufferBFS + inicioBuffer);
+    inicioBuffer++;
+    
+    int actualF = actualIdx / GRID_SIZE;
+    int actualC = actualIdx % GRID_SIZE;
+    
+    // ¿Llegamos al objetivo?
+    if (actualIdx == goalIdx) {
+      encontrado = true;
+      break;
     }
-
-    // Evaluar todas las 4 direcciones
-    typedef struct {
-      int dir;
-      float heuristica;
-      int distancia;
-    } Opcion;
-
-    Opcion opciones[4];
-    int numOpciones = 0;
-
+    
+    // Explorar los 4 vecinos
     for (int i = 0; i < 4; i++) {
       int nf = actualF + dF[i];
       int nc = actualC + dC[i];
-
-      // Validar límites (solo 1 celda ahora, no 2x2)
+      
+      // Validar límites del mapa
       if (nf < 0 || nf >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE)
         continue;
-
-      // Validar SOLO la celda destino (1x1, no bloque 2x2)
+      
+      int neighborIdx = nf * GRID_SIZE + nc;
+      
+      // Saltar si ya visitado (padreIdx != -1)
+      if (*(padreIdx + neighborIdx) != -1)
+        continue;
+      
+      // Verificar colisión usando aritmética de punteros
       int *fila_ptr = *(collision + nf);
       int valor = *(fila_ptr + nc);
+      
+      // Bloqueado por agua/árbol (1) o edificio (2) - NO pasar
       if (valor == 1 || valor == 2)
-        continue; // Bloqueado
-
-      // NUEVO: Permitir revisitar si ha pasado tiempo (para backtracking)
-      bool yaVisitado = visitado[nf * GRID_SIZE + nc];
-      int distActual = distancias[actualF * GRID_SIZE + actualC] + 1;
-      int distPrevia = distancias[nf * GRID_SIZE + nc];
-
-      // Solo considerar si no ha sido visitada O si encontramos ruta más corta
-      if (yaVisitado && distActual >= distPrevia)
         continue;
-
-      // Calcular heurística (distancia al objetivo)
-      int distF = (nf > goalF) ? (nf - goalF) : (goalF - nf);
-      int distC = (nc > goalC) ? (nc - goalC) : (goalC - nc);
-      float heuristica = (float)(distF + distC) +
-                         distActual * 0.1f; // Favorece rutas más cortas
-
-      opciones[numOpciones].dir = i;
-      opciones[numOpciones].heuristica = heuristica;
-      opciones[numOpciones].distancia = distActual;
-      numOpciones++;
+      
+      // Marcar como visitado y agregar al buffer
+      *(padreIdx + neighborIdx) = actualIdx;
+      *(bufferBFS + finBuffer) = neighborIdx;
+      finBuffer++;
     }
-
-    // Si no hay opciones, hemos llegado a un callejón sin salida
-    if (numOpciones == 0) {
-      intentosFallidos++;
-
-      if (intentosFallidos > MAX_REINTENTOS || pasos == 0) {
-        free(rutaTemp);
-        free(visitado);
-        free(distancias);
-        return false; // No hay ruta posible
-      }
-
-      // BACKTRACKING: Retroceder un paso
-      if (pasos > 0) {
-        pasos--;
-        int celdaPrevia = rutaTemp[pasos > 0 ? pasos - 1 : 0];
-        actualF = celdaPrevia / GRID_SIZE;
-        actualC = celdaPrevia % GRID_SIZE;
-        continue;
-      } else {
-        // No podemos retroceder más
-        free(rutaTemp);
-        free(visitado);
-        free(distancias);
-        return false;
-      }
-    }
-
-    // Ordenar opciones por heurística (mejor primero)
-    for (int i = 0; i < numOpciones - 1; i++) {
-      for (int j = i + 1; j < numOpciones; j++) {
-        if (opciones[j].heuristica < opciones[i].heuristica) {
-          Opcion temp = opciones[i];
-          opciones[i] = opciones[j];
-          opciones[j] = temp;
-        }
-      }
-    }
-
-    // Elegir la mejor opción
-    int mejorDir = opciones[0].dir;
-    actualF += dF[mejorDir];
-    actualC += dC[mejorDir];
-
-    // Actualizar estructuras
-    visitado[actualF * GRID_SIZE + actualC] = 1;
-    distancias[actualF * GRID_SIZE + actualC] = opciones[0].distancia;
-
-    rutaTemp[pasos] = actualF * GRID_SIZE + actualC;
-    pasos++;
-    intentosFallidos = 0; // Reset al progresar
   }
-
-  free(visitado);
-  free(distancias);
-
-  // Verificar si llegamos
-  if (actualF != goalF || actualC != goalC) {
-    free(rutaTemp);
+  
+  free(bufferBFS);
+  
+  if (!encontrado) {
+    free(padreIdx);
     return false;
   }
-
-  // Crear ruta final
-  int *rutaFinal = (int *)malloc(pasos * sizeof(int));
+  
+  // Contar longitud de la ruta reconstruyendo hacia atrás
+  int pathLen = 0;
+  int idx = goalIdx;
+  while (idx != startIdx) {
+    pathLen++;
+    idx = *(padreIdx + idx);
+    if (pathLen > TOTAL_CELDAS) { // Protección contra ciclos
+      free(padreIdx);
+      return false;
+    }
+  }
+  
+  if (pathLen == 0) {
+    free(padreIdx);
+    return false;
+  }
+  
+  // Crear array de ruta
+  int *rutaFinal = (int *)malloc(pathLen * sizeof(int));
   if (!rutaFinal) {
-    free(rutaTemp);
+    free(padreIdx);
     return false;
   }
-
-  for (int i = 0; i < pasos; i++) {
-    rutaFinal[i] = rutaTemp[i];
+  
+  // Llenar ruta en orden correcto (inicio -> fin)
+  idx = goalIdx;
+  for (int i = pathLen - 1; i >= 0; i--) {
+    *(rutaFinal + i) = idx;
+    idx = *(padreIdx + idx);
   }
-
-  free(rutaTemp);
-
+  
+  free(padreIdx);
+  
   *outRuta = rutaFinal;
-  *outLen = pasos;
+  *outLen = pathLen;
   return true;
 }
 
@@ -377,7 +337,8 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
 }
 
 void actualizarPersonajes(struct Jugador *j) {
-  const float vel = 4.0f;
+  const float vel = 5.0f;           // Velocidad de movimiento en píxeles/frame
+  const float umbralLlegada = 8.0f; // Umbral para considerar que llegó a la celda (más fluido)
   int **col = mapaObtenerCollisionMap();
   if (!col)
     return;
@@ -429,8 +390,8 @@ void actualizarPersonajes(struct Jugador *j) {
         bloqueadoPermanente = true;
       }
 
-      // MODIFICADO: Solo bloquear por otro personaje si es la ULTIMA celda de
-      // la ruta Esto permite atravesar personajes durante el transito
+      // Bloqueo TEMPORAL: Solo si la celda es la ULTIMA de la ruta (destino final)
+      // y hay otro personaje (valor == 3). Permite pasar por al lado durante transito.
       bool esUltimaCelda = (o->rutaIdx + 1 >= o->rutaLen);
       if (esUltimaCelda && valor == 3 &&
           (nextF != o->celdaFila || nextC != o->celdaCol)) {
@@ -445,7 +406,7 @@ void actualizarPersonajes(struct Jugador *j) {
       continue;
     }
 
-    // Si hay obstaculo TEMPORAL en celda FINAL, ESPERAR sin cancelar ruta
+    // Si hay otro personaje en la CELDA FINAL, ESPERAR sin cancelar ruta
     // El personaje mantiene su ruta y volvera a intentar en el siguiente frame
     if (bloqueadoTemporal) {
       continue; // Esperar, NO cancelar la ruta
@@ -474,7 +435,7 @@ void actualizarPersonajes(struct Jugador *j) {
     }
 
     //  6. Aplicar desplazamiento o finalizar llegada a la celda
-    if (dist <= vel) {
+    if (dist <= umbralLlegada) {
       // Guarda posición anterior
       float viejoX = o->x;
       float viejoY = o->y;
@@ -560,7 +521,7 @@ void actualizarPersonajes(struct Jugador *j) {
         bloqueadoPermanente = true;
       }
 
-      // MODIFICADO: Solo bloquear si es la ULTIMA celda de la ruta
+      // Bloqueo TEMPORAL: Solo en la celda FINAL de la ruta (destino)
       bool esUltimaCelda = (u->rutaIdx + 1 >= u->rutaLen);
       if (esUltimaCelda && valor == 3 &&
           (nextF != u->celdaFila || nextC != u->celdaCol)) {
@@ -597,7 +558,7 @@ void actualizarPersonajes(struct Jugador *j) {
       }
     }
 
-    if (dist <= vel) {
+    if (dist <= umbralLlegada) {
       float viejoX = u->x;
       float viejoY = u->y;
 
@@ -634,7 +595,6 @@ void actualizarPersonajes(struct Jugador *j) {
     }
   }
 
-  // Caballeros sin escudo
   for (int i = 0; i < 4; i++) {
     Unidad *u = &j->caballerosSinEscudo[i];
     if (u->x < 0)
@@ -646,6 +606,15 @@ void actualizarPersonajes(struct Jugador *j) {
       continue;
     int target = u->rutaCeldas[u->rutaIdx];
     int nF = target / GRID_SIZE, nC = target % GRID_SIZE;
+    
+    // Bloqueo TEMPORAL: Solo en la celda FINAL de la ruta (destino)
+    bool esUltimaCelda = (u->rutaIdx + 1 >= u->rutaLen);
+    int valorCelda = *(*(col + nF) + nC);
+    if (esUltimaCelda && valorCelda == 3 && 
+        (nF != u->celdaFila || nC != u->celdaCol)) {
+      continue; // Esperar, otro personaje ocupa la celda destino
+    }
+    
     float tx = celdaCentroPixel(nC), ty = celdaCentroPixel(nF);
     float vx = tx - (u->x + 32), vy = ty - (u->y + 32);
     float d = sqrtf(vx * vx + vy * vy);
@@ -667,7 +636,7 @@ void actualizarPersonajes(struct Jugador *j) {
         ocupacionActualizarUnidad(col, u, nf, nc);
       mapaMoverObjeto(u->x - (vx / d) * vel, u->y - (vy / d) * vel, u->x, u->y,
                       SIMBOLO_CABALLERO);
-      if (d < 5.0f) {
+      if (d < umbralLlegada) {
         u->rutaIdx++;
         if (u->rutaIdx >= u->rutaLen) {
           u->moviendose = false;
@@ -711,7 +680,7 @@ void actualizarPersonajes(struct Jugador *j) {
         bloqueadoPermanente = true;
       }
 
-      // MODIFICADO: Solo bloquear si es la ULTIMA celda de la ruta
+      // Bloqueo TEMPORAL: Solo en la celda FINAL de la ruta (destino)
       bool esUltimaCelda = (u->rutaIdx + 1 >= u->rutaLen);
       if (esUltimaCelda && valor == 3 &&
           (nextF != u->celdaFila || nextC != u->celdaCol)) {
@@ -748,7 +717,7 @@ void actualizarPersonajes(struct Jugador *j) {
       }
     }
 
-    if (dist <= vel) {
+    if (dist <= umbralLlegada) {
       float viejoX = u->x;
       float viejoY = u->y;
 
@@ -881,8 +850,24 @@ void rtsComandarMovimiento(struct Jugador *j, float mundoX, float mundoY) {
   printf("[DEBUG] Destino VALIDO: Procediendo a calcular pathfinding...\n");
   fflush(stdout);
 
-  // Contador de unidades que ya recibieron destino (para separación)
-  int unidadesAsignadas = 0;
+  // ================================================================
+  // SEPARACIÓN DE DESTINOS: Cada unidad recibe un destino diferente
+  // ================================================================
+  // Array para marcar celdas ya asignadas como destino (máximo 18 unidades)
+  int destinosAsignados[18][2];  // [fila, col] de cada destino asignado
+  int numDestinos = 0;
+  
+  // Función inline para verificar si una celda ya fue asignada
+  #define CELDA_YA_ASIGNADA(f, c) ({ \
+    int _asignada = 0; \
+    for (int _i = 0; _i < numDestinos; _i++) { \
+      if (destinosAsignados[_i][0] == (f) && destinosAsignados[_i][1] == (c)) { \
+        _asignada = 1; \
+        break; \
+      } \
+    } \
+    _asignada; \
+  })
 
   // Puntero base al array de obreros (aritmética de punteros)
   Unidad *base = j->obreros;
@@ -899,9 +884,38 @@ void rtsComandarMovimiento(struct Jugador *j, float mundoX, float mundoY) {
     if (!o->seleccionado)
       continue;
 
-    // Usar el destino global para todas las unidades
+    // Buscar destino libre (el original o una celda adyacente)
     int destinoF = gF;
     int destinoC = gC;
+    
+    // Si la celda destino ya fue asignada a otra unidad, buscar una adyacente
+    if (CELDA_YA_ASIGNADA(destinoF, destinoC) || 
+        (*(*(col + destinoF) + destinoC) == 3)) {
+      bool encontrado = false;
+      for (int r = 1; r <= 3 && !encontrado; r++) {
+        for (int dy = -r; dy <= r && !encontrado; dy++) {
+          for (int dx = -r; dx <= r && !encontrado; dx++) {
+            int nf = gF + dy;
+            int nc = gC + dx;
+            if (nf >= 0 && nf < GRID_SIZE && nc >= 0 && nc < GRID_SIZE) {
+              int valorCelda = *(*(col + nf) + nc);
+              // Solo aceptar celdas vacías (0) que no hayan sido asignadas
+              if (valorCelda == 0 && !CELDA_YA_ASIGNADA(nf, nc)) {
+                destinoF = nf;
+                destinoC = nc;
+                encontrado = true;
+              }
+            }
+          }
+        }
+      }
+      if (!encontrado) continue; // No hay celda libre, saltar esta unidad
+    }
+    
+    // Registrar este destino como asignado
+    destinosAsignados[numDestinos][0] = destinoF;
+    destinosAsignados[numDestinos][1] = destinoC;
+    numDestinos++;
 
     // Obtener posición actual de la unidad
     int sF = obreroFilaActual(o);
@@ -937,8 +951,6 @@ void rtsComandarMovimiento(struct Jugador *j, float mundoX, float mundoY) {
       o->rutaLen = len;
       o->rutaIdx = 0;
       o->moviendose = true;
-      // NO marcar el destino aquí - se actualizará cuando llegue
-      unidadesAsignadas++;
     }
   }
 
@@ -946,10 +958,40 @@ void rtsComandarMovimiento(struct Jugador *j, float mundoX, float mundoY) {
   for (int i = 0; i < 4; i++) {
     Unidad *u = &j->caballeros[i];
     if (u->seleccionado && u->x >= 0) {
+      // Buscar destino libre
+      int destinoF = gF;
+      int destinoC = gC;
+      
+      if (CELDA_YA_ASIGNADA(destinoF, destinoC) || 
+          (*(*(col + destinoF) + destinoC) == 3)) {
+        bool encontrado = false;
+        for (int r = 1; r <= 3 && !encontrado; r++) {
+          for (int dy = -r; dy <= r && !encontrado; dy++) {
+            for (int dx = -r; dx <= r && !encontrado; dx++) {
+              int nf = gF + dy;
+              int nc = gC + dx;
+              if (nf >= 0 && nf < GRID_SIZE && nc >= 0 && nc < GRID_SIZE) {
+                int valorCelda = *(*(col + nf) + nc);
+                if (valorCelda == 0 && !CELDA_YA_ASIGNADA(nf, nc)) {
+                  destinoF = nf;
+                  destinoC = nc;
+                  encontrado = true;
+                }
+              }
+            }
+          }
+        }
+        if (!encontrado) continue;
+      }
+      
+      destinosAsignados[numDestinos][0] = destinoF;
+      destinosAsignados[numDestinos][1] = destinoC;
+      numDestinos++;
+      
       int sF = obreroFilaActual(u), sC = obreroColActual(u);
       int *path = NULL;
       int len = 0;
-      if (pathfindSimple(sF, sC, gF, gC, col, &path, &len)) {
+      if (pathfindSimple(sF, sC, destinoF, destinoC, col, &path, &len)) {
         obreroLiberarRuta(u);
         u->rutaCeldas = path;
         u->rutaLen = len;
@@ -963,10 +1005,40 @@ void rtsComandarMovimiento(struct Jugador *j, float mundoX, float mundoY) {
   for (int i = 0; i < 4; i++) {
     Unidad *u = &j->caballerosSinEscudo[i];
     if (u->seleccionado && u->x >= 0) {
+      // Buscar destino libre
+      int destinoF = gF;
+      int destinoC = gC;
+      
+      if (CELDA_YA_ASIGNADA(destinoF, destinoC) || 
+          (*(*(col + destinoF) + destinoC) == 3)) {
+        bool encontrado = false;
+        for (int r = 1; r <= 3 && !encontrado; r++) {
+          for (int dy = -r; dy <= r && !encontrado; dy++) {
+            for (int dx = -r; dx <= r && !encontrado; dx++) {
+              int nf = gF + dy;
+              int nc = gC + dx;
+              if (nf >= 0 && nf < GRID_SIZE && nc >= 0 && nc < GRID_SIZE) {
+                int valorCelda = *(*(col + nf) + nc);
+                if (valorCelda == 0 && !CELDA_YA_ASIGNADA(nf, nc)) {
+                  destinoF = nf;
+                  destinoC = nc;
+                  encontrado = true;
+                }
+              }
+            }
+          }
+        }
+        if (!encontrado) continue;
+      }
+      
+      destinosAsignados[numDestinos][0] = destinoF;
+      destinosAsignados[numDestinos][1] = destinoC;
+      numDestinos++;
+      
       int sF = obreroFilaActual(u), sC = obreroColActual(u);
       int *path = NULL;
       int len = 0;
-      if (pathfindSimple(sF, sC, gF, gC, col, &path, &len)) {
+      if (pathfindSimple(sF, sC, destinoF, destinoC, col, &path, &len)) {
         obreroLiberarRuta(u);
         u->rutaCeldas = path;
         u->rutaLen = len;
@@ -980,10 +1052,40 @@ void rtsComandarMovimiento(struct Jugador *j, float mundoX, float mundoY) {
   for (int i = 0; i < 4; i++) {
     Unidad *u = &j->guerreros[i];
     if (u->seleccionado && u->x >= 0) {
+      // Buscar destino libre
+      int destinoF = gF;
+      int destinoC = gC;
+      
+      if (CELDA_YA_ASIGNADA(destinoF, destinoC) || 
+          (*(*(col + destinoF) + destinoC) == 3)) {
+        bool encontrado = false;
+        for (int r = 1; r <= 3 && !encontrado; r++) {
+          for (int dy = -r; dy <= r && !encontrado; dy++) {
+            for (int dx = -r; dx <= r && !encontrado; dx++) {
+              int nf = gF + dy;
+              int nc = gC + dx;
+              if (nf >= 0 && nf < GRID_SIZE && nc >= 0 && nc < GRID_SIZE) {
+                int valorCelda = *(*(col + nf) + nc);
+                if (valorCelda == 0 && !CELDA_YA_ASIGNADA(nf, nc)) {
+                  destinoF = nf;
+                  destinoC = nc;
+                  encontrado = true;
+                }
+              }
+            }
+          }
+        }
+        if (!encontrado) continue;
+      }
+      
+      destinosAsignados[numDestinos][0] = destinoF;
+      destinosAsignados[numDestinos][1] = destinoC;
+      numDestinos++;
+      
       int sF = obreroFilaActual(u), sC = obreroColActual(u);
       int *path = NULL;
       int len = 0;
-      if (pathfindSimple(sF, sC, gF, gC, col, &path, &len)) {
+      if (pathfindSimple(sF, sC, destinoF, destinoC, col, &path, &len)) {
         obreroLiberarRuta(u);
         u->rutaCeldas = path;
         u->rutaLen = len;
@@ -992,6 +1094,8 @@ void rtsComandarMovimiento(struct Jugador *j, float mundoX, float mundoY) {
       }
     }
   }
+  
+  #undef CELDA_YA_ASIGNADA
 }
 
 void rtsLiberarMovimientoJugador(struct Jugador *j) {
