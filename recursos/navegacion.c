@@ -32,6 +32,50 @@ static bool sBatallaPendiente = false;
 static int sIslaPendiente = 0;
 static int sIslaOrigen = 1;
 
+// ============================================================================
+// POSICIONES FIJAS DEL BARCO POR ISLA (EN COORDENADAS DE MATRIZ)
+// ============================================================================
+// Las posiciones se definen como (fila, columna) de la matriz 32x32.
+// Se convierten a píxeles multiplicando por TILE_SIZE.
+// Direcciones: 0=DIR_FRONT, 1=DIR_BACK, 2=DIR_LEFT, 3=DIR_RIGHT
+// ============================================================================
+
+// Array de posiciones por isla [isla][0=fila, 1=columna, 2=direccion]
+// Isla 0 no se usa, islas 1-3 son válidas
+static int sPosicionesBarco[4][3] = {
+  {0, 0, 0},        // Índice 0: no usado
+  {15, 2, 3},       // Isla 1: fila=15, col=2, dir=DIR_RIGHT (mirando hacia isla)
+  {15, 29, 2},      // Isla 2: fila=15, col=29, dir=DIR_LEFT
+  {2, 15, 0}        // Isla 3: fila=2, col=15, dir=DIR_FRONT
+};
+
+static void obtenerPosicionBarcoIsla(int isla, float *outX, float *outY, int *outDir) {
+  // Validar isla
+  if (isla < 1 || isla > 3) {
+    // Fallback: usar detección automática
+    mapaDetectarOrilla(outX, outY, outDir);
+    return;
+  }
+  
+  // Obtener posición usando aritmética de punteros sobre el array
+  int *posIsla = *(sPosicionesBarco + isla);  // Puntero a la fila del array
+  int fila = *(posIsla + 0);      // Primera posición: fila
+  int columna = *(posIsla + 1);   // Segunda posición: columna
+  int direccion = *(posIsla + 2); // Tercera posición: dirección
+  
+  // Convertir coordenadas de matriz a píxeles
+  *outX = (float)(columna * TILE_SIZE);
+  *outY = (float)(fila * TILE_SIZE);
+  *outDir = direccion;
+  
+  printf("[DEBUG BARCO] Isla %d: Matriz[%d][%d] -> Pixeles(%.1f, %.1f), dir=%d\n", 
+         isla, fila, columna, *outX, *outY, *outDir);
+}
+
+// Función exportable para usar desde main.c
+void navegacionObtenerPosicionBarcoIsla(int isla, float *outX, float *outY, int *outDir) {
+  obtenerPosicionBarcoIsla(isla, outX, outY, outDir);
+}
 static int contarIslasConquistadas(void) {
   int total = 0;
   for (int i = 1; i <= 3; i++) {
@@ -530,10 +574,10 @@ void viajarAIsla(struct Jugador *j, int islaDestino) {
     guardarEstadoIslaJugador(j); // Guardar snapshot inicial
   }
 
-  // Posicionar barco en orilla de la nueva isla
+  // Posicionar barco en orilla de la nueva isla (posiciones fijas por isla)
   float nuevoBarcoX, nuevoBarcoY;
   int nuevoDir;
-  mapaDetectarOrilla(&nuevoBarcoX, &nuevoBarcoY, &nuevoDir);
+  obtenerPosicionBarcoIsla(islaDestino, &nuevoBarcoX, &nuevoBarcoY, &nuevoDir);
   j->barco.x = nuevoBarcoX;
   j->barco.y = nuevoBarcoY;
   j->barco.dir = (Direccion)nuevoDir;

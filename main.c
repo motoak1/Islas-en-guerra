@@ -208,18 +208,18 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     // Inicializar menú de embarque
     menuEmbarqueInicializar(&menuEmbarque);
 
-    // Detectar orilla y colocar barco (192x192)
+    // Obtener posición fija del barco según la isla actual
     float barcoX, barcoY;
     int barcoDir;
-    mapaDetectarOrilla(&barcoX, &barcoY, &barcoDir);
+    navegacionObtenerPosicionBarcoIsla(jugador1.islaActual, &barcoX, &barcoY, &barcoDir);
     jugador1.barco.x = barcoX;
     jugador1.barco.y = barcoY;
     jugador1.barco.dir = (Direccion)barcoDir;
     jugador1.barco.activo = true;
     jugador1.barco.numTropas = 0;
 
-    printf("[DEBUG] Barco colocado en orilla: (%.1f, %.1f), dir=%d\n", barcoX,
-           barcoY, barcoDir);
+    printf("[DEBUG] Barco colocado en isla %d: (%.1f, %.1f), dir=%d\n", 
+           jugador1.islaActual, barcoX, barcoY, barcoDir);
 
     // Registrar barco en mapaObjetos
     mapaRegistrarObjeto(jugador1.barco.x, jugador1.barco.y, SIMBOLO_BARCO);

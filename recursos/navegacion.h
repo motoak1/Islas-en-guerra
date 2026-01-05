@@ -22,5 +22,8 @@ void navegacionRegistrarIslaInicial(int isla);
 void navegacionProcesarResultadoBatalla(struct Jugador* j, BatallaResultado r,
 										int islaDestino);
 
+// Obtiene la posición fija del barco para una isla específica
+void navegacionObtenerPosicionBarcoIsla(int isla, float *outX, float *outY, int *outDir);
+
 #endif
 
