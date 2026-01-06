@@ -32,6 +32,7 @@ typedef struct MenuEmbarque MenuEmbarque;
 #define SIMBOLO_MINA 'M'      // Mina
 #define SIMBOLO_CUARTEL 'Q'   // Cuartel (barracks)
 #define SIMBOLO_RECURSO '$'   // Recurso (para futuro uso)
+#define SIMBOLO_ENEMIGO 'X'   // Enemigo pasivo en isla
 #define SIMBOLO_JUGADOR 'P'   // Posición base del jugador
 // ============================================================================
 

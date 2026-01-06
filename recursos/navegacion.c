@@ -22,15 +22,20 @@ typedef struct {
   Unidad caballeros[4];
   Unidad caballerosSinEscudo[4];
   Unidad guerreros[4];
+  Unidad enemigos[8];
+  int numEnemigos;
+  bool enemigosGenerados;
 } EstadoIsla;
 
 static EstadoIsla sIslas[4];
 static int sIslaInicial = 1;
 static bool sIslaInicialDefinida = false;
-static bool sOmitirBatalla = false;
-static bool sBatallaPendiente = false;
-static int sIslaPendiente = 0;
-static int sIslaOrigen = 1;
+static Unidad sEnemigosActivos[8];
+static int sNumEnemigosActivos = 0;
+
+// Adelanto de helper usado antes de su definición
+static bool buscarCeldaLibreCerca(int preferX, int preferY, int ancho, int alto,
+                                  int radioMax, int *outX, int *outY);
 
 static int contarIslasConquistadas(void) {
   int total = 0;
@@ -38,6 +43,155 @@ static int contarIslasConquistadas(void) {
     if (sIslas[i].inicializado) total++;
   }
   return total;
+}
+
+static void limpiarEnemigosActivos(void) {
+  sNumEnemigosActivos = 0;
+  for (int i = 0; i < 8; i++) {
+    sEnemigosActivos[i].x = -1000.0f;
+    sEnemigosActivos[i].y = -1000.0f;
+    sEnemigosActivos[i].moviendose = false;
+    sEnemigosActivos[i].seleccionado = false;
+  }
+}
+
+Unidad *navegacionObtenerEnemigosActivos(int *cantidad) {
+  if (cantidad)
+    *cantidad = sNumEnemigosActivos;
+  return sEnemigosActivos;
+}
+
+static void marcarEnemigosEnMapa(const Unidad *enemigos, int cantidad) {
+  int **col = mapaObtenerCollisionMap();
+  for (int i = 0; i < cantidad; i++) {
+    const Unidad *e = enemigos + i;
+    mapaRegistrarObjeto(e->x, e->y, SIMBOLO_ENEMIGO);
+    if (!col)
+      continue;
+    int celdaX = (int)(e->x / TILE_SIZE);
+    int celdaY = (int)(e->y / TILE_SIZE);
+    if (celdaX >= 0 && celdaX < GRID_SIZE && celdaY >= 0 && celdaY < GRID_SIZE)
+      *(*(col + celdaY) + celdaX) = 3;
+  }
+}
+
+static void activarEnemigosDesdeEstado(EstadoIsla *estado) {
+  limpiarEnemigosActivos();
+  sNumEnemigosActivos = estado->numEnemigos;
+  for (int i = 0; i < estado->numEnemigos && i < 8; i++) {
+    sEnemigosActivos[i] = estado->enemigos[i];
+  }
+  marcarEnemigosEnMapa(sEnemigosActivos, sNumEnemigosActivos);
+}
+
+static void statsBasicosEnemigo(Unidad *u, TipoUnidad tipo) {
+  u->tipo = tipo;
+  u->moviendose = false;
+  u->seleccionado = false;
+  u->rutaCeldas = NULL;
+  u->rutaIdx = 0;
+  u->rutaLen = 0;
+  u->destinoX = u->x;
+  u->destinoY = u->y;
+  u->dir = DIR_LEFT;
+  u->alcance = TILE_SIZE;
+
+  if (tipo == TIPO_CABALLERO) {
+    u->vida = CABALLERO_VIDA;
+    u->vidaMax = CABALLERO_VIDA;
+    u->damage = CABALLERO_DANO;
+    u->defensa = CABALLERO_DEFENSA;
+    u->critico = CABALLERO_CRITICO;
+  } else {
+    u->vida = GUERRERO_VIDA;
+    u->vidaMax = GUERRERO_VIDA;
+    u->damage = GUERRERO_DANO;
+    u->defensa = GUERRERO_DEFENSA;
+    u->critico = GUERRERO_CRITICO;
+  }
+}
+
+static int clampIntLocal(int v, int lo, int hi) {
+  if (v < lo)
+    return lo;
+  if (v > hi)
+    return hi;
+  return v;
+}
+
+static int contarTropasJugador(const struct Jugador *j) {
+  int total = 0;
+  const Unidad *arrs[] = {j->caballeros, j->caballerosSinEscudo, j->guerreros};
+  const int lens[] = {4, 4, 4};
+
+  for (int g = 0; g < 3; g++) {
+    const Unidad *u = arrs[g];
+    int len = lens[g];
+    for (int i = 0; i < len; i++) {
+      if (u[i].x >= 0 && u[i].y >= 0)
+        total++;
+    }
+  }
+
+  total += j->barco.numTropas;
+  return total;
+}
+
+static ULONGLONG sStartMs = 0;
+
+static void generarEnemigosParaIsla(struct Jugador *j, int islaDestino) {
+  EstadoIsla *estado = &sIslas[islaDestino];
+  limpiarEnemigosActivos();
+  estado->numEnemigos = 0;
+  estado->enemigosGenerados = true;
+
+  if (islaDestino == sIslaInicial)
+    return; // Isla inicial sin enemigos
+
+  if (sStartMs == 0)
+    sStartMs = GetTickCount64();
+
+  ULONGLONG ahora = GetTickCount64();
+  int minutos = (sStartMs > 0 && ahora > sStartMs)
+                    ? (int)((ahora - sStartMs) / 60000ULL)
+                    : 0;
+
+  int tropasJugador = j ? contarTropasJugador(j) : 0;
+
+  int base = 4;
+  int bonusTiempo = minutos / 5;          // +1 cada 5 minutos
+  int bonusTropas = tropasJugador / 3;    // +1 por cada 3 tropas activas
+  int cantidad = clampIntLocal(base + bonusTiempo + bonusTropas, 3, 10);
+
+  int baseCeldaX = GRID_SIZE / 2;
+  int baseCeldaY = GRID_SIZE / 2;
+
+  for (int i = 0; i < cantidad && estado->numEnemigos < 8; i++) {
+    int preferX = baseCeldaX + (i % 3);
+    int preferY = baseCeldaY + (i / 3);
+    int celdaX = preferX;
+    int celdaY = preferY;
+
+    if (!buscarCeldaLibreCerca(preferX, preferY, 1, 1, 10, &celdaX, &celdaY))
+      continue;
+
+    Unidad enemigo = {0};
+    enemigo.x = (float)(celdaX * TILE_SIZE);
+    enemigo.y = (float)(celdaY * TILE_SIZE);
+    enemigo.celdaFila = celdaY;
+    enemigo.celdaCol = celdaX;
+    bool usarCaballero = (bonusTiempo >= 2) || (i % 2 == 0) || (tropasJugador > 6);
+    statsBasicosEnemigo(&enemigo, usarCaballero ? TIPO_CABALLERO
+                                                : TIPO_GUERRERO);
+
+    estado->enemigos[estado->numEnemigos++] = enemigo;
+  }
+
+  sNumEnemigosActivos = estado->numEnemigos;
+  for (int i = 0; i < sNumEnemigosActivos; i++) {
+    sEnemigosActivos[i] = estado->enemigos[i];
+  }
+  marcarEnemigosEnMapa(sEnemigosActivos, sNumEnemigosActivos);
 }
 
 // Limpia un rectángulo de celdas en mapaObjetos y collision map
@@ -59,7 +213,6 @@ static void limpiarAreaCeldas(int celdaX, int celdaY, int ancho, int alto) {
 void navegacionRegistrarIslaInicial(int isla) {
   sIslaInicial = (isla >= 1 && isla <= 3) ? isla : 1;
   sIslaInicialDefinida = true;
-  sIslaOrigen = sIslaInicial;
 }
 
 // Verifica si un rectángulo de celdas está libre en collision map y no es agua
@@ -269,6 +422,12 @@ static void guardarEstadoIslaJugador(struct Jugador *j) {
   for (int i = 0; i < 4; i++)
     estado->guerreros[i] = j->guerreros[i];
 
+  estado->numEnemigos = sNumEnemigosActivos;
+  estado->enemigosGenerados = sNumEnemigosActivos > 0 || estado->enemigosGenerados;
+  for (int i = 0; i < sNumEnemigosActivos && i < 8; i++) {
+    estado->enemigos[i] = sEnemigosActivos[i];
+  }
+
   estado->inicializado = true;
   printf("[DEBUG] Jugador: estado de isla %d guardado\n", isla);
 }
@@ -301,6 +460,12 @@ static void restaurarEstadoIslaJugador(struct Jugador *j, int isla) {
     j->caballerosSinEscudo[i] = estado->caballerosSinEscudo[i];
   for (int i = 0; i < 4; i++)
     j->guerreros[i] = estado->guerreros[i];
+
+  if (estado->enemigosGenerados) {
+    activarEnemigosDesdeEstado(estado);
+  } else {
+    generarEnemigosParaIsla(j, isla);
+  }
 
   printf("[DEBUG] Jugador: estado de isla %d restaurado (Recursos mantenidos "
          "globales)\n",
@@ -473,9 +638,7 @@ void viajarAIsla(struct Jugador *j, int islaDestino) {
   if (!sIslaInicialDefinida) {
     sIslaInicial = j->islaActual;
     sIslaInicialDefinida = true;
-    sIslaOrigen = sIslaInicial;
   }
-  sIslaOrigen = j->islaActual;
   
   // Si es la misma isla, desembarcar y listo
   if (islaDestino == j->islaActual) {
@@ -484,40 +647,25 @@ void viajarAIsla(struct Jugador *j, int islaDestino) {
     desembarcarTropas(&j->barco, j);
     return;
   }
-  
-  bool islaYaVisitada = (islaDestino >= 1 && islaDestino <= 3) && sIslas[islaDestino].inicializado;
-  bool islaNuevaHostil = (!islaYaVisitada && islaDestino != sIslaInicial);
 
-  // Batalla previa si es isla nueva (no la inicial) y no estamos forzando omisión
-  if (!sOmitirBatalla) {
-    bool requiereBatalla = islaNuevaHostil;
-    if (requiereBatalla) {
-      int conquistadas = contarIslasConquistadas();
-      if (batallasPrepararDesdeViaje(j, islaDestino, conquistadas, false)) {
-        sBatallaPendiente = true;
-        sIslaPendiente = islaDestino;
-        printf("[DEBUG] Batalla iniciada en isla %d (conquistadas=%d)\n", islaDestino, conquistadas);
-        return; // Esperar resolución en el loop principal
-      } else {
-        printf("[DEBUG] No se pudo iniciar batalla (sin tropas o error).\n");
-        return;
-      }
-    }
-  }
+  bool islaYaVisitada = (islaDestino >= 1 && islaDestino <= 3) &&
+                        sIslas[islaDestino].inicializado;
 
   // Guardar estado de la isla actual antes de salir
   guardarEstadoIslaJugador(j);
   mapaGuardarEstadoIsla(j->islaActual);
+
+  limpiarEnemigosActivos();
 
   // Cambiar isla activa
   j->islaActual = islaDestino;
   
   // Cambiar mapa de isla y recargar gráficos PRIMERO
   mapaSeleccionarIsla(islaDestino);
-  mapaSetGenerarRecursos(!islaNuevaHostil);
-  cargarRecursosGraficos(); // Esto crea el nuevo mapa de colisión (sin recursos si hostil)
   mapaSetGenerarRecursos(true);
+  cargarRecursosGraficos();
 
+  EstadoIsla *estadoDestino = &sIslas[islaDestino];
   // Si la isla ya tiene estado guardado, restaurarlo
   if (islaYaVisitada) {
     mapaRestaurarEstadoIsla(islaDestino);
@@ -525,9 +673,12 @@ void viajarAIsla(struct Jugador *j, int islaDestino) {
   } else {
     // Primera vez en la isla: resetear y generar base
     reiniciarIslaDesconocida(j);
-    sIslas[islaDestino].inicializado = true;
     vaciarUnidades(j); // Solo tropas desembarcadas estarán presentes
+    inicializarEstructurasIslaBase(j, estadoDestino);
+    estadoDestino->inicializado = true;
+    generarEnemigosParaIsla(j, islaDestino);
     guardarEstadoIslaJugador(j); // Guardar snapshot inicial
+    mapaGuardarEstadoIsla(islaDestino);
   }
 
   // Posicionar barco en orilla de la nueva isla
@@ -544,25 +695,14 @@ void viajarAIsla(struct Jugador *j, int islaDestino) {
   // Desembarcar SOLO tropas que venían en el barco
   desembarcarTropas(&j->barco, j);
 
-  printf("[DEBUG] Viaje completado\n");
+  printf("[DEBUG] Viaje completado sin batalla; enemigos pasivos listos\n");
 }
 
-// Resultado de batalla: si ganó, completar viaje; si perdió, se queda en isla origen
-void navegacionProcesarResultadoBatalla(struct Jugador* j, BatallaResultado r,
+// Con batallas deshabilitadas en el viaje, el resultado se ignora
+void navegacionProcesarResultadoBatalla(struct Jugador *j, BatallaResultado r,
                                         int islaDestino) {
-  if (!sBatallaPendiente || islaDestino != sIslaPendiente) return;
-  sBatallaPendiente = false;
-  sIslaPendiente = 0;
-
-  if (r == BATALLA_RESULTADO_VICTORIA) {
-    sOmitirBatalla = true; // evitar reentrada de batalla
-    viajarAIsla(j, islaDestino);
-    sOmitirBatalla = false;
-  } else if (r == BATALLA_RESULTADO_DERROTA) {
-    // Limpiar barco
-    for (int i = 0; i < 6; i++) j->barco.tropas[i] = NULL;
-    j->barco.numTropas = 0;
-    printf("[DEBUG] Batalla perdida: permaneces en isla %d\n", sIslaOrigen);
-  }
+  (void)j;
+  (void)r;
+  (void)islaDestino;
 }
 

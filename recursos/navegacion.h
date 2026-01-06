@@ -22,5 +22,8 @@ void navegacionRegistrarIslaInicial(int isla);
 void navegacionProcesarResultadoBatalla(struct Jugador* j, BatallaResultado r,
 										int islaDestino);
 
+// Enemigos pasivos por isla
+Unidad* navegacionObtenerEnemigosActivos(int* cantidad);
+
 #endif
 

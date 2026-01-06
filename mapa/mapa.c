@@ -198,6 +198,9 @@ void mapaReconstruirCollisionMap(void) {
       if (mapaObjetos[f][c] == SIMBOLO_VACA) {
         gCollisionMap[f][c] = 3; // Mismo valor que unidades temporales
       }
+      if (mapaObjetos[f][c] == SIMBOLO_ENEMIGO) {
+        gCollisionMap[f][c] = 3; // Enemigos pasivos ocupan la celda
+      }
     }
   }
   detectarAguaEnMapa();
@@ -1178,6 +1181,10 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
 
   HDC hdcSprites = CreateCompatibleDC(hdc);
 
+  int enemigosActivosCount = 0;
+  Unidad *enemigosActivos =
+      navegacionObtenerEnemigosActivos(&enemigosActivosCount);
+
   // Puntero a la matriz de objetos para aritmética de punteros
   char (*ptrMatriz)[GRID_SIZE] = mapaObjetos;
 
@@ -1348,6 +1355,38 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
             Ellipse(hdcBuffer, pantX, pantY + tam - 10, pantX + tam,
                     pantY + tam + 5);
             DeleteObject(amarillo);
+          }
+        }
+      }
+    }
+
+    // D.5) DIBUJAR ENEMIGOS PASIVOS
+    if (enemigosActivos && enemigosActivosCount > 0) {
+      for (int idx = 0; idx < enemigosActivosCount; idx++) {
+        Unidad *e = &enemigosActivos[idx];
+        float basePies = e->y + (float)TILE_SIZE;
+
+        if (basePies >= (float)yMinFila && basePies < (float)yMaxFila) {
+          int pantX = (int)((e->x - cam.x) * cam.zoom);
+          int pantY = (int)((e->y - cam.y) * cam.zoom);
+          int tam = (int)(64 * cam.zoom);
+
+          if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 &&
+              pantY < altoP) {
+            HBITMAP sprite =
+                (e->tipo == TIPO_CABALLERO) ? hCaballeroBmp[e->dir]
+                                            : hGuerreroBmp[e->dir];
+            SelectObject(hdcSprites, sprite);
+            TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
+                           64, 64, RGB(255, 255, 255));
+
+            HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+            HPEN rojo = CreatePen(PS_SOLID, 2, RGB(200, 60, 60));
+            SelectObject(hdcBuffer, nullBrush);
+            SelectObject(hdcBuffer, rojo);
+            Ellipse(hdcBuffer, pantX, pantY + tam - 10, pantX + tam,
+                    pantY + tam + 5);
+            DeleteObject(rojo);
           }
         }
       }
