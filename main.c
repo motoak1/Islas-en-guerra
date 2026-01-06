@@ -251,6 +251,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
         actualizarPersonajes(&jugador1);
         mapaActualizarVacas(); // NUEVO: Actualizar vacas (movimiento
                                // automático)
+        navegacionActualizarCombateAuto(&jugador1, 0.016f);
         menuCompraActualizar(&menuCompra);
 
         // Actualizar mina si existe

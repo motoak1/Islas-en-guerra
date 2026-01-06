@@ -32,6 +32,7 @@ static int sIslaInicial = 1;
 static bool sIslaInicialDefinida = false;
 static Unidad sEnemigosActivos[8];
 static int sNumEnemigosActivos = 0;
+static int sEnemigosCooldownMs[8] = {0};
 
 // Adelanto de helper usado antes de su definición
 static bool buscarCeldaLibreCerca(int preferX, int preferY, int ancho, int alto,
@@ -43,6 +44,29 @@ static int contarIslasConquistadas(void) {
     if (sIslas[i].inicializado) total++;
   }
   return total;
+}
+
+static void normalizarVidaSiVacio(Unidad *u) {
+  if (!u)
+    return;
+  if (u->vidaMax <= 0) {
+    switch (u->tipo) {
+    case TIPO_CABALLERO:
+      u->vidaMax = CABALLERO_VIDA;
+      u->vida = CABALLERO_VIDA;
+      break;
+    case TIPO_CABALLERO_SIN_ESCUDO:
+      u->vidaMax = CABALLERO_SIN_ESCUDO_VIDA;
+      u->vida = CABALLERO_SIN_ESCUDO_VIDA;
+      break;
+    case TIPO_GUERRERO:
+      u->vidaMax = GUERRERO_VIDA;
+      u->vida = GUERRERO_VIDA;
+      break;
+    default:
+      break;
+    }
+  }
 }
 
 static void limpiarEnemigosActivos(void) {
@@ -190,8 +214,173 @@ static void generarEnemigosParaIsla(struct Jugador *j, int islaDestino) {
   sNumEnemigosActivos = estado->numEnemigos;
   for (int i = 0; i < sNumEnemigosActivos; i++) {
     sEnemigosActivos[i] = estado->enemigos[i];
+    sEnemigosCooldownMs[i] = 0;
   }
   marcarEnemigosEnMapa(sEnemigosActivos, sNumEnemigosActivos);
+}
+
+// ---------------------------------------------------------------------------
+// COMBATE AUTOMÁTICO EN ISLA
+// Tropas y enemigos avanzan y se atacan al encontrarse
+// ---------------------------------------------------------------------------
+static float dist2f(float ax, float ay, float bx, float by) {
+  float dx = ax - bx;
+  float dy = ay - by;
+  return dx * dx + dy * dy;
+}
+
+static void moverHacia(Unidad *u, float tx, float ty, float vel) {
+  float dx = tx - u->x;
+  float dy = ty - u->y;
+  float d2 = dx * dx + dy * dy;
+  if (d2 < 1.0f)
+    return;
+  float inv = 1.0f / sqrtf(d2);
+  u->x += dx * inv * vel;
+  u->y += dy * inv * vel;
+  if (fabsf(dx) > fabsf(dy)) {
+    u->dir = (dx >= 0) ? DIR_RIGHT : DIR_LEFT;
+  } else {
+    u->dir = (dy >= 0) ? DIR_FRONT : DIR_BACK;
+  }
+}
+
+static int idxUnidadAliada(const struct Jugador *j, const Unidad *u) {
+  // 0-3 caballeros, 4-7 caballeros sin escudo, 8-11 guerreros
+  for (int i = 0; i < 4; i++)
+    if (&j->caballeros[i] == u)
+      return i;
+  for (int i = 0; i < 4; i++)
+    if (&j->caballerosSinEscudo[i] == u)
+      return 4 + i;
+  for (int i = 0; i < 4; i++)
+    if (&j->guerreros[i] == u)
+      return 8 + i;
+  return -1;
+}
+
+static int sAliadosCooldownMs[12] = {0};
+
+void navegacionActualizarCombateAuto(struct Jugador *j, float dt) {
+  if (!j)
+    return;
+
+  int cantEnemigos = sNumEnemigosActivos;
+  int vivosEnemigos = 0;
+  for (int i = 0; i < cantEnemigos; i++) {
+    if (sEnemigosActivos[i].vida > 0 && sEnemigosActivos[i].x >= 0)
+      vivosEnemigos++;
+  }
+  if (vivosEnemigos == 0)
+    return;
+
+  const float velEnemigo = 1.5f;
+  const float velAliado = 1.8f;
+  const float rango = 60.0f;
+  const float rango2 = rango * rango;
+  int dtMs = (int)(dt * 1000.0f);
+
+  // Listar tropas aliadas combatientes
+  Unidad *aliados[12];
+  int numAliados = 0;
+  for (int i = 0; i < 4; i++) aliados[numAliados++] = &j->caballeros[i];
+  for (int i = 0; i < 4; i++) aliados[numAliados++] = &j->caballerosSinEscudo[i];
+  for (int i = 0; i < 4; i++) aliados[numAliados++] = &j->guerreros[i];
+
+  // Asegurar vidas
+  for (int i = 0; i < numAliados; i++) normalizarVidaSiVacio(aliados[i]);
+  for (int i = 0; i < cantEnemigos; i++) normalizarVidaSiVacio(&sEnemigosActivos[i]);
+
+  // Reducir cooldowns
+  for (int i = 0; i < cantEnemigos; i++) if (sEnemigosCooldownMs[i] > 0) sEnemigosCooldownMs[i] -= dtMs;
+  for (int i = 0; i < 12; i++) if (sAliadosCooldownMs[i] > 0) sAliadosCooldownMs[i] -= dtMs;
+
+  // Enemigos buscan aliado más cercano
+  for (int e = 0; e < cantEnemigos; e++) {
+    Unidad *en = &sEnemigosActivos[e];
+    if (en->vida <= 0 || en->x < 0)
+      continue;
+
+    Unidad *target = NULL;
+    float mejor = 0.0f;
+    for (int a = 0; a < numAliados; a++) {
+      Unidad *al = aliados[a];
+      if (al->vida <= 0 || al->x < 0)
+        continue;
+      float d2 = dist2f(en->x, en->y, al->x, al->y);
+      if (!target || d2 < mejor) {
+        mejor = d2;
+        target = al;
+      }
+    }
+    if (!target)
+      continue;
+
+    if (mejor > rango2) {
+      moverHacia(en, target->x, target->y, velEnemigo);
+    } else {
+      if (sEnemigosCooldownMs[e] <= 0) {
+        sEnemigosCooldownMs[e] = 1200;
+        int danio = en->damage > 0 ? en->damage : 10;
+        target->vida -= danio;
+        if (target->vida < 0) target->vida = 0;
+      }
+    }
+  }
+
+  // Aliados buscan enemigo si no están en movimiento manual
+  for (int a = 0; a < numAliados; a++) {
+    Unidad *al = aliados[a];
+    if (al->vida <= 0 || al->x < 0)
+      continue;
+
+    Unidad *target = NULL;
+    float mejor = 0.0f;
+    for (int e = 0; e < cantEnemigos; e++) {
+      Unidad *en = &sEnemigosActivos[e];
+      if (en->vida <= 0 || en->x < 0)
+        continue;
+      float d2 = dist2f(al->x, al->y, en->x, en->y);
+      if (!target || d2 < mejor) {
+        mejor = d2;
+        target = en;
+      }
+    }
+    if (!target)
+      continue;
+
+    if (mejor > rango2) {
+      if (!al->moviendose) moverHacia(al, target->x, target->y, velAliado);
+    } else {
+      int idx = idxUnidadAliada(j, al);
+      if (idx >= 0 && sAliadosCooldownMs[idx] <= 0) {
+        sAliadosCooldownMs[idx] = 1000;
+        int danio = al->damage > 0 ? al->damage : 12;
+        target->vida -= danio;
+        if (target->vida < 0) target->vida = 0;
+      }
+    }
+  }
+
+  // Limpiar bajas aliadas en mapaObjetos
+  for (int a = 0; a < numAliados; a++) {
+    Unidad *al = aliados[a];
+    if (al->vida <= 0 && al->x >= 0) {
+      mapaMoverObjeto(al->x, al->y, -1000.0f, -1000.0f, SIMBOLO_VACIO);
+      al->x = -1000.0f;
+      al->y = -1000.0f;
+    }
+  }
+
+  // Limpiar bajas enemigas
+  for (int e = 0; e < cantEnemigos; e++) {
+    Unidad *en = &sEnemigosActivos[e];
+    if (en->vida <= 0 && en->x >= 0) {
+      mapaMoverObjeto(en->x, en->y, -1000.0f, -1000.0f, SIMBOLO_VACIO);
+      en->x = -1000.0f;
+      en->y = -1000.0f;
+    }
+  }
 }
 
 // Limpia un rectángulo de celdas en mapaObjetos y collision map

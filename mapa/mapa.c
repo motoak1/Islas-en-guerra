@@ -68,6 +68,8 @@ static HBITMAP hCaballeroSinEscudoBmp[4] = {
 static HBITMAP hBarcoBmp[4] = {NULL}; // Front, Back, Left, Right (192x192)
 
 static HBITMAP hGuerreroBmp[4] = {NULL}; // Front, Back, Left, Right
+static HBITMAP hCaballeroAtk[2][3] = {{NULL}}; // dir (0=left,1=right) x frames
+static HBITMAP hGuerreroAtk[2][2] = {{NULL}};
 
 static HBITMAP hVacaBmp[4] = {NULL};
 static bool gGenerarRecursos = true;
@@ -956,6 +958,47 @@ void cargarRecursosGraficos() {
   const char *rutasBarcoAlt[] = {BARCO_F_ALT, BARCO_B_ALT, BARCO_L_ALT,
                                  BARCO_R_ALT};
 
+  // Ataque caballero (left/right, 3 frames)
+  const char *cabAtkL[3] = {"../assets/caballero/caballero_war_move_1_left.bmp",
+                            "../assets/caballero/caballero_war_move_2_left.bmp",
+                            "../assets/caballero/caballero_war_move_3_left.bmp"};
+  const char *cabAtkR[3] = {"../assets/caballero/caballero_war_move_1_right.bmp",
+                            "../assets/caballero/caballero_war_move_2_right.bmp",
+                            "../assets/caballero/caballero_war_move_3_right.bmp"};
+  const char *cabAtkLAlt[3] = {"assets/caballero/caballero_war_move_1_left.bmp",
+                               "assets/caballero/caballero_war_move_2_left.bmp",
+                               "assets/caballero/caballero_war_move_3_left.bmp"};
+  const char *cabAtkRAlt[3] = {"assets/caballero/caballero_war_move_1_right.bmp",
+                               "assets/caballero/caballero_war_move_2_right.bmp",
+                               "assets/caballero/caballero_war_move_3_right.bmp"};
+
+  for (int i = 0; i < 3; i++) {
+    hCaballeroAtk[0][i] = (HBITMAP)LoadImageA(NULL, cabAtkL[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hCaballeroAtk[0][i])
+      hCaballeroAtk[0][i] = (HBITMAP)LoadImageA(NULL, cabAtkLAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hCaballeroAtk[1][i] = (HBITMAP)LoadImageA(NULL, cabAtkR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hCaballeroAtk[1][i])
+      hCaballeroAtk[1][i] = (HBITMAP)LoadImageA(NULL, cabAtkRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+  }
+
+  // Ataque guerrero (left/right, 2 frames)
+  const char *gueAtkL[2] = {"../assets/guerrero/guerrero_war_move_1_left.bmp",
+                            "../assets/guerrero/guerrero_war_move_2_left.bmp"};
+  const char *gueAtkR[2] = {"../assets/guerrero/guerrero_war_move_1_right.bmp",
+                            "../assets/guerrero/guerrero_war_move_2_right.bmp"};
+  const char *gueAtkLAlt[2] = {"assets/guerrero/guerrero_war_move_1_left.bmp",
+                               "assets/guerrero/guerrero_war_move_2_left.bmp"};
+  const char *gueAtkRAlt[2] = {"assets/guerrero/guerrero_war_move_1_right.bmp",
+                               "assets/guerrero/guerrero_war_move_2_right.bmp"};
+  for (int i = 0; i < 2; i++) {
+    hGuerreroAtk[0][i] = (HBITMAP)LoadImageA(NULL, gueAtkL[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hGuerreroAtk[0][i])
+      hGuerreroAtk[0][i] = (HBITMAP)LoadImageA(NULL, gueAtkLAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hGuerreroAtk[1][i] = (HBITMAP)LoadImageA(NULL, gueAtkR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hGuerreroAtk[1][i])
+      hGuerreroAtk[1][i] = (HBITMAP)LoadImageA(NULL, gueAtkRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+  }
+
   for (int i = 0; i < 4; i++) {
     hBarcoBmp[i] = (HBITMAP)LoadImageA(NULL, rutasBarcoAlt[i], IMAGE_BITMAP,
                                        192, 192, LR_LOADFROMFILE);
@@ -1102,6 +1145,44 @@ void mapaActualizarVacas(void) {
   }
 }
 
+static void dibujarUnidadCombat(HDC hdcBuffer, HDC hdcSprites, Unidad *u,
+                                Camara cam, int anchoP, int altoP,
+                                bool esEnemigo, bool atacando, int atkFrame) {
+  if (!u || u->x < 0 || u->y < 0)
+    return;
+
+  int pantX = (int)((u->x - cam.x) * cam.zoom);
+  int pantY = (int)((u->y - cam.y) * cam.zoom);
+  int tam = (int)(64 * cam.zoom);
+  if (pantX + tam <= 0 || pantX >= anchoP || pantY + tam <= 0 || pantY >= altoP)
+    return;
+
+  HBITMAP sprite = NULL;
+  int dirIdx = (u->dir == DIR_RIGHT) ? 1 : 0;
+  if (u->tipo == TIPO_CABALLERO) {
+    if (atacando && hCaballeroAtk[dirIdx][atkFrame % 3]) {
+      sprite = hCaballeroAtk[dirIdx][atkFrame % 3];
+    } else {
+      sprite = hCaballeroBmp[u->dir];
+    }
+  } else if (u->tipo == TIPO_CABALLERO_SIN_ESCUDO) {
+    sprite = hCaballeroSinEscudoBmp[u->dir];
+  } else {
+    if (atacando && hGuerreroAtk[dirIdx][atkFrame % 2]) {
+      sprite = hGuerreroAtk[dirIdx][atkFrame % 2];
+    } else {
+      sprite = hGuerreroBmp[u->dir];
+    }
+  }
+
+  if (sprite) {
+    SelectObject(hdcSprites, sprite);
+    TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0, 64, 64,
+                   RGB(255, 255, 255));
+  }
+
+}
+
 // ============================================================================
 // DIBUJADO CON Y-SORTING (PROFUNDIDAD POR FILA)
 // ============================================================================
@@ -1184,6 +1265,42 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
   int enemigosActivosCount = 0;
   Unidad *enemigosActivos =
       navegacionObtenerEnemigosActivos(&enemigosActivosCount);
+  static int frameAtaque = 0;
+  frameAtaque = (frameAtaque + 1) % 6;
+
+  Unidad *aliadosLista[12];
+  int numAliadosLista = 0;
+  for (int i = 0; i < 4; i++)
+    aliadosLista[numAliadosLista++] = &pJugador->caballeros[i];
+  for (int i = 0; i < 4; i++)
+    aliadosLista[numAliadosLista++] = &pJugador->caballerosSinEscudo[i];
+  for (int i = 0; i < 4; i++)
+    aliadosLista[numAliadosLista++] = &pJugador->guerreros[i];
+
+  bool ataqueAliados[12] = {false};
+  bool ataqueEnemigos[8] = {false};
+  const float rangoAtaque = 60.0f;
+  const float rangoAtaque2 = rangoAtaque * rangoAtaque;
+  if (enemigosActivos && enemigosActivosCount > 0) {
+    for (int a = 0; a < numAliadosLista; a++) {
+      Unidad *al = aliadosLista[a];
+      if (!al || al->vida <= 0 || al->x < 0)
+        continue;
+      for (int e = 0; e < enemigosActivosCount; e++) {
+        Unidad *en = &enemigosActivos[e];
+        if (en->vida <= 0 || en->x < 0)
+          continue;
+        float dx = al->x - en->x;
+        float dy = al->y - en->y;
+        float d2 = dx * dx + dy * dy;
+        if (d2 <= rangoAtaque2) {
+          ataqueAliados[a] = true;
+          ataqueEnemigos[e] = true;
+          break;
+        }
+      }
+    }
+  }
 
   // Puntero a la matriz de objetos para aritmética de punteros
   char (*ptrMatriz)[GRID_SIZE] = mapaObjetos;
@@ -1283,11 +1400,11 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
 
         if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 &&
             pantY < altoP) {
-          SelectObject(hdcSprites, hCaballeroBmp[c->dir]);
-          TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
-                         64, 64, RGB(255, 255, 255));
-
-          // Círculo de selección
+          int idxCab = (int)(c - baseCaballeros);
+          bool atacando = (idxCab >= 0 && idxCab < 12) ? ataqueAliados[idxCab]
+                                                       : false;
+          dibujarUnidadCombat(hdcBuffer, hdcSprites, c, cam, anchoP, altoP,
+                              false, atacando, frameAtaque);
           if (c->seleccionado) {
             HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
             HPEN verde = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
@@ -1313,11 +1430,11 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
 
         if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 &&
             pantY < altoP) {
-          SelectObject(hdcSprites, hCaballeroSinEscudoBmp[c->dir]);
-          TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
-                         64, 64, RGB(255, 255, 255));
-
-          // Círculo de selección (Cyan para distinguirlos)
+          int idxCse = 4 + (int)(c - baseCSE);
+          bool atacando = (idxCse >= 0 && idxCse < 12) ? ataqueAliados[idxCse]
+                                                       : false;
+          dibujarUnidadCombat(hdcBuffer, hdcSprites, c, cam, anchoP, altoP,
+                              false, atacando, frameAtaque);
           if (c->seleccionado) {
             HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
             HPEN cyan = CreatePen(PS_SOLID, 2, RGB(0, 255, 255));
@@ -1342,10 +1459,11 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
         int tam = (int)(64 * cam.zoom);
         if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 &&
             pantY < altoP) {
-          SelectObject(hdcSprites, hGuerreroBmp[g->dir]);
-          TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
-                         64, 64, RGB(255, 255, 255));
-          // Círculo de selección (color diferente para distinguirlos)
+          int idxG = 8 + (int)(g - baseGuerreros);
+          bool atacando = (idxG >= 0 && idxG < 12) ? ataqueAliados[idxG]
+                                                   : false;
+          dibujarUnidadCombat(hdcBuffer, hdcSprites, g, cam, anchoP, altoP,
+                              false, atacando, frameAtaque);
           if (g->seleccionado) {
             HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
             HPEN amarillo = CreatePen(
@@ -1373,20 +1491,16 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
 
           if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 &&
               pantY < altoP) {
-            HBITMAP sprite =
-                (e->tipo == TIPO_CABALLERO) ? hCaballeroBmp[e->dir]
-                                            : hGuerreroBmp[e->dir];
-            SelectObject(hdcSprites, sprite);
-            TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
-                           64, 64, RGB(255, 255, 255));
-
-            HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-            HPEN rojo = CreatePen(PS_SOLID, 2, RGB(200, 60, 60));
-            SelectObject(hdcBuffer, nullBrush);
-            SelectObject(hdcBuffer, rojo);
-            Ellipse(hdcBuffer, pantX, pantY + tam - 10, pantX + tam,
-                    pantY + tam + 5);
-            DeleteObject(rojo);
+                bool atacando = (idx >= 0 && idx < 8) ? ataqueEnemigos[idx] : false;
+                dibujarUnidadCombat(hdcBuffer, hdcSprites, e, cam, anchoP, altoP,
+                  true, atacando, frameAtaque);
+                HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+                HPEN rojo = CreatePen(PS_SOLID, 2, RGB(200, 60, 60));
+                SelectObject(hdcBuffer, nullBrush);
+                SelectObject(hdcBuffer, rojo);
+                Ellipse(hdcBuffer, pantX, pantY + tam - 10, pantX + tam,
+                  pantY + tam + 5);
+                DeleteObject(rojo);
           }
         }
       }
