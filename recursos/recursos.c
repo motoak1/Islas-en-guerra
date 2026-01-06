@@ -1458,8 +1458,8 @@ bool recursosIntentarCazar(struct Jugador *j, float mundoX, float mundoY) {
          vacaEncontrada, vacaFila, vacaCol);
 
     // Usar centro de la vaca para proximidad (aprox 64px de offset del ancla)
-    float vacaCentroX = (float)(c * TILE_SIZE) + 64.0f;
-    float vacaCentroY = (float)(f * TILE_SIZE) + 64.0f;
+    float vacaCentroX = (float)(vacaCol * TILE_SIZE) + 64.0f;
+    float vacaCentroY = (float)(vacaFila * TILE_SIZE) + 64.0f;
 
     // 2. Buscar si hay algún OBRERO o CABALLERO seleccionado cerca
     bool alguienCerca = false;
