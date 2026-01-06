@@ -1395,61 +1395,86 @@ bool entrenarGuerrero(struct Jugador *j, float x, float y) {
 }
 
 bool recursosIntentarCazar(struct Jugador *j, float mundoX, float mundoY) {
-  // 1. Verificar qué objeto hay en el mapa (coordenadas mundo -> celda)
+  // ================================================================
+  // VERIFICACIÓN DIRECTA: Buscar vaca por posición real del array
+  // ================================================================
+  // En lugar de confiar solo en mapaObjetos, verificamos directamente
+  // las coordenadas de cada vaca en el array dinámico.
+  // ================================================================
+  
+  // Convertir click a celda de la matriz
   int clickF = (int)(mundoY / TILE_SIZE);
   int clickC = (int)(mundoX / TILE_SIZE);
-
-  // Buscar en la celda clickeada y sus vecinas (arriba/izquierda)
-  // porque la vaca mide 2x2 tiles pero solo se registra en la esquina superior
-  // izquierda.
-  int targets[4][2] = {{0, 0}, {0, -1}, {-1, 0}, {-1, -1}};
-  int tipoObjeto = 0;
-  int f = -1, c = -1;
-
-  for (int k = 0; k < 4; k++) {
-    int tf = clickF + targets[k][0];
-    int tc = clickC + targets[k][1];
-
-    if (tf >= 0 && tf < GRID_SIZE && tc >= 0 && tc < GRID_SIZE) {
-      int t = mapaObtenerTipoObjeto(tf, tc);
-      // Las vacas se identifican con el símbolo 'V' (SIMBOLO_VACA)
-      if (t == SIMBOLO_VACA) {
-        tipoObjeto = t;
-        f = tf;
-        c = tc;
-        break; // Vaca encontrada
-      }
+  
+  // Validar límites
+  if (clickF < 0 || clickF >= GRID_SIZE || clickC < 0 || clickC >= GRID_SIZE) {
+    return false;
+  }
+  
+  // Obtener array de vacas
+  int numVacas = 0;
+  Vaca *vacas = mapaObtenerVacas(&numVacas);
+  
+  if (!vacas || numVacas == 0) {
+    return false;
+  }
+  
+  // Buscar una vaca en la celda clickeada (usando aritmética de punteros)
+  int vacaEncontrada = -1;
+  int vacaFila = -1, vacaCol = -1;
+  
+  Vaca *pVaca = vacas;
+  for (int i = 0; i < numVacas; i++, pVaca++) {
+    // Calcular celda de esta vaca
+    int vF = (int)(pVaca->y / TILE_SIZE);
+    int vC = (int)(pVaca->x / TILE_SIZE);
+    
+    // Verificar si coincide con el click (celda exacta o adyacentes)
+    // La vaca ocupa 64x64 pero solo se ancla en una celda
+    if (vF == clickF && vC == clickC) {
+      vacaEncontrada = i;
+      vacaFila = vF;
+      vacaCol = vC;
+      break;
+    }
+    
+    // También verificar celdas adyacentes por el tamaño del sprite
+    int dF = clickF - vF;
+    int dC = clickC - vC;
+    if (dF >= 0 && dF <= 1 && dC >= 0 && dC <= 1) {
+      vacaEncontrada = i;
+      vacaFila = vF;
+      vacaCol = vC;
+      break;
     }
   }
+  
+  // Si no encontramos vaca en la posición real, no procesar
+  if (vacaEncontrada < 0) {
+    return false;
+  }
+  
+  printf("[DEBUG] Cazar: Vaca #%d encontrada en posicion real Celda[%d][%d]\n",
+         vacaEncontrada, vacaFila, vacaCol);
 
-  // Las vacas se identifican con SIMBOLO_VACA ('V')
-  if (tipoObjeto == SIMBOLO_VACA) {
-    printf("[DEBUG] Cazar: Click (o vecindad) en vaca (tipo %d) anclada en "
-           "Celda[%d][%d]\n",
-           tipoObjeto, f, c);
+  if (recursosCualquierTropaCercaDePunto(j, mundoX, mundoY, 200.0f)) {
+    // Confirmación al usuario
+    int respuesta = MessageBox(NULL, "¿Quieres cazar esta vaca por comida?",
+                               "Cazar Vaca", MB_YESNO | MB_ICONQUESTION);
 
-    if (recursosCualquierTropaCercaDePunto(j, mundoX, mundoY, 200.0f)) {
-      // 3. Confirmación
-      int respuesta = MessageBox(NULL, "¿Quieres cazar esta vaca por comida?",
-                                 "Cazar Vaca", MB_YESNO | MB_ICONQUESTION);
-
-      if (respuesta == IDYES) {
-        // Eliminar objeto de la matriz
-        mapaEliminarObjeto(f, c);
-        j->Comida += 100;
-        MessageBox(NULL, "¡Vaca cazada! +100 Comida", "Recursos",
-                   MB_OK | MB_ICONINFORMATION);
-      }
-      return true; // Click manejado
+    if (respuesta == IDYES) {
+      // Eliminar vaca de la matriz y del array
+      mapaEliminarObjeto(vacaFila, vacaCol);
+      j->Comida += 100;
+      MessageBox(NULL, "¡Vaca cazada! +100 Comida", "Recursos",
+                 MB_OK | MB_ICONINFORMATION);
     }
-
-    // Si no hay tropa cerca, mandarlos a caminar
-    rtsComandarMovimiento(j, mundoX, mundoY);
-    return true; // Click manejado (movimiento comandado)
+    return true; // Click manejado
   }
 
-  // No era una vaca
-  return false;
+  // Si no hay tropa cerca, mandarlos a caminar
+  rtsComandarMovimiento(j, mundoX, mundoY);
+  return true; // Click manejado (movimiento comandado)
 }
 
 // ============================================================================

@@ -175,6 +175,14 @@ int **mapaObtenerCollisionMap(void) {
   return gCollisionMap;
 }
 
+// Retorna el array de vacas y la cantidad actual
+Vaca *mapaObtenerVacas(int *cantidad) {
+  if (cantidad) {
+    *cantidad = gNumVacas;
+  }
+  return gVacas;
+}
+
 void mapaSeleccionarIsla(int isla) {
   int seleccion = (isla >= 1 && isla <= 3) ? isla : 1;
   snprintf(gRutaMapaPrincipal, sizeof(gRutaMapaPrincipal),
@@ -1099,6 +1107,34 @@ void mapaActualizarVacas(void) {
 
         // Si llegamos aquí, esta dirección está bloqueada, probar la siguiente
       }
+    }
+  }
+  
+  // ================================================================
+  // SINCRONIZACIÓN FORZADA: Limpiar y remarcar posiciones de vacas
+  // ================================================================
+  // Esto asegura que mapaObjetos siempre refleje la posición real
+  // de cada vaca, eliminando cualquier celda 'V' huérfana.
+  // ================================================================
+  
+  // Paso 1: Limpiar TODAS las celdas 'V' de la matriz
+  for (int f = 0; f < GRID_SIZE; f++) {
+    for (int c = 0; c < GRID_SIZE; c++) {
+      if (*(*(mapaObjetos + f) + c) == SIMBOLO_VACA) {
+        *(*(mapaObjetos + f) + c) = SIMBOLO_VACIO;
+      }
+    }
+  }
+  
+  // Paso 2: Remarcar las posiciones reales de cada vaca
+  Vaca *pVaca = gVacas;
+  for (int i = 0; i < gNumVacas; i++, pVaca++) {
+    int f = (int)(pVaca->y / TILE_SIZE);
+    int c = (int)(pVaca->x / TILE_SIZE);
+    
+    // Validar límites y marcar en matriz
+    if (f >= 0 && f < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
+      *(*(mapaObjetos + f) + c) = SIMBOLO_VACA;
     }
   }
 }
