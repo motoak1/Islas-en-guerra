@@ -1105,14 +1105,14 @@ void mapaActualizarVacas(void) {
       }
     }
   }
-  
+
   // ================================================================
   // SINCRONIZACIÓN FORZADA: Limpiar y remarcar posiciones de vacas
   // ================================================================
   // Esto asegura que mapaObjetos siempre refleje la posición real
   // de cada vaca, eliminando cualquier celda 'V' huérfana.
   // ================================================================
-  
+
   // Paso 1: Limpiar TODAS las celdas 'V' de la matriz
   for (int f = 0; f < GRID_SIZE; f++) {
     for (int c = 0; c < GRID_SIZE; c++) {
@@ -1121,13 +1121,13 @@ void mapaActualizarVacas(void) {
       }
     }
   }
-  
+
   // Paso 2: Remarcar las posiciones reales de cada vaca
   Vaca *pVaca = gVacas;
   for (int i = 0; i < gNumVacas; i++, pVaca++) {
     int f = (int)(pVaca->y / TILE_SIZE);
     int c = (int)(pVaca->x / TILE_SIZE);
-    
+
     // Validar límites y marcar en matriz
     if (f >= 0 && f < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
       *(*(mapaObjetos + f) + c) = SIMBOLO_VACA;
@@ -1147,6 +1147,61 @@ void mapaActualizarVacas(void) {
 // Esto crea un efecto de profundidad natural: los objetos "más abajo"
 // en la pantalla se dibujan después (encima) de los objetos "más arriba).
 // ============================================================================
+
+// ============================================================================
+// DIBUJADO DE BARRAS DE VIDA
+// ============================================================================
+static void dibujarBarraVida(HDC hdc, int x, int y, int vida, int vidaMax,
+                             float zoom) {
+  if (vidaMax <= 0)
+    return;
+
+  // Ancho de la barra (proporcional al sprite 64px)
+  int anchoBarra = (int)(50 * zoom);
+  int altoBarra = (int)(5 * zoom);
+
+  // Posición relativa a la unidad (arriba del sprite 64x64)
+  int barraX = x + (int)((64 * zoom - anchoBarra) / 2);
+  int barraY = y - (int)(8 * zoom);
+
+  // 1. Fondo (Rojo oscuro/negro)
+  HBRUSH hBrushFondo = CreateSolidBrush(RGB(50, 0, 0));
+  RECT rFondo;
+  rFondo.left = barraX;
+  rFondo.top = barraY;
+  rFondo.right = barraX + anchoBarra;
+  rFondo.bottom = barraY + altoBarra;
+  FillRect(hdc, &rFondo, hBrushFondo);
+  DeleteObject(hBrushFondo);
+
+  // 2. Vida (Verde brillante)
+  float porcentaje = (float)vida / (float)vidaMax;
+  if (porcentaje < 0)
+    porcentaje = 0;
+  if (porcentaje > 1)
+    porcentaje = 1;
+
+  int anchoVida = (int)(anchoBarra * porcentaje);
+  if (anchoVida > 0) {
+    HBRUSH hBrushVida = CreateSolidBrush(RGB(0, 255, 0));
+    RECT rVida;
+    rVida.left = barraX;
+    rVida.top = barraY;
+    rVida.right = barraX + anchoVida;
+    rVida.bottom = barraY + altoBarra;
+    FillRect(hdc, &rVida, hBrushVida);
+    DeleteObject(hBrushVida);
+  }
+
+  // 3. Borde (Negro)
+  HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+  HPEN oldPen = (HPEN)SelectObject(hdc, hPen);
+  HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
+  Rectangle(hdc, barraX, barraY, barraX + anchoBarra, barraY + altoBarra);
+  SelectObject(hdc, oldPen);
+  SelectObject(hdc, oldBrush);
+  DeleteObject(hPen);
+}
 
 void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
                   struct MenuCompra *menu, MenuEmbarque *menuEmb,
@@ -1285,6 +1340,10 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
           // (truncado), asumiremos dibujo simple de 64x64.
           TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
                          64, 64, RGB(255, 255, 255));
+
+          // Dibujar barra de vida
+          dibujarBarraVida(hdcBuffer, pantX, pantY, o->vida, o->vidaMax,
+                           cam.zoom);
         }
 
         // Círculo de selección
@@ -1316,6 +1375,10 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
           TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
                          64, 64, RGB(255, 255, 255));
 
+          // Dibujar barra de vida
+          dibujarBarraVida(hdcBuffer, pantX, pantY, c->vida, c->vidaMax,
+                           cam.zoom);
+
           // Círculo de selección
           if (c->seleccionado) {
             HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
@@ -1346,6 +1409,10 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
           TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
                          64, 64, RGB(255, 255, 255));
 
+          // Dibujar barra de vida
+          dibujarBarraVida(hdcBuffer, pantX, pantY, c->vida, c->vidaMax,
+                           cam.zoom);
+
           // Círculo de selección (Cyan para distinguirlos)
           if (c->seleccionado) {
             HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
@@ -1374,6 +1441,10 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
           SelectObject(hdcSprites, hGuerreroBmp[g->dir]);
           TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
                          64, 64, RGB(255, 255, 255));
+
+          // Dibujar barra de vida
+          dibujarBarraVida(hdcBuffer, pantX, pantY, g->vida, g->vidaMax,
+                           cam.zoom);
           // Círculo de selección (color diferente para distinguirlos)
           if (g->seleccionado) {
             HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);

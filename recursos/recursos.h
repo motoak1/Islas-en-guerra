@@ -19,6 +19,10 @@
 #define GUERRERO_CRITICO 10
 #define GUERRERO_DEFENSA 20
 
+#define COSTO_CURACION 10
+#define CANTIDAD_CURACION 25
+#define OBRERO_VIDA_MAX 100
+
 // --- ESTRUCTURAS ---
 
 struct Tropa {

@@ -15,7 +15,6 @@
 #include <windows.h>
 #include <windowsx.h>
 
-
 // --- CONFIGURACIÓN ---
 #define ZOOM_MAXIMO 6.0f
 #define IDT_TIMER_JUEGO 1 // ID para el refresco de lógica (aprox 60fps)
@@ -37,7 +36,7 @@ int mouseColHover = -1;  // Columna de la celda bajo el cursor
 Edificio cuartel;        // Edificio del cuartel
 
 // Sistema de guardado/pausa
-MenuPausa menuPausa;     // Menú de pausa con opciones de guardar/cargar
+MenuPausa menuPausa;         // Menú de pausa con opciones de guardar/cargar
 bool partidaCargada = false; // Indica si se está cargando una partida guardada
 
 // --- MOTOR DE VALIDACIÓN DE CÁMARA ---
@@ -218,14 +217,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     // Obtener posición fija del barco según la isla actual
     float barcoX, barcoY;
     int barcoDir;
-    navegacionObtenerPosicionBarcoIsla(jugador1.islaActual, &barcoX, &barcoY, &barcoDir);
+    navegacionObtenerPosicionBarcoIsla(jugador1.islaActual, &barcoX, &barcoY,
+                                       &barcoDir);
     jugador1.barco.x = barcoX;
     jugador1.barco.y = barcoY;
     jugador1.barco.dir = (Direccion)barcoDir;
     jugador1.barco.activo = true;
     jugador1.barco.numTropas = 0;
 
-    printf("[DEBUG] Barco colocado en isla %d: (%.1f, %.1f), dir=%d\n", 
+    printf("[DEBUG] Barco colocado en isla %d: (%.1f, %.1f), dir=%d\n",
            jugador1.islaActual, barcoX, barcoY, barcoDir);
 
     // Registrar barco en mapaObjetos
@@ -247,7 +247,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 
     // Inicializar menú de pausa/guardado
     menuPausaInicializar(&menuPausa);
-    
+
     // Si el usuario eligió cargar partida desde el menú principal,
     // abrir automáticamente el menú de pausa en modo carga
     if (partidaCargada) {
@@ -265,13 +265,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     if (wParam == IDT_TIMER_JUEGO) {
       // Actualizar menú de pausa (timers de mensajes)
       menuPausaActualizar(&menuPausa);
-      
+
       // Si el menú de pausa está activo, solo actualizar ese menú
       if (menuPausa.activo) {
         InvalidateRect(hwnd, NULL, FALSE);
         return 0;
       }
-      
+
       if (batallasEnCurso()) {
         batallasActualizar(0.016f);
       } else {
@@ -366,7 +366,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
   case WM_KEYDOWN:
     // Primero procesar teclas del menú de pausa (incluye ESC para abrir)
     if (menuPausaProcesarTecla(&menuPausa, wParam, &jugador1, &camara,
-                                &ayuntamiento, &mina, &cuartel)) {
+                               &ayuntamiento, &mina, &cuartel)) {
       // Verificar si el usuario quiere volver al menú principal
       if (menuPausa.volverAlMenu) {
         // Cerrar la ventana de juego para volver al menú
@@ -375,7 +375,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
       InvalidateRect(hwnd, NULL, FALSE);
       return 0;
     }
-    
+
     if (wParam == 'C') {
       // Centrar cámara en el Ayuntamiento (1024, 1024)
       // Restamos la mitad de la pantalla (aprox 640x360) para que quede al
@@ -388,6 +388,35 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     // Tecla 'M' para mostrar matriz en consola (debug)
     if (wParam == 'M') {
       mostrarMapa(mapaObjetos);
+    }
+    // Tecla 'H' para CURAR unidades seleccionadas (Cuesta Comida)
+    if (wParam == 'H') {
+      bool alguienCurado = false;
+      struct Jugador *j = &jugador1;
+
+      // Lista de punteros a arrays de unidades para iterar
+      Unidad *arrays[] = {j->obreros, j->caballeros, j->caballerosSinEscudo,
+                          j->guerreros};
+      int tamanos[] = {6, 4, 4, 4};
+
+      for (int a = 0; a < 4; a++) {
+        for (int i = 0; i < tamanos[a]; i++) {
+          Unidad *u = &arrays[a][i];
+          if (u->seleccionado && u->x >= 0 && u->vida < u->vidaMax) {
+            if (j->Comida >= COSTO_CURACION) {
+              j->Comida -= COSTO_CURACION;
+              u->vida += CANTIDAD_CURACION;
+              if (u->vida > u->vidaMax)
+                u->vida = u->vidaMax;
+              alguienCurado = true;
+            }
+          }
+        }
+      }
+
+      if (alguienCurado) {
+        InvalidateRect(hwnd, NULL, FALSE);
+      }
     }
     break;
 
@@ -515,7 +544,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
       dibujarMundo(hdc, rect, camara, &jugador1, &menuCompra, &menuEmbarque,
                    mouseFilaHover, mouseColHover);
     }
-    
+
     // Dibujar menú de pausa como overlay (si está activo)
     if (menuPausa.activo) {
       menuPausaDibujar(hdc, rect, &menuPausa);
@@ -552,7 +581,7 @@ int main() {
   while (continuar) {
     // Mostrar menú principal
     mostrarMenu();
-    
+
     int accion = menuObtenerAccion();
     if (accion == 3) {
       // Salir del juego
@@ -562,8 +591,9 @@ int main() {
     // Reiniciar estado global para nueva partida
     partidaCargada = false;
     menuPausaInicializar(&menuPausa);
-    
-    // CRITICO: Reiniciar TODOS los globals para que el juego comience desde cero
+
+    // CRITICO: Reiniciar TODOS los globals para que el juego comience desde
+    // cero
     memset(&jugador1, 0, sizeof(jugador1));
     camara.x = 0;
     camara.y = 0;
@@ -577,7 +607,7 @@ int main() {
     arrastrandoCamara = false;
     mouseFilaHover = -1;
     mouseColHover = -1;
-    
+
     // Verificar si el usuario eligió cargar partida
     if (accion == 1) {
       // Cargar partida: establecer flag global
@@ -594,13 +624,14 @@ int main() {
     cargarRecursosGraficos(); // Carga BMPs de mapa, árboles y obreros
     edificiosCargarSprites(); // Carga sprites de edificios
 
-    HWND hwnd =
-        CreateWindowEx(0, wc.lpszClassName, "Islas en Guerra - Motor de Unidades",
-                       WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 1280,
-                       720, NULL, NULL, wc.hInstance, NULL);
+    HWND hwnd = CreateWindowEx(
+        0, wc.lpszClassName, "Islas en Guerra - Motor de Unidades",
+        WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 1280, 720, NULL,
+        NULL, wc.hInstance, NULL);
 
     if (!hwnd) {
-      MessageBoxA(NULL, "Error al crear la ventana del juego", "Error", MB_OK | MB_ICONERROR);
+      MessageBoxA(NULL, "Error al crear la ventana del juego", "Error",
+                  MB_OK | MB_ICONERROR);
       continue;
     }
 
@@ -613,7 +644,7 @@ int main() {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     }
-    
+
     // Si se llegó aquí, se cerró la ventana del juego
     // El loop continuará mostrando el menú de nuevo
   }
