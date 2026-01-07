@@ -15,7 +15,7 @@ void desembarcarTropas(Barco* barco, struct Jugador* j);
 void reiniciarIslaDesconocida(struct Jugador* j);
 
 // NUEVO: Viaja directamente a una isla sin animación
-void viajarAIsla(struct Jugador* j, int islaDestino);
+bool viajarAIsla(struct Jugador* j, int islaDestino);
 
 // Registrar la isla inicial (nunca genera batalla) y recibir resultados
 void navegacionRegistrarIslaInicial(int isla);

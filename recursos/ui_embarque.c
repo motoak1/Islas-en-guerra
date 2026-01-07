@@ -271,9 +271,20 @@ bool menuEmbarqueClick(MenuEmbarque* menu, struct Jugador* j, int x, int y) {
     for (int i = 0; i < total; i++) {
       RECT btn = {startX, startY + i * (btnHeight + 20), startX + btnWidth, startY + i * (btnHeight + 20) + btnHeight};
       if (x >= btn.left && x <= btn.right && y >= btn.top && y <= btn.bottom) {
-        menu->activo = false;
-        menu->eligiendoIsla = false;
-        viajarAIsla(j, opciones[i]);
+        bool ok = viajarAIsla(j, opciones[i]);
+        if (ok) {
+          // Cerrar y limpiar selección si el viaje se realizó o se desembarcó en misma isla
+          menu->activo = false;
+          menu->eligiendoIsla = false;
+          menu->obrerosSeleccionados = 0;
+          menu->caballerosSeleccionados = 0;
+          menu->guerrerosSeleccionados = 0;
+          menu->totalSeleccionados = 0;
+        } else {
+          // Mantener selección de isla abierta; el mensaje ya fue mostrado en viajarAIsla
+          menu->activo = true;
+          menu->eligiendoIsla = true;
+        }
         return true;
       }
     }
@@ -281,7 +292,16 @@ bool menuEmbarqueClick(MenuEmbarque* menu, struct Jugador* j, int x, int y) {
     // Botón cancelar
     RECT btnCancelar = {menu->x + 50, menu->y + menu->alto - 60, menu->x + menu->ancho - 50, menu->y + menu->alto - 20};
     if (x >= btnCancelar.left && x <= btnCancelar.right && y >= btnCancelar.top && y <= btnCancelar.bottom) {
+      // Si hay tropas en el barco (ocultas), devolverlas a tierra
+      if (j->barco.numTropas > 0) {
+        desembarcarTropas(&j->barco, j);
+      }
+      // Cerrar y limpiar selección
       menuEmbarqueCerrar(menu);
+      menu->obrerosSeleccionados = 0;
+      menu->caballerosSeleccionados = 0;
+      menu->guerrerosSeleccionados = 0;
+      menu->totalSeleccionados = 0;
       menu->eligiendoIsla = false;
       return true;
     }
@@ -391,7 +411,15 @@ bool menuEmbarqueClick(MenuEmbarque* menu, struct Jugador* j, int x, int y) {
   // Botón CANCELAR
   if (x >= menu->x + 220 && x <= menu->x + 350 && 
       y >= menu->y + yOffset && y <= menu->y + yOffset + 40) {
+    // Si el usuario cancela antes de elegir isla, devolver tropas al mapa si ya se embarcaron
+    if (j->barco.numTropas > 0) {
+      desembarcarTropas(&j->barco, j);
+    }
     menuEmbarqueCerrar(menu);
+    menu->obrerosSeleccionados = 0;
+    menu->caballerosSeleccionados = 0;
+    menu->guerrerosSeleccionados = 0;
+    menu->totalSeleccionados = 0;
     return true;
   }
   

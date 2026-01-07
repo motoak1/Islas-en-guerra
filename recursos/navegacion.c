@@ -264,6 +264,33 @@ static void generarEnemigosParaIsla(struct Jugador *j, int islaDestino) {
 }
 
 // ---------------------------------------------------------------------------
+// VALIDACIONES DE VIAJE
+// ---------------------------------------------------------------------------
+static bool islaConquistada(int isla) {
+  if (isla < 1 || isla > 3) return false;
+  EstadoIsla *e = &sIslas[isla];
+  // Isla inicial no tiene enemigos por diseño; si aún no está inicializada,
+  // consideramos que no está conquistada salvo que sea la inicial definida.
+  if (!e->inicializado) {
+    return (isla == sIslaInicial); // permitir si el destino es la isla inicial
+  }
+  int vivos = 0;
+  for (int i = 0; i < e->numEnemigos; i++) {
+    if (e->enemigos[i].vida > 0 && e->enemigos[i].x >= 0) vivos++;
+  }
+  return vivos == 0;
+}
+
+static bool barcoTieneObreros(const Barco *barco) {
+  if (!barco) return false;
+  for (int i = 0; i < barco->numTropas; i++) {
+    const Unidad *u = barco->tropas[i];
+    if (u && u->tipo == TIPO_OBRERO) return true;
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
 // COMBATE AUTOMÁTICO EN ISLA
 // Tropas y enemigos avanzan y se atacan al encontrarse
 // ---------------------------------------------------------------------------
@@ -866,11 +893,19 @@ void reiniciarIslaDesconocida(struct Jugador *j) {
 // viaja directamente sin animación del barco.
 // ============================================================================
 
-void viajarAIsla(struct Jugador *j, int islaDestino) {
+bool viajarAIsla(struct Jugador *j, int islaDestino) {
   printf("[DEBUG] Viajando directamente a isla %d\n", islaDestino);
   if (!sIslaInicialDefinida) {
     sIslaInicial = j->islaActual;
     sIslaInicialDefinida = true;
+  }
+  // Validación: no permitir llevar obreros a islas no conquistadas
+  if (islaDestino != j->islaActual) {
+    if (barcoTieneObreros(&j->barco) && !islaConquistada(islaDestino)) {
+      MessageBox(NULL, "No puedes llevar obreros hasta conquistar la isla",
+                 "Embarque restringido", MB_OK | MB_ICONWARNING);
+      return false; // Cancelar viaje
+    }
   }
   
   // Si es la misma isla, desembarcar y listo
@@ -878,7 +913,7 @@ void viajarAIsla(struct Jugador *j, int islaDestino) {
     printf("[DEBUG] Ya estás en la isla %d, desembarcando tropas\n",
            islaDestino);
     desembarcarTropas(&j->barco, j);
-    return;
+    return true;
   }
 
   bool islaYaVisitada = (islaDestino >= 1 && islaDestino <= 3) &&
@@ -929,6 +964,7 @@ void viajarAIsla(struct Jugador *j, int islaDestino) {
   desembarcarTropas(&j->barco, j);
 
   printf("[DEBUG] Viaje completado sin batalla; enemigos pasivos listos\n");
+  return true;
 }
 
 // Con batallas deshabilitadas en el viaje, el resultado se ignora
