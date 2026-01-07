@@ -120,7 +120,16 @@ void edificioActualizar(Edificio *e) {
     if (e->oroRestante <= 0 && e->piedraRestante <= 0 &&
         e->hierroRestante <= 0) {
       e->agotada = true;
-      printf("[MINA] ¡AGOTADA! Ya no quedan recursos por extraer.\n");
+      e->construido = false; // "EXPLOTÓ": Desaparece del mapa
+
+      // Mostrar mensaje de evento
+      MessageBoxA(NULL,
+                  "¡UNA MINA HA EXPLOTADO!\n\nSe han agotado todas sus vetas y "
+                  "la estructura ha colapsado.",
+                  "Evento: Mina Agotada", MB_OK | MB_ICONWARNING);
+
+      printf("[MINA] ¡EXPLOTÓ! Ya no quedan recursos y la estructura ha "
+             "colapsado.\n");
     } else {
       // Debug para consola
       printf("[MINA] Generado: +%d Oro, +%d Piedra, +%d Hierro | Restante: %d "
