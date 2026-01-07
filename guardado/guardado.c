@@ -574,15 +574,15 @@ void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {
     // NO dibujar overlay oscuro - permitir que el mapa se vea detras del panel
     
     // Determinar tamaño del panel según el modo
-    int panelAncho = 450;
-    int panelAlto = 320;
+    int panelAncho = 580;  // Aumentado de 450 a 580 para que quepa todo el texto
+    int panelAlto = 340;   // Aumentado de 320 a 340
     
-    if (menu->modo == MODO_GUARDAR) {
-        panelAlto = 280;
+    if (menu->modo == MODO_GUARDAR || menu->modo == MODO_PRINCIPAL + 10) {
+        panelAlto = 340;   // Aumentado de 310 a 340 para evitar superposición
     } else if (menu->modo == MODO_CARGAR) {
-        panelAlto = 360;
+        panelAlto = 380;   // Aumentado de 360 a 380
     } else if (menu->modo == MODO_CONFIRMAR_SALIR) {
-        panelAlto = 200;
+        panelAlto = 220;   // Aumentado de 200 a 220
     }
     
     int panelX = (anchoV - panelAncho) / 2;
@@ -591,15 +591,15 @@ void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {
     dibujarPanelSolido(hdcBuffer, panelX, panelY, panelAncho, panelAlto);
     
     // Fuentes
-    HFONT fontTitulo = CreateFontA(28, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+    HFONT fontTitulo = CreateFontA(32, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
                                    DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
                                    CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
                                    FF_DONTCARE, "Segoe UI");
-    HFONT fontOpciones = CreateFontA(20, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+    HFONT fontOpciones = CreateFontA(22, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
                                      DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
                                      CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
                                      FF_DONTCARE, "Segoe UI");
-    HFONT fontPequena = CreateFontA(14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+    HFONT fontPequena = CreateFontA(17, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
                                     DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
                                     CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
                                     FF_DONTCARE, "Segoe UI");
@@ -614,6 +614,11 @@ void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {
         case MODO_GUARDAR: titulo = "GUARDAR PARTIDA"; break;
         case MODO_CARGAR: titulo = "CARGAR PARTIDA"; break;
         case MODO_CONFIRMAR_SALIR: titulo = "SALIR AL MENU"; break;
+        default:
+            if (menu->modo == MODO_PRINCIPAL + 10) {
+                titulo = "NUEVA PARTIDA";
+            }
+            break;
     }
     
     SIZE tituloSize;
@@ -654,64 +659,58 @@ void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {
             TextOutA(hdcBuffer, textoX, textoY, texto, strlen(texto));
         }
     } else if (menu->modo == MODO_GUARDAR) {
-        // Pantalla de guardar - pedir nombre
-        SetTextColor(hdcBuffer, RGB(200, 200, 200));
-        const char *instruc = "Ingresa tu nombre de jugador:";
-        SIZE iSize;
-        GetTextExtentPoint32A(hdcBuffer, instruc, strlen(instruc), &iSize);
-        TextOutA(hdcBuffer, panelX + (panelAncho - iSize.cx) / 2, inicioY, instruc, strlen(instruc));
-        
-        // Campo de texto
-        int campoX = panelX + 40;
-        int campoY = inicioY + 40;
-        int campoAncho = panelAncho - 80;
-        int campoAlto = 35;
-        
-        HBRUSH campoFondo = CreateSolidBrush(RGB(40, 40, 50));
-        RECT campoRect = {campoX, campoY, campoX + campoAncho, campoY + campoAlto};
-        FillRect(hdcBuffer, &campoRect, campoFondo);
-        DeleteObject(campoFondo);
-        
-        HPEN campoBorde = CreatePen(PS_SOLID, 2, menu->nombreExiste ? RGB(255, 100, 100) : RGB(100, 150, 200));
-        HPEN oldP = (HPEN)SelectObject(hdcBuffer, campoBorde);
-        HBRUSH nullB = (HBRUSH)GetStockObject(NULL_BRUSH);
-        HBRUSH oldB = (HBRUSH)SelectObject(hdcBuffer, nullB);
-        Rectangle(hdcBuffer, campoX, campoY, campoX + campoAncho, campoY + campoAlto);
-        SelectObject(hdcBuffer, oldP);
-        SelectObject(hdcBuffer, oldB);
-        DeleteObject(campoBorde);
-        
-        // Texto ingresado
-        SetTextColor(hdcBuffer, RGB(255, 255, 255));
-        char textoConCursor[MAX_NOMBRE_JUGADOR + 2];
-        snprintf(textoConCursor, sizeof(textoConCursor), "%s_", menu->nombreInput);
-        TextOutA(hdcBuffer, campoX + 10, campoY + 8, textoConCursor, strlen(textoConCursor));
-        
-        // Mensaje de error si existe
-        if (menu->nombreExiste) {
-            SelectObject(hdcBuffer, fontPequena);
-            SetTextColor(hdcBuffer, RGB(255, 100, 100));
-            const char *err = "Ya existe una partida con este nombre";
-            SIZE errSize;
-            GetTextExtentPoint32A(hdcBuffer, err, strlen(err), &errSize);
-            TextOutA(hdcBuffer, panelX + (panelAncho - errSize.cx) / 2, campoY + 45, err, strlen(err));
-            SelectObject(hdcBuffer, fontOpciones);
+        // Pantalla de guardar - mostrar lista de partidas guardadas
+        if (menu->numPartidas == 0) {
+            SetTextColor(hdcBuffer, RGB(180, 180, 180));
+            const char *noHay = "No hay partidas guardadas";
+            SIZE nhSize;
+            GetTextExtentPoint32A(hdcBuffer, noHay, strlen(noHay), &nhSize);
+            TextOutA(hdcBuffer, panelX + (panelAncho - nhSize.cx) / 2, inicioY, noHay, strlen(noHay));
+        } else {
+            // Mostrar partidas existentes
+            for (int i = 0; i < menu->numPartidas && i < 5; i++) {
+                COLORREF color = (i == menu->partidaSeleccionada) ? RGB(100, 255, 120) : RGB(200, 200, 200);
+                SetTextColor(hdcBuffer, color);
+                
+                char linea[128];
+                snprintf(linea, sizeof(linea), "%s - Isla %d (%s)", 
+                         menu->partidas[i].nombreJugador,
+                         menu->partidas[i].islaActual,
+                         menu->partidas[i].timestamp);
+                
+                int textoY = inicioY + i * 40;
+                
+                if (i == menu->partidaSeleccionada) {
+                    HPEN penHighlight = CreatePen(PS_SOLID, 2, RGB(80, 200, 100));
+                    HPEN oldP = (HPEN)SelectObject(hdcBuffer, penHighlight);
+                    HBRUSH nullB = (HBRUSH)GetStockObject(NULL_BRUSH);
+                    HBRUSH oldB = (HBRUSH)SelectObject(hdcBuffer, nullB);
+                    
+                    RoundRect(hdcBuffer, panelX + 20, textoY - 5,
+                              panelX + panelAncho - 20, textoY + 30, 5, 5);
+                    
+                    SelectObject(hdcBuffer, oldP);
+                    SelectObject(hdcBuffer, oldB);
+                    DeleteObject(penHighlight);
+                }
+                
+                TextOutA(hdcBuffer, panelX + 30, textoY, linea, strlen(linea));
+            }
         }
         
-        // Botones
-        int btnY = campoY + 80;
-        const char *btnGuardar = "[ENTER] Guardar";
-        const char *btnVolver = "[ESC] Volver";
-        
+        // Mostrar opción de nueva partida SIEMPRE (haya o no partidas)
+        SelectObject(hdcBuffer, fontPequena);
         SetTextColor(hdcBuffer, RGB(100, 255, 120));
-        SIZE gSize;
-        GetTextExtentPoint32A(hdcBuffer, btnGuardar, strlen(btnGuardar), &gSize);
-        TextOutA(hdcBuffer, panelX + panelAncho/4 - gSize.cx/2, btnY, btnGuardar, strlen(btnGuardar));
+        const char *nueva = menu->numPartidas > 0 
+            ? "[N] Nueva partida | [ENTER] Sobrescribir seleccionada | [ESC] Cancelar" 
+            : "[N] Crear nueva partida | [ESC] Cancelar";
+        SIZE nSize;
+        GetTextExtentPoint32A(hdcBuffer, nueva, strlen(nueva), &nSize);
+        int ayudaY = menu->numPartidas > 0 ? inicioY + 230 : inicioY + 150;
+        TextOutA(hdcBuffer, panelX + (panelAncho - nSize.cx) / 2, ayudaY, nueva, strlen(nueva));
+        SelectObject(hdcBuffer, fontOpciones);
         
-        SetTextColor(hdcBuffer, RGB(255, 200, 100));
-        SIZE vSize;
-        GetTextExtentPoint32A(hdcBuffer, btnVolver, strlen(btnVolver), &vSize);
-        TextOutA(hdcBuffer, panelX + 3*panelAncho/4 - vSize.cx/2, btnY, btnVolver, strlen(btnVolver));
+       
         
     } else if (menu->modo == MODO_CARGAR) {
         // Pantalla de cargar - lista de partidas
@@ -788,6 +787,65 @@ void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {
         SIZE noSize;
         GetTextExtentPoint32A(hdcBuffer, opNo, strlen(opNo), &noSize);
         TextOutA(hdcBuffer, panelX + (panelAncho - noSize.cx) / 2, btnY + 35, opNo, strlen(opNo));
+    } else if (menu->modo == MODO_PRINCIPAL + 10) {
+        // Pantalla de ingresar nombre para nueva partida
+        SetTextColor(hdcBuffer, RGB(200, 200, 200));
+        const char *instruc = "Ingresa el nombre de la nueva partida:";
+        SIZE iSize;
+        GetTextExtentPoint32A(hdcBuffer, instruc, strlen(instruc), &iSize);
+        TextOutA(hdcBuffer, panelX + (panelAncho - iSize.cx) / 2, inicioY, instruc, strlen(instruc));
+        
+        // Campo de texto
+        int campoX = panelX + 40;
+        int campoY = inicioY + 40;
+        int campoAncho = panelAncho - 80;
+        int campoAlto = 35;
+        
+        HBRUSH campoFondo = CreateSolidBrush(RGB(40, 40, 50));
+        RECT campoRect = {campoX, campoY, campoX + campoAncho, campoY + campoAlto};
+        FillRect(hdcBuffer, &campoRect, campoFondo);
+        DeleteObject(campoFondo);
+        
+        HPEN campoBorde = CreatePen(PS_SOLID, 2, menu->nombreExiste ? RGB(255, 100, 100) : RGB(100, 150, 200));
+        HPEN oldP = (HPEN)SelectObject(hdcBuffer, campoBorde);
+        HBRUSH nullB = (HBRUSH)GetStockObject(NULL_BRUSH);
+        HBRUSH oldB = (HBRUSH)SelectObject(hdcBuffer, nullB);
+        Rectangle(hdcBuffer, campoX, campoY, campoX + campoAncho, campoY + campoAlto);
+        SelectObject(hdcBuffer, oldP);
+        SelectObject(hdcBuffer, oldB);
+        DeleteObject(campoBorde);
+        
+        // Texto ingresado
+        SetTextColor(hdcBuffer, RGB(255, 255, 255));
+        char textoConCursor[MAX_NOMBRE_JUGADOR + 2];
+        snprintf(textoConCursor, sizeof(textoConCursor), "%s_", menu->nombreInput);
+        TextOutA(hdcBuffer, campoX + 10, campoY + 8, textoConCursor, strlen(textoConCursor));
+        
+        // Mensaje de error si existe
+        if (menu->nombreExiste) {
+            SelectObject(hdcBuffer, fontPequena);
+            SetTextColor(hdcBuffer, RGB(255, 100, 100));
+            const char *err = "Ya existe una partida con este nombre";
+            SIZE errSize;
+            GetTextExtentPoint32A(hdcBuffer, err, strlen(err), &errSize);
+            TextOutA(hdcBuffer, panelX + (panelAncho - errSize.cx) / 2, campoY + 45, err, strlen(err));
+            SelectObject(hdcBuffer, fontOpciones);
+        }
+        
+        // Botones
+        int btnY = campoY + 80;
+        const char *btnGuardar = "[ENTER] Guardar";
+        const char *btnVolver = "[ESC] Volver";
+        
+        SetTextColor(hdcBuffer, RGB(100, 255, 120));
+        SIZE gSize;
+        GetTextExtentPoint32A(hdcBuffer, btnGuardar, strlen(btnGuardar), &gSize);
+        TextOutA(hdcBuffer, panelX + panelAncho/4 - gSize.cx/2, btnY, btnGuardar, strlen(btnGuardar));
+        
+        SetTextColor(hdcBuffer, RGB(255, 200, 100));
+        SIZE vSize;
+        GetTextExtentPoint32A(hdcBuffer, btnVolver, strlen(btnVolver), &vSize);
+        TextOutA(hdcBuffer, panelX + 3*panelAncho/4 - vSize.cx/2, btnY, btnVolver, strlen(btnVolver));
     }
     
     // Mensaje de estado y ruta de guardado
@@ -811,14 +869,17 @@ void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {
         }
     }
     
-    // Instrucciones en la parte inferior
-    SelectObject(hdcBuffer, fontPequena);
-    SetTextColor(hdcBuffer, RGB(120, 120, 120));
-    const char *instruc = "Flechas: navegar | Enter: confirmar | ESC: volver";
-    SIZE instrucSize;
-    GetTextExtentPoint32A(hdcBuffer, instruc, strlen(instruc), &instrucSize);
-    TextOutA(hdcBuffer, panelX + (panelAncho - instrucSize.cx) / 2,
-             panelY + panelAlto - 18, instruc, strlen(instruc));
+    // Instrucciones en la parte inferior (solo para modos PRINCIPAL, CARGAR y CONFIRMAR_SALIR)
+    // No mostrar en MODO_GUARDAR ni modo de ingreso de nombre para evitar superposición
+    if (menu->modo != MODO_GUARDAR && menu->modo != MODO_PRINCIPAL + 10) {
+        SelectObject(hdcBuffer, fontPequena);
+        SetTextColor(hdcBuffer, RGB(120, 120, 120));
+        const char *instruc = "Flechas: navegar | Enter: confirmar | ESC: volver";
+        SIZE instrucSize;
+        GetTextExtentPoint32A(hdcBuffer, instruc, strlen(instruc), &instrucSize);
+        TextOutA(hdcBuffer, panelX + (panelAncho - instrucSize.cx) / 2,
+                 panelY + panelAlto - 18, instruc, strlen(instruc));
+    }
     
     SelectObject(hdcBuffer, oldFont);
     DeleteObject(fontTitulo);
@@ -827,19 +888,21 @@ void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {
 }
 
 bool menuPausaProcesarCaracter(MenuPausa *menu, WPARAM caracter) {
-    if (!menu->activo || menu->modo != MODO_GUARDAR) {
+    if (!menu->activo || (menu->modo != MODO_GUARDAR && menu->modo != MODO_PRINCIPAL + 10)) {
         return false;
     }
     
-    // Solo procesar caracteres imprimibles
-    if (caracter >= 32 && caracter < 127) {
-        if (menu->cursorPos < MAX_NOMBRE_JUGADOR - 1) {
-            menu->nombreInput[menu->cursorPos] = (char)caracter;
-            menu->cursorPos++;
-            menu->nombreInput[menu->cursorPos] = '\0';
-            menu->nombreExiste = existePartida(menu->nombreInput);
+    // Solo procesar caracteres imprimibles en el modo de ingreso de nombre
+    if (menu->modo == MODO_PRINCIPAL + 10) {
+        if (caracter >= 32 && caracter < 127) {
+            if (menu->cursorPos < MAX_NOMBRE_JUGADOR - 1) {
+                menu->nombreInput[menu->cursorPos] = (char)caracter;
+                menu->cursorPos++;
+                menu->nombreInput[menu->cursorPos] = '\0';
+                menu->nombreExiste = existePartida(menu->nombreInput);
+            }
+            return true;
         }
-        return true;
     }
     
     return false;
@@ -858,7 +921,12 @@ bool menuPausaProcesarTecla(MenuPausa *menu, WPARAM tecla, struct Jugador *j,
     
     // ESC para cerrar o volver
     if (tecla == VK_ESCAPE) {
-        if (menu->modo != MODO_PRINCIPAL) {
+        if (menu->modo == MODO_PRINCIPAL + 10) {
+            // Si está en modo de ingreso de nombre, volver a la lista de guardado
+            menu->modo = MODO_GUARDAR;
+            menu->nombreInput[0] = '\0';
+            menu->cursorPos = 0;
+        } else if (menu->modo != MODO_PRINCIPAL) {
             menu->modo = MODO_PRINCIPAL;
             menu->seleccion = 0;
         } else {
@@ -867,8 +935,40 @@ bool menuPausaProcesarTecla(MenuPausa *menu, WPARAM tecla, struct Jugador *j,
         return true;
     }
     
-    // En modo guardar, manejar backspace
+    // En modo guardar, manejar navegación de lista y creación de nueva partida
     if (menu->modo == MODO_GUARDAR) {
+        // Tecla N para crear nueva partida
+        if (tecla == 'N' || tecla == 'n') {
+            menu->modo = MODO_PRINCIPAL + 10;  // Modo temporal para pedir nombre
+            menu->nombreInput[0] = '\0';
+            menu->cursorPos = 0;
+            menu->nombreExiste = false;
+            return true;
+        }
+        
+        // Enter para sobrescribir partida seleccionada
+        if (tecla == VK_RETURN && menu->numPartidas > 0) {
+            const char *nombreExistente = menu->partidas[menu->partidaSeleccionada].nombreJugador;
+            if (guardarPartidaPorNombre(nombreExistente, j, cam)) {
+                strncpy(j->Nombre, nombreExistente, sizeof(j->Nombre) - 1);
+                j->Nombre[sizeof(j->Nombre) - 1] = '\0';
+                
+                snprintf(menu->mensaje, sizeof(menu->mensaje), "Partida sobrescrita correctamente!");
+                obtenerRutaGuardado(nombreExistente, menu->rutaGuardado, sizeof(menu->rutaGuardado));
+                menu->timerMensaje = 180;
+                menu->partidaGuardada = true;
+                menu->modo = MODO_PRINCIPAL;
+            } else {
+                snprintf(menu->mensaje, sizeof(menu->mensaje), "Error al guardar");
+                menu->timerMensaje = 120;
+            }
+            return true;
+        }
+        // NO consumir otras teclas - permitir que se procesen las flechas abajo
+    }
+    
+    // Modo especial para pedir nombre de nueva partida
+    if (menu->modo == MODO_PRINCIPAL + 10) {
         if (tecla == VK_BACK && menu->cursorPos > 0) {
             menu->cursorPos--;
             menu->nombreInput[menu->cursorPos] = '\0';
@@ -878,16 +978,15 @@ bool menuPausaProcesarTecla(MenuPausa *menu, WPARAM tecla, struct Jugador *j,
         
         if (tecla == VK_RETURN) {
             if (menu->cursorPos > 0) {
-                // Guardar la partida (permitir sobrescribir si ya existe)
+                // Guardar la partida con el nuevo nombre
                 if (guardarPartidaPorNombre(menu->nombreInput, j, cam)) {
-                    // Guardar el nombre en el jugador para futuras reescrituras
                     strncpy(j->Nombre, menu->nombreInput, sizeof(j->Nombre) - 1);
                     j->Nombre[sizeof(j->Nombre) - 1] = '\0';
                     
                     snprintf(menu->mensaje, sizeof(menu->mensaje), "Partida guardada correctamente!");
                     obtenerRutaGuardado(menu->nombreInput, menu->rutaGuardado, sizeof(menu->rutaGuardado));
-                    menu->timerMensaje = 180;  // 3 segundos
-                    menu->partidaGuardada = true; // Marcar que ya se guardó
+                    menu->timerMensaje = 180;
+                    menu->partidaGuardada = true;
                     menu->modo = MODO_PRINCIPAL;
                     menu->nombreInput[0] = '\0';
                     menu->cursorPos = 0;
@@ -898,14 +997,14 @@ bool menuPausaProcesarTecla(MenuPausa *menu, WPARAM tecla, struct Jugador *j,
             }
             return true;
         }
-        return true;  // Consumir todas las teclas en modo guardar
+        return true;  // Consumir todas las teclas
     }
     
     // Navegación con flechas
     if (tecla == VK_UP || tecla == 'W' || tecla == 'w') {
         if (menu->modo == MODO_PRINCIPAL) {
             menu->seleccion = (menu->seleccion - 1 + OPCIONES_PAUSA_TOTAL) % OPCIONES_PAUSA_TOTAL;
-        } else if (menu->modo == MODO_CARGAR && menu->numPartidas > 0) {
+        } else if ((menu->modo == MODO_CARGAR || menu->modo == MODO_GUARDAR) && menu->numPartidas > 0) {
             menu->partidaSeleccionada = (menu->partidaSeleccionada - 1 + menu->numPartidas) % menu->numPartidas;
         } else if (menu->modo == MODO_CONFIRMAR_SALIR) {
             menu->seleccion = (menu->seleccion + 1) % 2;
@@ -916,7 +1015,7 @@ bool menuPausaProcesarTecla(MenuPausa *menu, WPARAM tecla, struct Jugador *j,
     if (tecla == VK_DOWN || tecla == 'S' || tecla == 's') {
         if (menu->modo == MODO_PRINCIPAL) {
             menu->seleccion = (menu->seleccion + 1) % OPCIONES_PAUSA_TOTAL;
-        } else if (menu->modo == MODO_CARGAR && menu->numPartidas > 0) {
+        } else if ((menu->modo == MODO_CARGAR || menu->modo == MODO_GUARDAR) && menu->numPartidas > 0) {
             menu->partidaSeleccionada = (menu->partidaSeleccionada + 1) % menu->numPartidas;
         } else if (menu->modo == MODO_CONFIRMAR_SALIR) {
             menu->seleccion = (menu->seleccion + 1) % 2;
@@ -933,16 +1032,9 @@ bool menuPausaProcesarTecla(MenuPausa *menu, WPARAM tecla, struct Jugador *j,
                     break;
                 case 1:  // Guardar
                     menu->modo = MODO_GUARDAR;
-                    // Auto-rellenar con el nombre del jugador si ya guardó antes
-                    if (j->Nombre[0] != '\0') {
-                        strncpy(menu->nombreInput, j->Nombre, sizeof(menu->nombreInput) - 1);
-                        menu->nombreInput[sizeof(menu->nombreInput) - 1] = '\0';
-                        menu->cursorPos = (int)strlen(menu->nombreInput);
-                    } else {
-                        menu->nombreInput[0] = '\0';
-                        menu->cursorPos = 0;
-                    }
-                    menu->nombreExiste = false;
+                    // Obtener lista de partidas guardadas (igual que en cargar)
+                    menu->numPartidas = obtenerPartidasGuardadas(menu->partidas);
+                    menu->partidaSeleccionada = 0;
                     break;
                 case 2:  // Cargar
                     menu->modo = MODO_CARGAR;
