@@ -1629,7 +1629,16 @@ bool recursosIntentarRecogerMina(struct Jugador *j, float mundoX,
 
   // 1. Verificar si el click fue sobre la mina
   if (edificioContienePunto(e, mundoX, mundoY)) {
-    // 2. Verificar si hay recursos
+    // 1.5 Verificar si la mina está agotada
+    if (e->agotada) {
+      MessageBox(NULL,
+                 "Esta mina está completamente agotada.\\n\\nYa no quedan "
+                 "recursos por extraer.",
+                 "Mina Agotada", MB_OK | MB_ICONWARNING);
+      return true; // Click manejado
+    }
+
+    // 2. Verificar si hay recursos acumulados
     if (e->oroAcumulado <= 0 && e->piedraAcumulada <= 0 &&
         e->hierroAcumulado <= 0) {
       MessageBox(NULL, "La mina no tiene recursos acumulados aun.",

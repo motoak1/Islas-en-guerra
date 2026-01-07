@@ -26,6 +26,12 @@ typedef struct {
   int piedraAcumulada;
   int hierroAcumulado;
   DWORD ultimoTickGeneracion;
+
+  // --- Sistema de agotamiento de recursos ---
+  int oroRestante;    // Oro total que queda por extraer
+  int piedraRestante; // Piedra total que queda por extraer
+  int hierroRestante; // Hierro total que queda por extraer
+  bool agotada;       // true si la mina ya no tiene recursos
 } Edificio;
 
 // --- FUNCIONES DE EDIFICIOS ---
