@@ -22,8 +22,14 @@ void navegacionRegistrarIslaInicial(int isla);
 void navegacionProcesarResultadoBatalla(struct Jugador* j, BatallaResultado r,
 										int islaDestino);
 
-// Obtiene la posición fija del barco para una isla específica
+// Posición fija del barco por isla (exportada para uso externo)
 void navegacionObtenerPosicionBarcoIsla(int isla, float *outX, float *outY, int *outDir);
+
+// Acceso a enemigos activos en la isla actual
+Unidad *navegacionObtenerEnemigosActivos(int *cantidad);
+
+// Actualización de combate automático entre tropas y enemigos
+void navegacionActualizarCombateAuto(struct Jugador *j, float dt);
 
 #endif
 

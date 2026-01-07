@@ -153,6 +153,9 @@ void menuEmbarqueDibujar(HDC hdc, MenuEmbarque* menu, struct Jugador* j) {
     if (unidadListaParaEmbarcar(&j->caballeros[i], &j->barco)) caballerosDisponibles++;
   }
   for (int i = 0; i < 4; i++) {
+    if (unidadListaParaEmbarcar(&j->caballerosSinEscudo[i], &j->barco)) caballerosDisponibles++;
+  }
+  for (int i = 0; i < 4; i++) {
     if (unidadListaParaEmbarcar(&j->guerreros[i], &j->barco)) guerrerosDisponibles++;
   }
   
@@ -300,6 +303,9 @@ bool menuEmbarqueClick(MenuEmbarque* menu, struct Jugador* j, int x, int y) {
     if (unidadListaParaEmbarcar(&j->caballeros[i], &j->barco)) caballerosDisponibles++;
   }
   for (int i = 0; i < 4; i++) {
+    if (unidadListaParaEmbarcar(&j->caballerosSinEscudo[i], &j->barco)) caballerosDisponibles++;
+  }
+  for (int i = 0; i < 4; i++) {
     if (unidadListaParaEmbarcar(&j->guerreros[i], &j->barco)) guerrerosDisponibles++;
   }
   
@@ -408,13 +414,21 @@ void menuEmbarqueEmbarcar(MenuEmbarque* menu, struct Jugador* j) {
     }
   }
   
-  // Embarcar caballeros
+  // Embarcar caballeros (con y sin escudo)
   int caballerosEmbarcados = 0;
   for (int i = 0; i < 4 && caballerosEmbarcados < menu->caballerosSeleccionados; i++) {
     if (unidadListaParaEmbarcar(&j->caballeros[i], &j->barco) && j->barco.numTropas < 6) {
       j->barco.tropas[j->barco.numTropas++] = &j->caballeros[i];
       j->caballeros[i].x = -1000;
       j->caballeros[i].y = -1000;
+      caballerosEmbarcados++;
+    }
+  }
+  for (int i = 0; i < 4 && caballerosEmbarcados < menu->caballerosSeleccionados; i++) {
+    if (unidadListaParaEmbarcar(&j->caballerosSinEscudo[i], &j->barco) && j->barco.numTropas < 6) {
+      j->barco.tropas[j->barco.numTropas++] = &j->caballerosSinEscudo[i];
+      j->caballerosSinEscudo[i].x = -1000;
+      j->caballerosSinEscudo[i].y = -1000;
       caballerosEmbarcados++;
     }
   }

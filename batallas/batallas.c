@@ -13,7 +13,7 @@
 #define BATTLE_ROWS          8
 #define BATTLE_STEP_PIXELS   36.0f
 #define BATTLE_RANGE_PIXELS  60.0f
-#define BATTLE_ANIM_STEP_SEC 0.20f
+#define BATTLE_ANIM_STEP_SEC 1.00f
 
 // Rutas locales de sprites (reutilizamos los mismos BMP con carga propia)
 static const char *kCaballeroRutas[4] = {

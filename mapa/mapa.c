@@ -68,6 +68,8 @@ static HBITMAP hCaballeroSinEscudoBmp[4] = {
 static HBITMAP hBarcoBmp[4] = {NULL}; // Front, Back, Left, Right (192x192)
 
 static HBITMAP hGuerreroBmp[4] = {NULL}; // Front, Back, Left, Right
+static HBITMAP hCaballeroAtk[2][3] = {{NULL}}; // dir (0=left,1=right) x frames
+static HBITMAP hGuerreroAtk[2][2] = {{NULL}};
 
 static HBITMAP hVacaBmp[4] = {NULL};
 static bool gGenerarRecursos = true;
@@ -205,6 +207,9 @@ void mapaReconstruirCollisionMap(void) {
       // NUEVO: Las vacas tambien bloquean el paso temporalmente
       if (mapaObjetos[f][c] == SIMBOLO_VACA) {
         gCollisionMap[f][c] = 3; // Mismo valor que unidades temporales
+      }
+      if (mapaObjetos[f][c] == SIMBOLO_ENEMIGO) {
+        gCollisionMap[f][c] = 3; // Enemigos pasivos ocupan la celda
       }
     }
   }
@@ -961,6 +966,47 @@ void cargarRecursosGraficos() {
   const char *rutasBarcoAlt[] = {BARCO_F_ALT, BARCO_B_ALT, BARCO_L_ALT,
                                  BARCO_R_ALT};
 
+  // Ataque caballero (left/right, 3 frames)
+  const char *cabAtkL[3] = {"../assets/caballero/caballero_war_move_1_left.bmp",
+                            "../assets/caballero/caballero_war_move_2_left.bmp",
+                            "../assets/caballero/caballero_war_move_3_left.bmp"};
+  const char *cabAtkR[3] = {"../assets/caballero/caballero_war_move_1_right.bmp",
+                            "../assets/caballero/caballero_war_move_2_right.bmp",
+                            "../assets/caballero/caballero_war_move_3_right.bmp"};
+  const char *cabAtkLAlt[3] = {"assets/caballero/caballero_war_move_1_left.bmp",
+                               "assets/caballero/caballero_war_move_2_left.bmp",
+                               "assets/caballero/caballero_war_move_3_left.bmp"};
+  const char *cabAtkRAlt[3] = {"assets/caballero/caballero_war_move_1_right.bmp",
+                               "assets/caballero/caballero_war_move_2_right.bmp",
+                               "assets/caballero/caballero_war_move_3_right.bmp"};
+
+  for (int i = 0; i < 3; i++) {
+    hCaballeroAtk[0][i] = (HBITMAP)LoadImageA(NULL, cabAtkL[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hCaballeroAtk[0][i])
+      hCaballeroAtk[0][i] = (HBITMAP)LoadImageA(NULL, cabAtkLAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hCaballeroAtk[1][i] = (HBITMAP)LoadImageA(NULL, cabAtkR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hCaballeroAtk[1][i])
+      hCaballeroAtk[1][i] = (HBITMAP)LoadImageA(NULL, cabAtkRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+  }
+
+  // Ataque guerrero (left/right, 2 frames)
+  const char *gueAtkL[2] = {"../assets/guerrero/guerrero_war_move_1_left.bmp",
+                            "../assets/guerrero/guerrero_war_move_2_left.bmp"};
+  const char *gueAtkR[2] = {"../assets/guerrero/guerrero_war_move_1_right.bmp",
+                            "../assets/guerrero/guerrero_war_move_2_right.bmp"};
+  const char *gueAtkLAlt[2] = {"assets/guerrero/guerrero_war_move_1_left.bmp",
+                               "assets/guerrero/guerrero_war_move_2_left.bmp"};
+  const char *gueAtkRAlt[2] = {"assets/guerrero/guerrero_war_move_1_right.bmp",
+                               "assets/guerrero/guerrero_war_move_2_right.bmp"};
+  for (int i = 0; i < 2; i++) {
+    hGuerreroAtk[0][i] = (HBITMAP)LoadImageA(NULL, gueAtkL[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hGuerreroAtk[0][i])
+      hGuerreroAtk[0][i] = (HBITMAP)LoadImageA(NULL, gueAtkLAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hGuerreroAtk[1][i] = (HBITMAP)LoadImageA(NULL, gueAtkR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hGuerreroAtk[1][i])
+      hGuerreroAtk[1][i] = (HBITMAP)LoadImageA(NULL, gueAtkRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+  }
+
   for (int i = 0; i < 4; i++) {
     hBarcoBmp[i] = (HBITMAP)LoadImageA(NULL, rutasBarcoAlt[i], IMAGE_BITMAP,
                                        192, 192, LR_LOADFROMFILE);
@@ -1135,6 +1181,44 @@ void mapaActualizarVacas(void) {
   }
 }
 
+static void dibujarUnidadCombat(HDC hdcBuffer, HDC hdcSprites, Unidad *u,
+                                Camara cam, int anchoP, int altoP,
+                                bool esEnemigo, bool atacando, int atkFrame) {
+  if (!u || u->x < 0 || u->y < 0)
+    return;
+
+  int pantX = (int)((u->x - cam.x) * cam.zoom);
+  int pantY = (int)((u->y - cam.y) * cam.zoom);
+  int tam = (int)(64 * cam.zoom);
+  if (pantX + tam <= 0 || pantX >= anchoP || pantY + tam <= 0 || pantY >= altoP)
+    return;
+
+  HBITMAP sprite = NULL;
+  int dirIdx = (u->dir == DIR_RIGHT) ? 1 : 0;
+  if (u->tipo == TIPO_CABALLERO) {
+    if (atacando && hCaballeroAtk[dirIdx][atkFrame % 3]) {
+      sprite = hCaballeroAtk[dirIdx][atkFrame % 3];
+    } else {
+      sprite = hCaballeroBmp[u->dir];
+    }
+  } else if (u->tipo == TIPO_CABALLERO_SIN_ESCUDO) {
+    sprite = hCaballeroSinEscudoBmp[u->dir];
+  } else {
+    if (atacando && hGuerreroAtk[dirIdx][atkFrame % 2]) {
+      sprite = hGuerreroAtk[dirIdx][atkFrame % 2];
+    } else {
+      sprite = hGuerreroBmp[u->dir];
+    }
+  }
+
+  if (sprite) {
+    SelectObject(hdcSprites, sprite);
+    TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0, 64, 64,
+                   RGB(255, 255, 255));
+  }
+
+}
+
 // ============================================================================
 // DIBUJADO CON Y-SORTING (PROFUNDIDAD POR FILA)
 // ============================================================================
@@ -1269,36 +1353,61 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
 
   HDC hdcSprites = CreateCompatibleDC(hdc);
 
+  // Nota: Dibujamos árboles por fila para preservar Y-sorting con unidades.
+
+  int enemigosActivosCount = 0;
+  Unidad *enemigosActivos =
+      navegacionObtenerEnemigosActivos(&enemigosActivosCount);
+  static int frameAtaque = 0;
+  {
+    static ULONGLONG sUltimoAtkMs = 0;
+    ULONGLONG ahora = GetTickCount64();
+    if (sUltimoAtkMs == 0 || (ahora > sUltimoAtkMs && (ahora - sUltimoAtkMs) >= 1000ULL)) {
+      frameAtaque = (frameAtaque + 1) % 6;
+      sUltimoAtkMs = ahora;
+    }
+  }
+
+  Unidad *aliadosLista[12];
+  int numAliadosLista = 0;
+  for (int i = 0; i < 4; i++)
+    aliadosLista[numAliadosLista++] = &pJugador->caballeros[i];
+  for (int i = 0; i < 4; i++)
+    aliadosLista[numAliadosLista++] = &pJugador->caballerosSinEscudo[i];
+  for (int i = 0; i < 4; i++)
+    aliadosLista[numAliadosLista++] = &pJugador->guerreros[i];
+
+  bool ataqueAliados[12] = {false};
+  bool ataqueEnemigos[8] = {false};
+  const float rangoAtaque = 60.0f;
+  const float rangoAtaque2 = rangoAtaque * rangoAtaque;
+  if (enemigosActivos && enemigosActivosCount > 0) {
+    for (int a = 0; a < numAliadosLista; a++) {
+      Unidad *al = aliadosLista[a];
+      if (!al || al->vida <= 0 || al->x < 0)
+        continue;
+      for (int e = 0; e < enemigosActivosCount; e++) {
+        Unidad *en = &enemigosActivos[e];
+        if (en->vida <= 0 || en->x < 0)
+          continue;
+        float dx = al->x - en->x;
+        float dy = al->y - en->y;
+        float d2 = dx * dx + dy * dy;
+        if (d2 <= rangoAtaque2) {
+          ataqueAliados[a] = true;
+          ataqueEnemigos[e] = true;
+          break;
+        }
+      }
+    }
+  }
+
   // Puntero a la matriz de objetos para aritmética de punteros
   char (*ptrMatriz)[GRID_SIZE] = mapaObjetos;
 
   // Recorrer cada fila del mapa (0 a GRID_SIZE-1)
   for (int f = 0; f < GRID_SIZE; f++) {
-    // ================================================================
-    // A) DIBUJAR ÁRBOLES DE ESTA FILA
-    // ================================================================
-    for (int c = 0; c < GRID_SIZE; c++) {
-      // Obtener el contenido de la celda usando aritmética de punteros
-      char celdaContenido = *(*(ptrMatriz + f) + c);
-
-      // Si hay un árbol en esta celda, dibujarlo
-      if (celdaContenido == SIMBOLO_ARBOL) {
-        int mundoX = c * TILE_SIZE;
-        int mundoY = f * TILE_SIZE;
-
-        int pantX = (int)((mundoX - cam.x) * cam.zoom);
-        int pantY = (int)((mundoY - cam.y) * cam.zoom);
-        int tamZoom = (int)(SPRITE_ARBOL * cam.zoom);
-
-        if (pantX + tamZoom > 0 && pantX < anchoP && pantY + tamZoom > 0 &&
-            pantY < altoP) {
-          // Usar el primer sprite de árbol (índice 0)
-          SelectObject(hdcSprites, hArboles[0]);
-          TransparentBlt(hdcBuffer, pantX, pantY, tamZoom, tamZoom, hdcSprites,
-                         0, 0, SPRITE_ARBOL, SPRITE_ARBOL, RGB(255, 255, 255));
-        }
-      }
-    }
+    // A) Árboles se dibujan al final de la fila para quedar encima.
 
     // ================================================================
     // B) DIBUJAR OBREROS CUYA BASE (y + 64) COINCIDE CON ESTA FILA
@@ -1359,6 +1468,25 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
       }
     }
 
+    // ================================================================
+    // Z) DIBUJAR ÁRBOLES DE ESTA FILA (AL FINAL PARA ESTAR ENCIMA)
+    // ================================================================
+    for (int c = 0; c < GRID_SIZE; c++) {
+      char celdaContenido = *(*(ptrMatriz + f) + c);
+      if (celdaContenido == SIMBOLO_ARBOL) {
+        int mundoX = c * TILE_SIZE;
+        int mundoY = f * TILE_SIZE;
+        int pantX = (int)((mundoX - cam.x) * cam.zoom);
+        int pantY = (int)((mundoY - cam.y) * cam.zoom);
+        int tamZoom = (int)(SPRITE_ARBOL * cam.zoom);
+        if (pantX + tamZoom > 0 && pantX < anchoP && pantY + tamZoom > 0 && pantY < altoP) {
+          SelectObject(hdcSprites, hArboles[0]);
+          TransparentBlt(hdcBuffer, pantX, pantY, tamZoom, tamZoom, hdcSprites,
+                         0, 0, SPRITE_ARBOL, SPRITE_ARBOL, RGB(255, 255, 255));
+        }
+      }
+    }
+
     // C) DIBUJAR CABALLEROS (NUEVO)
     Unidad *baseCaballeros = pJugador->caballeros;
     for (Unidad *c = baseCaballeros; c < baseCaballeros + 4; c++) {
@@ -1371,6 +1499,11 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
 
         if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 &&
             pantY < altoP) {
+          int idxCab = (int)(c - baseCaballeros);
+          bool atacando = (idxCab >= 0 && idxCab < 12) ? ataqueAliados[idxCab]
+                                                       : false;
+          dibujarUnidadCombat(hdcBuffer, hdcSprites, c, cam, anchoP, altoP,
+                              false, atacando, frameAtaque);
           SelectObject(hdcSprites, hCaballeroBmp[c->dir]);
           TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
                          64, 64, RGB(255, 255, 255));
@@ -1414,6 +1547,11 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
                            cam.zoom);
 
           // Círculo de selección (Cyan para distinguirlos)
+          int idxCse = 4 + (int)(c - baseCSE);
+          bool atacando = (idxCse >= 0 && idxCse < 12) ? ataqueAliados[idxCse]
+                                                       : false;
+          dibujarUnidadCombat(hdcBuffer, hdcSprites, c, cam, anchoP, altoP,
+                              false, atacando, frameAtaque);
           if (c->seleccionado) {
             HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
             HPEN cyan = CreatePen(PS_SOLID, 2, RGB(0, 255, 255));
@@ -1438,6 +1576,11 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
         int tam = (int)(64 * cam.zoom);
         if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 &&
             pantY < altoP) {
+          int idxG = 8 + (int)(g - baseGuerreros);
+          bool atacando = (idxG >= 0 && idxG < 12) ? ataqueAliados[idxG]
+                                                   : false;
+          dibujarUnidadCombat(hdcBuffer, hdcSprites, g, cam, anchoP, altoP,
+                              false, atacando, frameAtaque);
           SelectObject(hdcSprites, hGuerreroBmp[g->dir]);
           TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
                          64, 64, RGB(255, 255, 255));
@@ -1455,6 +1598,34 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
             Ellipse(hdcBuffer, pantX, pantY + tam - 10, pantX + tam,
                     pantY + tam + 5);
             DeleteObject(amarillo);
+          }
+        }
+      }
+    }
+
+    // D.5) DIBUJAR ENEMIGOS PASIVOS
+    if (enemigosActivos && enemigosActivosCount > 0) {
+      for (int idx = 0; idx < enemigosActivosCount; idx++) {
+        Unidad *e = &enemigosActivos[idx];
+        float basePies = e->y + (float)TILE_SIZE;
+
+        if (basePies >= (float)yMinFila && basePies < (float)yMaxFila) {
+          int pantX = (int)((e->x - cam.x) * cam.zoom);
+          int pantY = (int)((e->y - cam.y) * cam.zoom);
+          int tam = (int)(64 * cam.zoom);
+
+          if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 &&
+              pantY < altoP) {
+                bool atacando = (idx >= 0 && idx < 8) ? ataqueEnemigos[idx] : false;
+                dibujarUnidadCombat(hdcBuffer, hdcSprites, e, cam, anchoP, altoP,
+                  true, atacando, frameAtaque);
+                HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+                HPEN rojo = CreatePen(PS_SOLID, 2, RGB(200, 60, 60));
+                SelectObject(hdcBuffer, nullBrush);
+                SelectObject(hdcBuffer, rojo);
+                Ellipse(hdcBuffer, pantX, pantY + tam - 10, pantX + tam,
+                  pantY + tam + 5);
+                DeleteObject(rojo);
           }
         }
       }
@@ -1766,12 +1937,18 @@ void mapaMoverObjeto(float viejoX, float viejoY, float nuevoX, float nuevoY,
   if (viejaFila != nuevaFila || viejaCol != nuevaCol) {
     if (viejaFila >= 0 && viejaFila < GRID_SIZE && viejaCol >= 0 &&
         viejaCol < GRID_SIZE) {
-      mapaObjetos[viejaFila][viejaCol] = SIMBOLO_VACIO;
+      // Solo limpiar si el contenido coincide con el simbolo móvil
+      if (mapaObjetos[viejaFila][viejaCol] == simbolo) {
+        mapaObjetos[viejaFila][viejaCol] = SIMBOLO_VACIO;
+      }
     }
 
     if (nuevaFila >= 0 && nuevaFila < GRID_SIZE && nuevaCol >= 0 &&
         nuevaCol < GRID_SIZE) {
-      mapaObjetos[nuevaFila][nuevaCol] = simbolo;
+      // Evitar sobreescribir contenido estático (ej: árboles)
+      if (mapaObjetos[nuevaFila][nuevaCol] == SIMBOLO_VACIO) {
+        mapaObjetos[nuevaFila][nuevaCol] = simbolo;
+      }
     }
   }
 }
