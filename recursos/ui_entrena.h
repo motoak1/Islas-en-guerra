@@ -25,6 +25,22 @@
 #define COSTO_GUERRERO_MADERA 20
 #define COSTO_GUERRERO_HIERRO 20
 
+// Costos para mejorar el barco por nivel (muy altos)
+#define COSTO_MEJORA_BARCO_2_ORO 500
+#define COSTO_MEJORA_BARCO_2_MADERA 400
+#define COSTO_MEJORA_BARCO_2_PIEDRA 300
+#define COSTO_MEJORA_BARCO_2_HIERRO 200
+
+#define COSTO_MEJORA_BARCO_3_ORO 1000
+#define COSTO_MEJORA_BARCO_3_MADERA 800
+#define COSTO_MEJORA_BARCO_3_PIEDRA 600
+#define COSTO_MEJORA_BARCO_3_HIERRO 400
+
+#define COSTO_MEJORA_BARCO_4_ORO 1500
+#define COSTO_MEJORA_BARCO_4_MADERA 1200
+#define COSTO_MEJORA_BARCO_4_PIEDRA 900
+#define COSTO_MEJORA_BARCO_4_HIERRO 600
+
 // --- ESTRUCTURA DEL MENÚ DE ENTRENAMIENTO ---
 typedef struct MenuEntrenamiento {
   bool abierto;
@@ -34,6 +50,7 @@ typedef struct MenuEntrenamiento {
   RECT botonCaballero;          // Botón para entrenar caballero
   RECT botonCaballeroSinEscudo; // Botón para entrenar caballero sin escudo
   RECT botonGuerrero;           // Botón para entrenar guerrero
+  RECT botonMejorarBarco;       // Botón para mejorar capacidad del barco
   RECT botonCerrar;             // Rectángulo del botón cerrar
   char mensajeError[100];       // Mensaje de error si recursos insuficientes
   int tiempoError;              // Contador para mostrar error temporalmente

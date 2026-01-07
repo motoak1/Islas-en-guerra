@@ -60,6 +60,8 @@ int **mapaObtenerCollisionMap(void);
 void mapaReconstruirCollisionMap(void);
 // Marca un edificio en el collision map como impasable
 void mapaMarcarEdificio(float x, float y, int ancho, int alto);
+// Desmarca un edificio en el collision map (cuando se destruye o explota)
+void mapaDesmarcarEdificio(float x, float y, int ancho, int alto);
 // Detecta automáticamente una posición válida en la orilla del mapa
 void mapaDetectarOrilla(float *outX, float *outY, int *outDir);
 // Detecta automáticamente una posición válida en la orilla del mapa
@@ -87,7 +89,8 @@ void mapaMoverObjeto(float viejoX, float viejoY, float nuevoX, float nuevoY,
 bool mapaEstaOcupada(int fila, int columna);
 // Limpia una celda (marca como vacía)
 void mapaLimpiarCelda(int fila, int columna);
-// Habilita o deshabilita la generación automática de árboles/vacas en cargarRecursosGraficos
+// Habilita o deshabilita la generación automática de árboles/vacas en
+// cargarRecursosGraficos
 void mapaSetGenerarRecursos(bool habilitar);
 
 // --- FUNCIONES DE VACAS ---

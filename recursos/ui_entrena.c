@@ -14,16 +14,17 @@ void menuEntrenamientoInicializar(MenuEntrenamiento *menu) {
 void menuEntrenamientoAbrir(MenuEntrenamiento *menu, int anchoPantalla,
                             int altoPantalla) {
   menu->abierto = true;
-  menu->ancho = 540;
-  menu->alto = 620; // Más alto para 4 botones y stats
+  menu->ancho = 560;
+  menu->alto = 720; // Más alto para 5 botones (4 tropas + 1 mejora barco)
   menu->pantallaX = (anchoPantalla - menu->ancho) / 2;
   menu->pantallaY = (altoPantalla - menu->alto) / 2;
 
   int xCentro = menu->pantallaX + (menu->ancho / 2);
 
   // Configurar botones
-  int btnAncho = 460;
-  int btnAlto = 90;
+  int btnAncho = 500;
+  int btnAlto = 85;
+  int espacioEntreBotones = 12;
 
   // Botón Entrenar Obrero
   menu->botonObrero.left = xCentro - (btnAncho / 2);
@@ -33,22 +34,31 @@ void menuEntrenamientoAbrir(MenuEntrenamiento *menu, int anchoPantalla,
 
   // Botón Entrenar Caballero con Escudo
   menu->botonCaballero.left = xCentro - (btnAncho / 2);
-  menu->botonCaballero.top = menu->botonObrero.bottom + 15;
+  menu->botonCaballero.top = menu->botonObrero.bottom + espacioEntreBotones;
   menu->botonCaballero.right = xCentro + (btnAncho / 2);
   menu->botonCaballero.bottom = menu->botonCaballero.top + btnAlto;
 
   // Botón Entrenar Caballero sin Escudo
   menu->botonCaballeroSinEscudo.left = xCentro - (btnAncho / 2);
-  menu->botonCaballeroSinEscudo.top = menu->botonCaballero.bottom + 15;
+  menu->botonCaballeroSinEscudo.top =
+      menu->botonCaballero.bottom + espacioEntreBotones;
   menu->botonCaballeroSinEscudo.right = xCentro + (btnAncho / 2);
   menu->botonCaballeroSinEscudo.bottom =
       menu->botonCaballeroSinEscudo.top + btnAlto;
 
   // Botón Entrenar Guerrero
   menu->botonGuerrero.left = xCentro - (btnAncho / 2);
-  menu->botonGuerrero.top = menu->botonCaballeroSinEscudo.bottom + 15;
+  menu->botonGuerrero.top =
+      menu->botonCaballeroSinEscudo.bottom + espacioEntreBotones;
   menu->botonGuerrero.right = xCentro + (btnAncho / 2);
   menu->botonGuerrero.bottom = menu->botonGuerrero.top + btnAlto;
+
+  // Botón Mejorar Barco (NUEVO)
+  menu->botonMejorarBarco.left = xCentro - (btnAncho / 2);
+  menu->botonMejorarBarco.top =
+      menu->botonGuerrero.bottom + espacioEntreBotones;
+  menu->botonMejorarBarco.right = xCentro + (btnAncho / 2);
+  menu->botonMejorarBarco.bottom = menu->botonMejorarBarco.top + btnAlto;
 
   // Botón Cerrar
   menu->botonCerrar.left = xCentro - 80;
@@ -208,6 +218,66 @@ void menuEntrenamientoDibujar(HDC hdc, MenuEntrenamiento *menu,
   dibujarBotonEntrenamiento(hdc, menu->botonGuerrero, "Entrenar Guerrero",
                             costo, stats);
 
+  // Botón Mejorar Barco (NUEVO)
+  int nivelActual = jugador->barco.nivelMejora;
+  int capacidadActual = jugador->barco.capacidadMaxima;
+
+  if (nivelActual < 4) {
+    // Preparar texto de mejora
+    char tituloBarco[80];
+    char costoBarco[120];
+    char statsBarco[100];
+
+    int siguienteNivel = nivelActual + 1;
+    int siguienteCapacidad = siguienteNivel * 3 + 3; // 9, 12, 15
+
+    sprintf(tituloBarco, "Mejorar Barco (Niv %d -> %d)", nivelActual,
+            siguienteNivel);
+    sprintf(statsBarco, "Capacidad: %d -> %d tropas", capacidadActual,
+            siguienteCapacidad);
+
+    // Determinar costos según el siguiente nivel
+    int oro, madera, piedra, hierro;
+    if (siguienteNivel == 2) {
+      oro = COSTO_MEJORA_BARCO_2_ORO;
+      madera = COSTO_MEJORA_BARCO_2_MADERA;
+      piedra = COSTO_MEJORA_BARCO_2_PIEDRA;
+      hierro = COSTO_MEJORA_BARCO_2_HIERRO;
+    } else if (siguienteNivel == 3) {
+      oro = COSTO_MEJORA_BARCO_3_ORO;
+      madera = COSTO_MEJORA_BARCO_3_MADERA;
+      piedra = COSTO_MEJORA_BARCO_3_PIEDRA;
+      hierro = COSTO_MEJORA_BARCO_3_HIERRO;
+    } else { // siguienteNivel == 4
+      oro = COSTO_MEJORA_BARCO_4_ORO;
+      madera = COSTO_MEJORA_BARCO_4_MADERA;
+      piedra = COSTO_MEJORA_BARCO_4_PIEDRA;
+      hierro = COSTO_MEJORA_BARCO_4_HIERRO;
+    }
+
+    sprintf(costoBarco, "Costo: %d Oro, %d Madera, %d Piedra, %d Hierro", oro,
+            madera, piedra, hierro);
+
+    dibujarBotonEntrenamiento(hdc, menu->botonMejorarBarco, tituloBarco,
+                              costoBarco, statsBarco);
+  } else {
+    // Nivel máximo alcanzado
+    HBRUSH brushMaximo = CreateSolidBrush(RGB(50, 50, 50)); // Gris oscuro
+    SelectObject(hdc, brushMaximo);
+    HPEN penMaximo = CreatePen(PS_SOLID, 2, RGB(100, 100, 100));
+    SelectObject(hdc, penMaximo);
+    RoundRect(hdc, menu->botonMejorarBarco.left, menu->botonMejorarBarco.top,
+              menu->botonMejorarBarco.right, menu->botonMejorarBarco.bottom, 8,
+              8);
+    DeleteObject(brushMaximo);
+    DeleteObject(penMaximo);
+
+    SetTextColor(hdc, RGB(150, 150, 150));
+    RECT rectTexto = menu->botonMejorarBarco;
+    DrawText(hdc, "Barco al Nivel Máximo (15 tropas)", -1, &rectTexto,
+             DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+  }
+
   SelectObject(hdc, oldFont);
   DeleteObject(fontNormal);
 
@@ -348,6 +418,29 @@ bool menuEntrenamientoClick(MenuEntrenamiento *menu, struct Jugador *jugador,
       }
     } else {
       strcpy(menu->mensajeError, "Recursos insuficientes!");
+      menu->tiempoError = 60;
+    }
+    return true;
+  }
+
+  // --- MEJORAR BARCO ---
+  if (pantallaX >= menu->botonMejorarBarco.left &&
+      pantallaX <= menu->botonMejorarBarco.right &&
+      pantallaY >= menu->botonMejorarBarco.top &&
+      pantallaY <= menu->botonMejorarBarco.bottom) {
+    // Solo permitir si no está al nivel máximo
+    if (jugador->barco.nivelMejora < 4) {
+      extern bool mejorarBarco(struct Jugador * j);
+      if (mejorarBarco(jugador)) {
+        // mejorarBarco ya descuenta los recursos internamente
+        strcpy(menu->mensajeError, "Barco mejorado con exito!");
+        menu->tiempoError = 80;
+      } else {
+        strcpy(menu->mensajeError, "Recursos insuficientes!");
+        menu->tiempoError = 60;
+      }
+    } else {
+      strcpy(menu->mensajeError, "El barco ya esta al nivel maximo!");
       menu->tiempoError = 60;
     }
     return true;

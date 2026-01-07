@@ -1,5 +1,6 @@
 // edificios/edificios.c
 #include "edificios.h"
+#include "../mapa/mapa.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -48,6 +49,21 @@ void edificioInicializar(Edificio *e, TipoEdificio tipo, float x, float y) {
   e->piedraAcumulada = 0;
   e->hierroAcumulado = 0;
   e->ultimoTickGeneracion = GetTickCount();
+
+  // Inicializar recursos totales de la mina (solo para minas)
+  if (tipo == EDIFICIO_MINA) {
+    e->oroRestante = 500;    // 500 oro total
+    e->piedraRestante = 500; // 500 piedra total
+    e->hierroRestante = 250; // 250 hierro total
+    e->agotada = false;
+    printf("[MINA] Inicializada con: %d Oro, %d Piedra, %d Hierro\n",
+           e->oroRestante, e->piedraRestante, e->hierroRestante);
+  } else {
+    e->oroRestante = 0;
+    e->piedraRestante = 0;
+    e->hierroRestante = 0;
+    e->agotada = false;
+  }
 }
 
 bool edificioContienePunto(const Edificio *e, float mundoX, float mundoY) {
@@ -63,22 +79,68 @@ void edificioActualizar(Edificio *e) {
   if (!e->construido || e->tipo != EDIFICIO_MINA)
     return;
 
+  // Si la mina está agotada, no generar más recursos
+  if (e->agotada) {
+    return;
+  }
+
   DWORD tickActual = GetTickCount();
   // Generar cada 15 segundos (15000 ms)
   if (tickActual - e->ultimoTickGeneracion >= 15000) {
-    // Generar +20 de cada uno, hasta un tope de 100
-    if (e->oroAcumulado < 100)
-      e->oroAcumulado += 20;
-    if (e->piedraAcumulada < 100)
-      e->piedraAcumulada += 20;
-    if (e->hierroAcumulado < 100)
-      e->hierroAcumulado += 10; // Hierro es mas escaso
+    // Generar recursos solo si hay reservas disponibles
+    int oroGenerado = 0, piedraGenerada = 0, hierroGenerado = 0;
+
+    // Generar +20 de oro, hasta un tope de 100 acumulados Y sin exceder
+    // recursos restantes
+    if (e->oroAcumulado < 100 && e->oroRestante > 0) {
+      int cantidad = (e->oroRestante >= 20) ? 20 : e->oroRestante;
+      e->oroAcumulado += cantidad;
+      e->oroRestante -= cantidad;
+      oroGenerado = cantidad;
+    }
+
+    // Generar +20 de piedra
+    if (e->piedraAcumulada < 100 && e->piedraRestante > 0) {
+      int cantidad = (e->piedraRestante >= 20) ? 20 : e->piedraRestante;
+      e->piedraAcumulada += cantidad;
+      e->piedraRestante -= cantidad;
+      piedraGenerada = cantidad;
+    }
+
+    // Generar +10 de hierro (más escaso)
+    if (e->hierroAcumulado < 100 && e->hierroRestante > 0) {
+      int cantidad = (e->hierroRestante >= 10) ? 10 : e->hierroRestante;
+      e->hierroAcumulado += cantidad;
+      e->hierroRestante -= cantidad;
+      hierroGenerado = cantidad;
+    }
 
     e->ultimoTickGeneracion = tickActual;
 
-    // Debug para consola
-    printf("[MINA] Recursos generados: Oro=%d, Piedra=%d, Hierro=%d\n",
-           e->oroAcumulado, e->piedraAcumulada, e->hierroAcumulado);
+    // Verificar si la mina se agotó completamente
+    if (e->oroRestante <= 0 && e->piedraRestante <= 0 &&
+        e->hierroRestante <= 0) {
+      e->agotada = true;
+      e->construido = false; // "EXPLOTÓ": Desaparece del mapa
+
+      // NUEVO: Liberar el espacio en el mapa de colisiones y matriz de objetos
+      mapaDesmarcarEdificio(e->x, e->y, e->ancho, e->alto);
+
+      // Mostrar mensaje de evento
+      MessageBoxA(NULL,
+                  "¡UNA MINA HA EXPLOTADO!\n\nSe han agotado todas sus vetas y "
+                  "la estructura ha colapsado.",
+                  "Evento: Mina Agotada", MB_OK | MB_ICONWARNING);
+
+      printf("[MINA] ¡EXPLOTÓ! Ya no quedan recursos y la estructura ha "
+             "colapsado.\n");
+    } else {
+      // Debug para consola
+      printf("[MINA] Generado: +%d Oro, +%d Piedra, +%d Hierro | Restante: %d "
+             "Oro, %d Piedra, %d Hierro\n",
+             oroGenerado, piedraGenerada, hierroGenerado, e->oroRestante,
+             e->piedraRestante, e->hierroRestante);
+    }
   }
 }
 

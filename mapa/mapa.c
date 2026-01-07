@@ -68,7 +68,7 @@ static HBITMAP hCaballeroSinEscudoBmp[4] = {
     NULL};                            // Front, Back, Left, Right (NUEVO)
 static HBITMAP hBarcoBmp[4] = {NULL}; // Front, Back, Left, Right (192x192)
 
-static HBITMAP hGuerreroBmp[4] = {NULL}; // Front, Back, Left, Right
+static HBITMAP hGuerreroBmp[4] = {NULL};       // Front, Back, Left, Right
 static HBITMAP hCaballeroAtk[2][3] = {{NULL}}; // dir (0=left,1=right) x frames
 static HBITMAP hGuerreroAtk[2][2] = {{NULL}};
 
@@ -241,6 +241,33 @@ void mapaMarcarEdificio(float x, float y, int ancho, int alto) {
 
         // Eliminar árboles en área expandida
         mapaObjetos[f][c] = 0;
+      }
+    }
+  }
+}
+
+// Desmarca un edificio en el collision map (cuando se destruye o explota)
+void mapaDesmarcarEdificio(float x, float y, int ancho, int alto) {
+  if (gCollisionMap == NULL)
+    return;
+
+  // Calcular celdas que ocupa el edificio (TILE_SIZE=64)
+  int celInicioFila = (int)(y / TILE_SIZE);
+  int celInicioCol = (int)(x / TILE_SIZE);
+  int celFinFila = (int)((y + alto) / TILE_SIZE);
+  int celFinCol = (int)((x + ancho) / TILE_SIZE);
+
+  for (int f = celInicioFila; f <= celFinFila && f < GRID_SIZE; f++) {
+    for (int c = celInicioCol; c <= celFinCol && c < GRID_SIZE; c++) {
+      if (f >= 0 && c >= 0) {
+        gCollisionMap[f][c] = 0; // Desbloquear celda
+
+        // También limpiar el símbolo en mapaObjetos si era un edificio
+        char s = mapaObjetos[f][c];
+        if (s == SIMBOLO_EDIFICIO || s == SIMBOLO_MINA ||
+            s == SIMBOLO_CUARTEL) {
+          mapaObjetos[f][c] = SIMBOLO_VACIO;
+        }
       }
     }
   }
@@ -968,26 +995,34 @@ void cargarRecursosGraficos() {
                                  BARCO_R_ALT};
 
   // Ataque caballero (left/right, 3 frames)
-  const char *cabAtkL[3] = {"../assets/caballero/caballero_war_move_1_left.bmp",
-                            "../assets/caballero/caballero_war_move_2_left.bmp",
-                            "../assets/caballero/caballero_war_move_3_left.bmp"};
-  const char *cabAtkR[3] = {"../assets/caballero/caballero_war_move_1_right.bmp",
-                            "../assets/caballero/caballero_war_move_2_right.bmp",
-                            "../assets/caballero/caballero_war_move_3_right.bmp"};
-  const char *cabAtkLAlt[3] = {"assets/caballero/caballero_war_move_1_left.bmp",
-                               "assets/caballero/caballero_war_move_2_left.bmp",
-                               "assets/caballero/caballero_war_move_3_left.bmp"};
-  const char *cabAtkRAlt[3] = {"assets/caballero/caballero_war_move_1_right.bmp",
-                               "assets/caballero/caballero_war_move_2_right.bmp",
-                               "assets/caballero/caballero_war_move_3_right.bmp"};
+  const char *cabAtkL[3] = {
+      "../assets/caballero/caballero_war_move_1_left.bmp",
+      "../assets/caballero/caballero_war_move_2_left.bmp",
+      "../assets/caballero/caballero_war_move_3_left.bmp"};
+  const char *cabAtkR[3] = {
+      "../assets/caballero/caballero_war_move_1_right.bmp",
+      "../assets/caballero/caballero_war_move_2_right.bmp",
+      "../assets/caballero/caballero_war_move_3_right.bmp"};
+  const char *cabAtkLAlt[3] = {
+      "assets/caballero/caballero_war_move_1_left.bmp",
+      "assets/caballero/caballero_war_move_2_left.bmp",
+      "assets/caballero/caballero_war_move_3_left.bmp"};
+  const char *cabAtkRAlt[3] = {
+      "assets/caballero/caballero_war_move_1_right.bmp",
+      "assets/caballero/caballero_war_move_2_right.bmp",
+      "assets/caballero/caballero_war_move_3_right.bmp"};
 
   for (int i = 0; i < 3; i++) {
-    hCaballeroAtk[0][i] = (HBITMAP)LoadImageA(NULL, cabAtkL[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hCaballeroAtk[0][i] = (HBITMAP)LoadImageA(NULL, cabAtkL[i], IMAGE_BITMAP,
+                                              64, 64, LR_LOADFROMFILE);
     if (!hCaballeroAtk[0][i])
-      hCaballeroAtk[0][i] = (HBITMAP)LoadImageA(NULL, cabAtkLAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
-    hCaballeroAtk[1][i] = (HBITMAP)LoadImageA(NULL, cabAtkR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+      hCaballeroAtk[0][i] = (HBITMAP)LoadImageA(
+          NULL, cabAtkLAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hCaballeroAtk[1][i] = (HBITMAP)LoadImageA(NULL, cabAtkR[i], IMAGE_BITMAP,
+                                              64, 64, LR_LOADFROMFILE);
     if (!hCaballeroAtk[1][i])
-      hCaballeroAtk[1][i] = (HBITMAP)LoadImageA(NULL, cabAtkRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+      hCaballeroAtk[1][i] = (HBITMAP)LoadImageA(
+          NULL, cabAtkRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
   }
 
   // Ataque guerrero (left/right, 2 frames)
@@ -1000,12 +1035,16 @@ void cargarRecursosGraficos() {
   const char *gueAtkRAlt[2] = {"assets/guerrero/guerrero_war_move_1_right.bmp",
                                "assets/guerrero/guerrero_war_move_2_right.bmp"};
   for (int i = 0; i < 2; i++) {
-    hGuerreroAtk[0][i] = (HBITMAP)LoadImageA(NULL, gueAtkL[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hGuerreroAtk[0][i] = (HBITMAP)LoadImageA(NULL, gueAtkL[i], IMAGE_BITMAP, 64,
+                                             64, LR_LOADFROMFILE);
     if (!hGuerreroAtk[0][i])
-      hGuerreroAtk[0][i] = (HBITMAP)LoadImageA(NULL, gueAtkLAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
-    hGuerreroAtk[1][i] = (HBITMAP)LoadImageA(NULL, gueAtkR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+      hGuerreroAtk[0][i] = (HBITMAP)LoadImageA(
+          NULL, gueAtkLAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hGuerreroAtk[1][i] = (HBITMAP)LoadImageA(NULL, gueAtkR[i], IMAGE_BITMAP, 64,
+                                             64, LR_LOADFROMFILE);
     if (!hGuerreroAtk[1][i])
-      hGuerreroAtk[1][i] = (HBITMAP)LoadImageA(NULL, gueAtkRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+      hGuerreroAtk[1][i] = (HBITMAP)LoadImageA(
+          NULL, gueAtkRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
   }
 
   for (int i = 0; i < 4; i++) {
@@ -1217,7 +1256,6 @@ static void dibujarUnidadCombat(HDC hdcBuffer, HDC hdcSprites, Unidad *u,
     TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0, 64, 64,
                    RGB(255, 255, 255));
   }
-
 }
 
 // ============================================================================
@@ -1518,7 +1556,8 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
         int pantX = (int)((mundoX - cam.x) * cam.zoom);
         int pantY = (int)((mundoY - cam.y) * cam.zoom);
         int tamZoom = (int)(SPRITE_ARBOL * cam.zoom);
-        if (pantX + tamZoom > 0 && pantX < anchoP && pantY + tamZoom > 0 && pantY < altoP) {
+        if (pantX + tamZoom > 0 && pantX < anchoP && pantY + tamZoom > 0 &&
+            pantY < altoP) {
           SelectObject(hdcSprites, hArboles[0]);
           TransparentBlt(hdcBuffer, pantX, pantY, tamZoom, tamZoom, hdcSprites,
                          0, 0, SPRITE_ARBOL, SPRITE_ARBOL, RGB(255, 255, 255));
@@ -1539,8 +1578,8 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
         if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 &&
             pantY < altoP) {
           int idxCab = (int)(c - baseCaballeros);
-          bool atacando = (idxCab >= 0 && idxCab < 12) ? ataqueAliados[idxCab]
-                                                       : false;
+          bool atacando =
+              (idxCab >= 0 && idxCab < 12) ? ataqueAliados[idxCab] : false;
           dibujarUnidadCombat(hdcBuffer, hdcSprites, c, cam, anchoP, altoP,
                               false, atacando, frameAtaque);
 
@@ -1582,8 +1621,8 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
 
           // Círculo de selección (verde, igual que aliados)
           int idxCse = 4 + (int)(c - baseCSE);
-          bool atacando = (idxCse >= 0 && idxCse < 12) ? ataqueAliados[idxCse]
-                                                       : false;
+          bool atacando =
+              (idxCse >= 0 && idxCse < 12) ? ataqueAliados[idxCse] : false;
           dibujarUnidadCombat(hdcBuffer, hdcSprites, c, cam, anchoP, altoP,
                               false, atacando, frameAtaque);
           if (c->seleccionado) {
@@ -1611,8 +1650,8 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
         if (pantX + tam > 0 && pantX < anchoP && pantY + tam > 0 &&
             pantY < altoP) {
           int idxG = 8 + (int)(g - baseGuerreros);
-          bool atacando = (idxG >= 0 && idxG < 12) ? ataqueAliados[idxG]
-                                                   : false;
+          bool atacando =
+              (idxG >= 0 && idxG < 12) ? ataqueAliados[idxG] : false;
           dibujarUnidadCombat(hdcBuffer, hdcSprites, g, cam, anchoP, altoP,
                               false, atacando, frameAtaque);
 

@@ -2,7 +2,9 @@
 #include "../edificios/edificios.h"
 #include "../mapa/mapa.h"
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <windows.h>
 
 // Estado persistente por isla (1..3)
 typedef struct {
@@ -49,43 +51,47 @@ static bool buscarCeldaLibreCerca(int preferX, int preferY, int ancho, int alto,
 // Array de posiciones por isla [isla][0=fila, 1=columna, 2=direccion]
 // Isla 0 no se usa, islas 1-3 son válidas
 static int sPosicionesBarco[4][3] = {
-  {0, 0, 0},        // Índice 0: no usado
-  {15, 2, 3},       // Isla 1: fila=15, col=2, dir=DIR_RIGHT (mirando hacia isla)
-  {15, 29, 2},      // Isla 2: fila=15, col=29, dir=DIR_LEFT
-  {2, 15, 0}        // Isla 3: fila=2, col=15, dir=DIR_FRONT
+    {0, 0, 0},   // Índice 0: no usado
+    {15, 2, 3},  // Isla 1: fila=15, col=2, dir=DIR_RIGHT (mirando hacia isla)
+    {15, 29, 2}, // Isla 2: fila=15, col=29, dir=DIR_LEFT
+    {2, 15, 0}   // Isla 3: fila=2, col=15, dir=DIR_FRONT
 };
 
-static void obtenerPosicionBarcoIsla(int isla, float *outX, float *outY, int *outDir) {
+static void obtenerPosicionBarcoIsla(int isla, float *outX, float *outY,
+                                     int *outDir) {
   // Validar isla
   if (isla < 1 || isla > 3) {
     // Fallback: usar detección automática
     mapaDetectarOrilla(outX, outY, outDir);
     return;
   }
-  
+
   // Obtener posición usando aritmética de punteros sobre el array
-  int *posIsla = *(sPosicionesBarco + isla);  // Puntero a la fila del array
-  int fila = *(posIsla + 0);      // Primera posición: fila
-  int columna = *(posIsla + 1);   // Segunda posición: columna
-  int direccion = *(posIsla + 2); // Tercera posición: dirección
-  
+  int *posIsla = *(sPosicionesBarco + isla); // Puntero a la fila del array
+  int fila = *(posIsla + 0);                 // Primera posición: fila
+  int columna = *(posIsla + 1);              // Segunda posición: columna
+  int direccion = *(posIsla + 2);            // Tercera posición: dirección
+
   // Convertir coordenadas de matriz a píxeles
   *outX = (float)(columna * TILE_SIZE);
   *outY = (float)(fila * TILE_SIZE);
   *outDir = direccion;
-  
-  printf("[DEBUG BARCO] Isla %d: Matriz[%d][%d] -> Pixeles(%.1f, %.1f), dir=%d\n", 
-         isla, fila, columna, *outX, *outY, *outDir);
+
+  printf(
+      "[DEBUG BARCO] Isla %d: Matriz[%d][%d] -> Pixeles(%.1f, %.1f), dir=%d\n",
+      isla, fila, columna, *outX, *outY, *outDir);
 }
 
 // Función exportable para usar desde main.c
-void navegacionObtenerPosicionBarcoIsla(int isla, float *outX, float *outY, int *outDir) {
+void navegacionObtenerPosicionBarcoIsla(int isla, float *outX, float *outY,
+                                        int *outDir) {
   obtenerPosicionBarcoIsla(isla, outX, outY, outDir);
 }
 static int contarIslasConquistadas(void) {
   int total = 0;
   for (int i = 1; i <= 3; i++) {
-    if (sIslas[i].inicializado) total++;
+    if (sIslas[i].inicializado)
+      total++;
   }
   return total;
 }
@@ -205,7 +211,7 @@ static int contarTropasJugador(const struct Jugador *j) {
   return total;
 }
 
-static ULONGLONG sStartMs = 0;
+static DWORD sStartMs = 0;
 
 static void generarEnemigosParaIsla(struct Jugador *j, int islaDestino) {
   EstadoIsla *estado = &sIslas[islaDestino];
@@ -217,18 +223,18 @@ static void generarEnemigosParaIsla(struct Jugador *j, int islaDestino) {
     return; // Isla inicial sin enemigos
 
   if (sStartMs == 0)
-    sStartMs = GetTickCount64();
+    sStartMs = GetTickCount();
 
-  ULONGLONG ahora = GetTickCount64();
+  DWORD ahora = GetTickCount();
   int minutos = (sStartMs > 0 && ahora > sStartMs)
-                    ? (int)((ahora - sStartMs) / 60000ULL)
+                    ? (int)((ahora - sStartMs) / 60000)
                     : 0;
 
   int tropasJugador = j ? contarTropasJugador(j) : 0;
 
   int base = 4;
-  int bonusTiempo = minutos / 5;          // +1 cada 5 minutos
-  int bonusTropas = tropasJugador / 3;    // +1 por cada 3 tropas activas
+  int bonusTiempo = minutos / 5;       // +1 cada 5 minutos
+  int bonusTropas = tropasJugador / 3; // +1 por cada 3 tropas activas
   int cantidad = clampIntLocal(base + bonusTiempo + bonusTropas, 3, 10);
 
   int baseCeldaX = GRID_SIZE / 2;
@@ -248,9 +254,10 @@ static void generarEnemigosParaIsla(struct Jugador *j, int islaDestino) {
     enemigo.y = (float)(celdaY * TILE_SIZE);
     enemigo.celdaFila = celdaY;
     enemigo.celdaCol = celdaX;
-    bool usarCaballero = (bonusTiempo >= 2) || (i % 2 == 0) || (tropasJugador > 6);
-    statsBasicosEnemigo(&enemigo, usarCaballero ? TIPO_CABALLERO
-                                                : TIPO_GUERRERO);
+    bool usarCaballero =
+        (bonusTiempo >= 2) || (i % 2 == 0) || (tropasJugador > 6);
+    statsBasicosEnemigo(&enemigo,
+                        usarCaballero ? TIPO_CABALLERO : TIPO_GUERRERO);
 
     estado->enemigos[estado->numEnemigos++] = enemigo;
   }
@@ -354,17 +361,26 @@ void navegacionActualizarCombateAuto(struct Jugador *j, float dt) {
   // Listar tropas aliadas combatientes
   Unidad *aliados[12];
   int numAliados = 0;
-  for (int i = 0; i < 4; i++) aliados[numAliados++] = &j->caballeros[i];
-  for (int i = 0; i < 4; i++) aliados[numAliados++] = &j->caballerosSinEscudo[i];
-  for (int i = 0; i < 4; i++) aliados[numAliados++] = &j->guerreros[i];
+  for (int i = 0; i < 4; i++)
+    aliados[numAliados++] = &j->caballeros[i];
+  for (int i = 0; i < 4; i++)
+    aliados[numAliados++] = &j->caballerosSinEscudo[i];
+  for (int i = 0; i < 4; i++)
+    aliados[numAliados++] = &j->guerreros[i];
 
   // Asegurar vidas
-  for (int i = 0; i < numAliados; i++) normalizarVidaSiVacio(aliados[i]);
-  for (int i = 0; i < cantEnemigos; i++) normalizarVidaSiVacio(&sEnemigosActivos[i]);
+  for (int i = 0; i < numAliados; i++)
+    normalizarVidaSiVacio(aliados[i]);
+  for (int i = 0; i < cantEnemigos; i++)
+    normalizarVidaSiVacio(&sEnemigosActivos[i]);
 
   // Reducir cooldowns
-  for (int i = 0; i < cantEnemigos; i++) if (sEnemigosCooldownMs[i] > 0) sEnemigosCooldownMs[i] -= dtMs;
-  for (int i = 0; i < 12; i++) if (sAliadosCooldownMs[i] > 0) sAliadosCooldownMs[i] -= dtMs;
+  for (int i = 0; i < cantEnemigos; i++)
+    if (sEnemigosCooldownMs[i] > 0)
+      sEnemigosCooldownMs[i] -= dtMs;
+  for (int i = 0; i < 12; i++)
+    if (sAliadosCooldownMs[i] > 0)
+      sAliadosCooldownMs[i] -= dtMs;
 
   // Enemigos buscan aliado más cercano
   for (int e = 0; e < cantEnemigos; e++) {
@@ -394,7 +410,8 @@ void navegacionActualizarCombateAuto(struct Jugador *j, float dt) {
         sEnemigosCooldownMs[e] = 1200;
         int danio = en->damage > 0 ? en->damage : 10;
         target->vida -= danio;
-        if (target->vida < 0) target->vida = 0;
+        if (target->vida < 0)
+          target->vida = 0;
       }
     }
   }
@@ -421,14 +438,16 @@ void navegacionActualizarCombateAuto(struct Jugador *j, float dt) {
       continue;
 
     if (mejor > rango2) {
-      if (!al->moviendose) moverHacia(al, target->x, target->y, velAliado);
+      if (!al->moviendose)
+        moverHacia(al, target->x, target->y, velAliado);
     } else {
       int idx = idxUnidadAliada(j, al);
       if (idx >= 0 && sAliadosCooldownMs[idx] <= 0) {
         sAliadosCooldownMs[idx] = 1000;
         int danio = al->damage > 0 ? al->damage : 12;
         target->vida -= danio;
-        if (target->vida < 0) target->vida = 0;
+        if (target->vida < 0)
+          target->vida = 0;
       }
     }
   }
@@ -683,7 +702,8 @@ static void guardarEstadoIslaJugador(struct Jugador *j) {
     estado->guerreros[i] = j->guerreros[i];
 
   estado->numEnemigos = sNumEnemigosActivos;
-  estado->enemigosGenerados = sNumEnemigosActivos > 0 || estado->enemigosGenerados;
+  estado->enemigosGenerados =
+      sNumEnemigosActivos > 0 || estado->enemigosGenerados;
   for (int i = 0; i < sNumEnemigosActivos && i < 8; i++) {
     estado->enemigos[i] = sEnemigosActivos[i];
   }
@@ -928,7 +948,7 @@ bool viajarAIsla(struct Jugador *j, int islaDestino) {
 
   // Cambiar isla activa
   j->islaActual = islaDestino;
-  
+
   // Cambiar mapa de isla y recargar gráficos PRIMERO
   mapaSeleccionarIsla(islaDestino);
   mapaSetGenerarRecursos(true);
@@ -975,4 +995,3 @@ void navegacionProcesarResultadoBatalla(struct Jugador *j, BatallaResultado r,
   (void)r;
   (void)islaDestino;
 }
-

@@ -107,8 +107,12 @@ typedef struct {
   bool activo;   // Si el barco está colocado
 
   // === Sistema de tropas ===
-  Unidad *tropas[6]; // Punteros a las tropas embarcadas (máximo 6)
-  int numTropas;     // Cantidad actual de tropas en el barco
+  Unidad *tropas[15]; // Punteros a las tropas embarcadas (máximo 15)
+  int numTropas;      // Cantidad actual de tropas en el barco
+
+  // === Sistema de mejoras ===
+  int nivelMejora;     // Nivel de mejora del barco (1-4)
+  int capacidadMaxima; // Capacidad máxima según nivel (6, 9, 12, 15)
 
   // === Sistema de navegación ===
   bool navegando;           // Si está en ruta a otra isla
@@ -170,6 +174,9 @@ bool entrenarObrero(struct Jugador *j, float x, float y);
 bool entrenarCaballero(struct Jugador *j, float x, float y);
 bool entrenarCaballeroSinEscudo(struct Jugador *j, float x, float y);
 bool entrenarGuerrero(struct Jugador *j, float x, float y);
+
+// Función para mejorar la capacidad del barco
+bool mejorarBarco(struct Jugador *j);
 
 // Verifica si hay algun obrero seleccionado cerca de un punto
 bool recursosObreroCercaDePunto(struct Jugador *j, float x, float y,

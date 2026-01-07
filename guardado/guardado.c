@@ -4,11 +4,12 @@
 #include "guardado.h"
 #include "../mapa/mapa.h"
 #include "../recursos/recursos.h"
+#include <ctype.h>
+#include <direct.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <direct.h>
-#include <ctype.h>
+
 
 // ============================================================================
 // FUNCIONES AUXILIARES INTERNAS
@@ -16,115 +17,129 @@
 
 // Construye la ruta completa del archivo de guardado por nombre
 void obtenerRutaGuardado(const char *nombreJugador, char *ruta, int maxLen) {
-    // Sanitizar nombre (quitar caracteres inválidos para archivos)
-    char nombreSanitizado[MAX_NOMBRE_JUGADOR];
-    int j = 0;
-    for (int i = 0; nombreJugador[i] != '\0' && i < MAX_NOMBRE_JUGADOR - 1; i++) {
-        char c = nombreJugador[i];
-        // Solo permitir letras, números, guiones y guiones bajos
-        if (isalnum((unsigned char)c) || c == '-' || c == '_') {
-            nombreSanitizado[j++] = c;
-        } else if (c == ' ') {
-            nombreSanitizado[j++] = '_'; // Reemplazar espacios por guiones bajos
-        }
+  // Sanitizar nombre (quitar caracteres inválidos para archivos)
+  char nombreSanitizado[MAX_NOMBRE_JUGADOR];
+  int j = 0;
+  for (int i = 0; nombreJugador[i] != '\0' && i < MAX_NOMBRE_JUGADOR - 1; i++) {
+    char c = nombreJugador[i];
+    // Solo permitir letras, números, guiones y guiones bajos
+    if (isalnum((unsigned char)c) || c == '-' || c == '_') {
+      nombreSanitizado[j++] = c;
+    } else if (c == ' ') {
+      nombreSanitizado[j++] = '_'; // Reemplazar espacios por guiones bajos
     }
-    nombreSanitizado[j] = '\0';
-    
-    if (j == 0) {
-        strcpy(nombreSanitizado, "partida");
-    }
-    
-    snprintf(ruta, maxLen, "%s\\%s%s", SAVE_FOLDER, nombreSanitizado, SAVE_EXTENSION);
+  }
+  nombreSanitizado[j] = '\0';
+
+  if (j == 0) {
+    strcpy(nombreSanitizado, "partida");
+  }
+
+  snprintf(ruta, maxLen, "%s\\%s%s", SAVE_FOLDER, nombreSanitizado,
+           SAVE_EXTENSION);
 }
 
 // Obtiene la fecha y hora actual en formato legible
 static void obtenerTimestamp(char *buffer, int maxLen) {
-    time_t ahora = time(NULL);
-    struct tm *local = localtime(&ahora);
-    strftime(buffer, maxLen, "%d/%m/%Y %H:%M", local);
+  time_t ahora = time(NULL);
+  struct tm *local = localtime(&ahora);
+  strftime(buffer, maxLen, "%d/%m/%Y %H:%M", local);
 }
 
 // Convierte una Unidad a UnidadGuardada (elimina punteros)
 static void unidadAGuardada(const Unidad *src, UnidadGuardada *dst) {
-    dst->x = src->x;
-    dst->y = src->y;
-    dst->destinoX = src->destinoX;
-    dst->destinoY = src->destinoY;
-    dst->moviendose = src->moviendose;
-    dst->seleccionado = src->seleccionado;
-    dst->dir = (int)src->dir;
-    dst->frame = src->frame;
-    dst->objetivoFila = src->objetivoFila;
-    dst->objetivoCol = src->objetivoCol;
-    dst->celdaFila = src->celdaFila;
-    dst->celdaCol = src->celdaCol;
-    dst->tipo = (int)src->tipo;
-    dst->vida = src->vida;
-    dst->vidaMax = src->vidaMax;
-    dst->damage = src->damage;
-    dst->critico = src->critico;
-    dst->defensa = src->defensa;
-    dst->alcance = src->alcance;
+  dst->x = src->x;
+  dst->y = src->y;
+  dst->destinoX = src->destinoX;
+  dst->destinoY = src->destinoY;
+  dst->moviendose = src->moviendose;
+  dst->seleccionado = src->seleccionado;
+  dst->dir = (int)src->dir;
+  dst->frame = src->frame;
+  dst->objetivoFila = src->objetivoFila;
+  dst->objetivoCol = src->objetivoCol;
+  dst->celdaFila = src->celdaFila;
+  dst->celdaCol = src->celdaCol;
+  dst->tipo = (int)src->tipo;
+  dst->vida = src->vida;
+  dst->vidaMax = src->vidaMax;
+  dst->damage = src->damage;
+  dst->critico = src->critico;
+  dst->defensa = src->defensa;
+  dst->alcance = src->alcance;
 }
 
 // Convierte UnidadGuardada a Unidad (restaura estructura)
 static void guardadaAUnidad(const UnidadGuardada *src, Unidad *dst) {
-    dst->x = src->x;
-    dst->y = src->y;
-    dst->destinoX = src->destinoX;
-    dst->destinoY = src->destinoY;
-    dst->moviendose = src->moviendose;
-    dst->seleccionado = src->seleccionado;
-    dst->dir = (Direccion)src->dir;
-    dst->frame = src->frame;
-    dst->objetivoFila = src->objetivoFila;
-    dst->objetivoCol = src->objetivoCol;
-    // Liberar ruta anterior si existe
-    if (dst->rutaCeldas != NULL) {
-        free(dst->rutaCeldas);
-        dst->rutaCeldas = NULL;
-    }
-    dst->rutaLen = 0;
-    dst->rutaIdx = 0;
-    dst->celdaFila = src->celdaFila;
-    dst->celdaCol = src->celdaCol;
-    dst->animActual = NULL;
-    dst->animTick = 0;
-    dst->tipo = (TipoUnidad)src->tipo;
-    dst->vida = src->vida;
-    dst->vidaMax = src->vidaMax;
-    dst->damage = src->damage;
-    dst->critico = src->critico;
-    dst->defensa = src->defensa;
-    dst->alcance = src->alcance;
+  dst->x = src->x;
+  dst->y = src->y;
+  dst->destinoX = src->destinoX;
+  dst->destinoY = src->destinoY;
+  dst->moviendose = src->moviendose;
+  dst->seleccionado = src->seleccionado;
+  dst->dir = (Direccion)src->dir;
+  dst->frame = src->frame;
+  dst->objetivoFila = src->objetivoFila;
+  dst->objetivoCol = src->objetivoCol;
+  // Liberar ruta anterior si existe
+  if (dst->rutaCeldas != NULL) {
+    free(dst->rutaCeldas);
+    dst->rutaCeldas = NULL;
+  }
+  dst->rutaLen = 0;
+  dst->rutaIdx = 0;
+  dst->celdaFila = src->celdaFila;
+  dst->celdaCol = src->celdaCol;
+  dst->animActual = NULL;
+  dst->animTick = 0;
+  dst->tipo = (TipoUnidad)src->tipo;
+  dst->vida = src->vida;
+  dst->vidaMax = src->vidaMax;
+  dst->damage = src->damage;
+  dst->critico = src->critico;
+  dst->defensa = src->defensa;
+  dst->alcance = src->alcance;
 }
 
 // Convierte un Edificio a EdificioGuardado
 static void edificioAGuardado(const Edificio *src, EdificioGuardado *dst) {
-    dst->tipo = (int)src->tipo;
-    dst->x = src->x;
-    dst->y = src->y;
-    dst->ancho = src->ancho;
-    dst->alto = src->alto;
-    dst->construido = src->construido;
-    dst->oroAcumulado = src->oroAcumulado;
-    dst->piedraAcumulada = src->piedraAcumulada;
-    dst->hierroAcumulado = src->hierroAcumulado;
+  dst->tipo = (int)src->tipo;
+  dst->x = src->x;
+  dst->y = src->y;
+  dst->ancho = src->ancho;
+  dst->alto = src->alto;
+  dst->construido = src->construido;
+  dst->oroAcumulado = src->oroAcumulado;
+  dst->piedraAcumulada = src->piedraAcumulada;
+  dst->hierroAcumulado = src->hierroAcumulado;
+
+  // Agregado para sistema de agotamiento
+  dst->oroRestante = src->oroRestante;
+  dst->piedraRestante = src->piedraRestante;
+  dst->hierroRestante = src->hierroRestante;
+  dst->agotada = src->agotada;
 }
 
 // Convierte EdificioGuardado a Edificio
 static void guardadoAEdificio(const EdificioGuardado *src, Edificio *dst) {
-    dst->tipo = (TipoEdificio)src->tipo;
-    dst->x = src->x;
-    dst->y = src->y;
-    dst->ancho = src->ancho;
-    dst->alto = src->alto;
-    dst->construido = src->construido;
-    dst->oroAcumulado = src->oroAcumulado;
-    dst->piedraAcumulada = src->piedraAcumulada;
-    dst->hierroAcumulado = src->hierroAcumulado;
-    dst->sprite = NULL;
-    dst->ultimoTickGeneracion = GetTickCount();
+  dst->tipo = (TipoEdificio)src->tipo;
+  dst->x = src->x;
+  dst->y = src->y;
+  dst->ancho = src->ancho;
+  dst->alto = src->alto;
+  dst->construido = src->construido;
+  dst->oroAcumulado = src->oroAcumulado;
+  dst->piedraAcumulada = src->piedraAcumulada;
+  dst->hierroAcumulado = src->hierroAcumulado;
+
+  // Agregado para sistema de agotamiento
+  dst->oroRestante = src->oroRestante;
+  dst->piedraRestante = src->piedraRestante;
+  dst->hierroRestante = src->hierroRestante;
+  dst->agotada = src->agotada;
+
+  dst->sprite = NULL;
+  dst->ultimoTickGeneracion = GetTickCount();
 }
 
 // ============================================================================
@@ -132,437 +147,459 @@ static void guardadoAEdificio(const EdificioGuardado *src, Edificio *dst) {
 // ============================================================================
 
 bool existePartida(const char *nombreJugador) {
-    char ruta[256];
-    obtenerRutaGuardado(nombreJugador, ruta, sizeof(ruta));
-    
-    FILE *f = fopen(ruta, "rb");
-    if (f) {
-        fclose(f);
-        return true;
-    }
+  char ruta[256];
+  obtenerRutaGuardado(nombreJugador, ruta, sizeof(ruta));
+
+  FILE *f = fopen(ruta, "rb");
+  if (f) {
+    fclose(f);
+    return true;
+  }
+  return false;
+}
+
+bool guardarPartidaPorNombre(const char *nombreJugador, struct Jugador *j,
+                             Camara *cam) {
+  if (nombreJugador == NULL || nombreJugador[0] == '\0') {
+    printf("[ERROR] Nombre de jugador vacío\n");
     return false;
+  }
+
+  // Crear carpeta de guardados si no existe
+  _mkdir(SAVE_FOLDER);
+
+  char ruta[256];
+  obtenerRutaGuardado(nombreJugador, ruta, sizeof(ruta));
+
+  FILE *f = fopen(ruta, "wb");
+  if (!f) {
+    printf("[ERROR] No se pudo crear archivo de guardado: %s\n", ruta);
+    return false;
+  }
+
+  DatosGuardado datos;
+  memset(&datos, 0, sizeof(datos));
+
+  // --- Header ---
+  datos.header.magic = SAVE_MAGIC;
+  datos.header.version = SAVE_VERSION;
+  obtenerTimestamp(datos.header.timestamp, sizeof(datos.header.timestamp));
+  strncpy(datos.header.nombreJugador, nombreJugador,
+          sizeof(datos.header.nombreJugador) - 1);
+  datos.header.islaActual = j->islaActual;
+
+  // --- Recursos ---
+  datos.Comida = j->Comida;
+  datos.Oro = j->Oro;
+  datos.Madera = j->Madera;
+  datos.Piedra = j->Piedra;
+  datos.Hierro = j->Hierro;
+
+  // --- Unidades (con aritmética de punteros) ---
+  for (int i = 0; i < 6; i++) {
+    unidadAGuardada(j->obreros + i, datos.obreros + i);
+  }
+  for (int i = 0; i < 4; i++) {
+    unidadAGuardada(j->caballeros + i, datos.caballeros + i);
+  }
+  for (int i = 0; i < 4; i++) {
+    unidadAGuardada(j->caballerosSinEscudo + i, datos.caballerosSinEscudo + i);
+  }
+  for (int i = 0; i < 4; i++) {
+    unidadAGuardada(j->guerreros + i, datos.guerreros + i);
+  }
+
+  // --- Barco ---
+  datos.barco.x = j->barco.x;
+  datos.barco.y = j->barco.y;
+  datos.barco.dir = (int)j->barco.dir;
+  datos.barco.activo = j->barco.activo;
+  datos.barco.numTropas = j->barco.numTropas;
+
+  // Agregado para sistema de mejoras
+  datos.barco.nivelMejora = j->barco.nivelMejora;
+  datos.barco.capacidadMaxima = j->barco.capacidadMaxima;
+
+  for (int i = 0; i < 15; i++) {
+    datos.barco.indiceTropas[i] = -1;
+    datos.barco.tipoTropas[i] = -1;
+
+    if (i < j->barco.numTropas && j->barco.tropas[i] != NULL) {
+      Unidad *tropa = j->barco.tropas[i];
+      datos.barco.tipoTropas[i] = (int)tropa->tipo;
+
+      switch (tropa->tipo) {
+      case TIPO_OBRERO:
+        for (int k = 0; k < 6; k++) {
+          if (tropa == j->obreros + k) {
+            datos.barco.indiceTropas[i] = k;
+            break;
+          }
+        }
+        break;
+      case TIPO_CABALLERO:
+        for (int k = 0; k < 4; k++) {
+          if (tropa == j->caballeros + k) {
+            datos.barco.indiceTropas[i] = k;
+            break;
+          }
+        }
+        break;
+      case TIPO_CABALLERO_SIN_ESCUDO:
+        for (int k = 0; k < 4; k++) {
+          if (tropa == j->caballerosSinEscudo + k) {
+            datos.barco.indiceTropas[i] = k;
+            break;
+          }
+        }
+        break;
+      case TIPO_GUERRERO:
+        for (int k = 0; k < 4; k++) {
+          if (tropa == j->guerreros + k) {
+            datos.barco.indiceTropas[i] = k;
+            break;
+          }
+        }
+        break;
+      default:
+        break;
+      }
+    }
+  }
+
+  // --- Edificios ---
+  datos.tieneAyuntamiento = (j->ayuntamiento != NULL);
+  if (datos.tieneAyuntamiento) {
+    edificioAGuardado((Edificio *)j->ayuntamiento, &datos.ayuntamiento);
+  }
+
+  datos.tieneMina = (j->mina != NULL);
+  if (datos.tieneMina) {
+    edificioAGuardado((Edificio *)j->mina, &datos.mina);
+  }
+
+  datos.tieneCuartel = (j->cuartel != NULL);
+  if (datos.tieneCuartel) {
+    edificioAGuardado((Edificio *)j->cuartel, &datos.cuartel);
+  }
+
+  // --- Estado de vista ---
+  datos.vistaActual = (int)j->vistaActual;
+  datos.islaActual = j->islaActual;
+
+  // --- Mapa de objetos ---
+  memcpy(datos.mapaObjetosGuardado, mapaObjetos, sizeof(mapaObjetos));
+
+  // --- Vacas ---
+  Vaca *vacas = mapaObtenerVacas(&datos.numVacas);
+  if (datos.numVacas > 10)
+    datos.numVacas = 10;
+  for (int i = 0; i < datos.numVacas; i++) {
+    datos.vacas[i].x = (vacas + i)->x;
+    datos.vacas[i].y = (vacas + i)->y;
+    datos.vacas[i].dir = (int)(vacas + i)->dir;
+    datos.vacas[i].timerMovimiento = (vacas + i)->timerMovimiento;
+  }
+
+  // --- Cámara ---
+  datos.camaraX = cam->x;
+  datos.camaraY = cam->y;
+  datos.camaraZoom = cam->zoom;
+
+  // Escribir todo en binario
+  size_t escritos = fwrite(&datos, sizeof(DatosGuardado), 1, f);
+  fclose(f);
+
+  if (escritos != 1) {
+    printf("[ERROR] Error al escribir datos de guardado\n");
+    return false;
+  }
+
+  printf("[GUARDADO] Partida guardada: %s\n", ruta);
+  return true;
 }
 
-bool guardarPartidaPorNombre(const char *nombreJugador, struct Jugador *j, Camara *cam) {
-    if (nombreJugador == NULL || nombreJugador[0] == '\0') {
-        printf("[ERROR] Nombre de jugador vacío\n");
-        return false;
-    }
-    
-    // Crear carpeta de guardados si no existe
-    _mkdir(SAVE_FOLDER);
-    
-    char ruta[256];
-    obtenerRutaGuardado(nombreJugador, ruta, sizeof(ruta));
-    
-    FILE *f = fopen(ruta, "wb");
-    if (!f) {
-        printf("[ERROR] No se pudo crear archivo de guardado: %s\n", ruta);
-        return false;
-    }
-    
-    DatosGuardado datos;
-    memset(&datos, 0, sizeof(datos));
-    
-    // --- Header ---
-    datos.header.magic = SAVE_MAGIC;
-    datos.header.version = SAVE_VERSION;
-    obtenerTimestamp(datos.header.timestamp, sizeof(datos.header.timestamp));
-    strncpy(datos.header.nombreJugador, nombreJugador, sizeof(datos.header.nombreJugador) - 1);
-    datos.header.islaActual = j->islaActual;
-    
-    // --- Recursos ---
-    datos.Comida = j->Comida;
-    datos.Oro = j->Oro;
-    datos.Madera = j->Madera;
-    datos.Piedra = j->Piedra;
-    datos.Hierro = j->Hierro;
-    
-    // --- Unidades (con aritmética de punteros) ---
-    for (int i = 0; i < 6; i++) {
-        unidadAGuardada(j->obreros + i, datos.obreros + i);
-    }
-    for (int i = 0; i < 4; i++) {
-        unidadAGuardada(j->caballeros + i, datos.caballeros + i);
-    }
-    for (int i = 0; i < 4; i++) {
-        unidadAGuardada(j->caballerosSinEscudo + i, datos.caballerosSinEscudo + i);
-    }
-    for (int i = 0; i < 4; i++) {
-        unidadAGuardada(j->guerreros + i, datos.guerreros + i);
-    }
-    
-    // --- Barco ---
-    datos.barco.x = j->barco.x;
-    datos.barco.y = j->barco.y;
-    datos.barco.dir = (int)j->barco.dir;
-    datos.barco.activo = j->barco.activo;
-    datos.barco.numTropas = j->barco.numTropas;
-    
-    for (int i = 0; i < 6; i++) {
-        datos.barco.indiceTropas[i] = -1;
-        datos.barco.tipoTropas[i] = -1;
-        
-        if (i < j->barco.numTropas && j->barco.tropas[i] != NULL) {
-            Unidad *tropa = j->barco.tropas[i];
-            datos.barco.tipoTropas[i] = (int)tropa->tipo;
-            
-            switch (tropa->tipo) {
-                case TIPO_OBRERO:
-                    for (int k = 0; k < 6; k++) {
-                        if (tropa == j->obreros + k) {
-                            datos.barco.indiceTropas[i] = k;
-                            break;
-                        }
-                    }
-                    break;
-                case TIPO_CABALLERO:
-                    for (int k = 0; k < 4; k++) {
-                        if (tropa == j->caballeros + k) {
-                            datos.barco.indiceTropas[i] = k;
-                            break;
-                        }
-                    }
-                    break;
-                case TIPO_CABALLERO_SIN_ESCUDO:
-                    for (int k = 0; k < 4; k++) {
-                        if (tropa == j->caballerosSinEscudo + k) {
-                            datos.barco.indiceTropas[i] = k;
-                            break;
-                        }
-                    }
-                    break;
-                case TIPO_GUERRERO:
-                    for (int k = 0; k < 4; k++) {
-                        if (tropa == j->guerreros + k) {
-                            datos.barco.indiceTropas[i] = k;
-                            break;
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-    
-    // --- Edificios ---
-    datos.tieneAyuntamiento = (j->ayuntamiento != NULL);
-    if (datos.tieneAyuntamiento) {
-        edificioAGuardado((Edificio *)j->ayuntamiento, &datos.ayuntamiento);
-    }
-    
-    datos.tieneMina = (j->mina != NULL);
-    if (datos.tieneMina) {
-        edificioAGuardado((Edificio *)j->mina, &datos.mina);
-    }
-    
-    datos.tieneCuartel = (j->cuartel != NULL);
-    if (datos.tieneCuartel) {
-        edificioAGuardado((Edificio *)j->cuartel, &datos.cuartel);
-    }
-    
-    // --- Estado de vista ---
-    datos.vistaActual = (int)j->vistaActual;
-    datos.islaActual = j->islaActual;
-    
-    // --- Mapa de objetos ---
-    memcpy(datos.mapaObjetosGuardado, mapaObjetos, sizeof(mapaObjetos));
-    
-    // --- Vacas ---
-    Vaca *vacas = mapaObtenerVacas(&datos.numVacas);
-    if (datos.numVacas > 10) datos.numVacas = 10;
-    for (int i = 0; i < datos.numVacas; i++) {
-        datos.vacas[i].x = (vacas + i)->x;
-        datos.vacas[i].y = (vacas + i)->y;
-        datos.vacas[i].dir = (int)(vacas + i)->dir;
-        datos.vacas[i].timerMovimiento = (vacas + i)->timerMovimiento;
-    }
-    
-    // --- Cámara ---
-    datos.camaraX = cam->x;
-    datos.camaraY = cam->y;
-    datos.camaraZoom = cam->zoom;
-    
-    // Escribir todo en binario
-    size_t escritos = fwrite(&datos, sizeof(DatosGuardado), 1, f);
-    fclose(f);
-    
-    if (escritos != 1) {
-        printf("[ERROR] Error al escribir datos de guardado\n");
-        return false;
-    }
-    
-    printf("[GUARDADO] Partida guardada: %s\n", ruta);
-    return true;
-}
+bool cargarPartidaPorNombre(const char *nombreJugador, struct Jugador *j,
+                            Camara *cam, Edificio *ayuntamiento, Edificio *mina,
+                            Edificio *cuartel) {
+  char ruta[256];
+  obtenerRutaGuardado(nombreJugador, ruta, sizeof(ruta));
 
-bool cargarPartidaPorNombre(const char *nombreJugador, struct Jugador *j, Camara *cam,
-                            Edificio *ayuntamiento, Edificio *mina, Edificio *cuartel) {
-    char ruta[256];
-    obtenerRutaGuardado(nombreJugador, ruta, sizeof(ruta));
-    
-    FILE *f = fopen(ruta, "rb");
-    if (!f) {
-        printf("[ERROR] No se pudo abrir archivo de guardado: %s\n", ruta);
-        return false;
+  FILE *f = fopen(ruta, "rb");
+  if (!f) {
+    printf("[ERROR] No se pudo abrir archivo de guardado: %s\n", ruta);
+    return false;
+  }
+
+  DatosGuardado datos;
+  size_t leidos = fread(&datos, sizeof(DatosGuardado), 1, f);
+  fclose(f);
+
+  if (leidos != 1) {
+    printf("[ERROR] Error al leer datos de guardado\n");
+    return false;
+  }
+
+  if (datos.header.magic != SAVE_MAGIC) {
+    printf("[ERROR] Archivo de guardado corrupto o inválido\n");
+    return false;
+  }
+
+  // --- Recursos ---
+  j->Comida = datos.Comida;
+  j->Oro = datos.Oro;
+  j->Madera = datos.Madera;
+  j->Piedra = datos.Piedra;
+  j->Hierro = datos.Hierro;
+  strncpy(j->Nombre, datos.header.nombreJugador, sizeof(j->Nombre) - 1);
+
+  // --- Unidades ---
+  for (int i = 0; i < 6; i++) {
+    guardadaAUnidad(datos.obreros + i, j->obreros + i);
+  }
+  for (int i = 0; i < 4; i++) {
+    guardadaAUnidad(datos.caballeros + i, j->caballeros + i);
+  }
+  for (int i = 0; i < 4; i++) {
+    guardadaAUnidad(datos.caballerosSinEscudo + i, j->caballerosSinEscudo + i);
+  }
+  for (int i = 0; i < 4; i++) {
+    guardadaAUnidad(datos.guerreros + i, j->guerreros + i);
+  }
+
+  // --- Barco ---
+  j->barco.x = datos.barco.x;
+  j->barco.y = datos.barco.y;
+  j->barco.dir = (Direccion)datos.barco.dir;
+  j->barco.activo = datos.barco.activo;
+  j->barco.numTropas = datos.barco.numTropas;
+
+  // Agregado para sistema de mejoras
+  j->barco.nivelMejora = datos.barco.nivelMejora;
+  j->barco.capacidadMaxima = datos.barco.capacidadMaxima;
+
+  // Si los datos cargados no tienen valores válidos (partidas antiguas), poner
+  // por defecto
+  if (j->barco.nivelMejora < 1)
+    j->barco.nivelMejora = 1;
+  if (j->barco.capacidadMaxima < 6)
+    j->barco.capacidadMaxima = 6;
+
+  for (int i = 0; i < 15; i++) {
+    j->barco.tropas[i] = NULL;
+
+    if (i < datos.barco.numTropas && datos.barco.indiceTropas[i] >= 0) {
+      int idx = datos.barco.indiceTropas[i];
+      switch (datos.barco.tipoTropas[i]) {
+      case TIPO_OBRERO:
+        if (idx < 6)
+          j->barco.tropas[i] = j->obreros + idx;
+        break;
+      case TIPO_CABALLERO:
+        if (idx < 4)
+          j->barco.tropas[i] = j->caballeros + idx;
+        break;
+      case TIPO_CABALLERO_SIN_ESCUDO:
+        if (idx < 4)
+          j->barco.tropas[i] = j->caballerosSinEscudo + idx;
+        break;
+      case TIPO_GUERRERO:
+        if (idx < 4)
+          j->barco.tropas[i] = j->guerreros + idx;
+        break;
+      default:
+        break;
+      }
     }
-    
-    DatosGuardado datos;
-    size_t leidos = fread(&datos, sizeof(DatosGuardado), 1, f);
-    fclose(f);
-    
-    if (leidos != 1) {
-        printf("[ERROR] Error al leer datos de guardado\n");
-        return false;
-    }
-    
-    if (datos.header.magic != SAVE_MAGIC) {
-        printf("[ERROR] Archivo de guardado corrupto o inválido\n");
-        return false;
-    }
-    
-    // --- Recursos ---
-    j->Comida = datos.Comida;
-    j->Oro = datos.Oro;
-    j->Madera = datos.Madera;
-    j->Piedra = datos.Piedra;
-    j->Hierro = datos.Hierro;
-    strncpy(j->Nombre, datos.header.nombreJugador, sizeof(j->Nombre) - 1);
-    
-    // --- Unidades ---
-    for (int i = 0; i < 6; i++) {
-        guardadaAUnidad(datos.obreros + i, j->obreros + i);
-    }
-    for (int i = 0; i < 4; i++) {
-        guardadaAUnidad(datos.caballeros + i, j->caballeros + i);
-    }
-    for (int i = 0; i < 4; i++) {
-        guardadaAUnidad(datos.caballerosSinEscudo + i, j->caballerosSinEscudo + i);
-    }
-    for (int i = 0; i < 4; i++) {
-        guardadaAUnidad(datos.guerreros + i, j->guerreros + i);
-    }
-    
-    // --- Barco ---
-    j->barco.x = datos.barco.x;
-    j->barco.y = datos.barco.y;
-    j->barco.dir = (Direccion)datos.barco.dir;
-    j->barco.activo = datos.barco.activo;
-    j->barco.numTropas = datos.barco.numTropas;
-    
-    for (int i = 0; i < 6; i++) {
-        j->barco.tropas[i] = NULL;
-        
-        if (i < datos.barco.numTropas && datos.barco.indiceTropas[i] >= 0) {
-            int idx = datos.barco.indiceTropas[i];
-            switch (datos.barco.tipoTropas[i]) {
-                case TIPO_OBRERO:
-                    if (idx < 6) j->barco.tropas[i] = j->obreros + idx;
-                    break;
-                case TIPO_CABALLERO:
-                    if (idx < 4) j->barco.tropas[i] = j->caballeros + idx;
-                    break;
-                case TIPO_CABALLERO_SIN_ESCUDO:
-                    if (idx < 4) j->barco.tropas[i] = j->caballerosSinEscudo + idx;
-                    break;
-                case TIPO_GUERRERO:
-                    if (idx < 4) j->barco.tropas[i] = j->guerreros + idx;
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-    
-    // --- Edificios ---
-    if (datos.tieneAyuntamiento && ayuntamiento != NULL) {
-        guardadoAEdificio(&datos.ayuntamiento, ayuntamiento);
-        ayuntamiento->sprite = g_spriteAyuntamiento;
-        j->ayuntamiento = ayuntamiento;
-    } else {
-        j->ayuntamiento = NULL;
-    }
-    
-    if (datos.tieneMina && mina != NULL) {
-        guardadoAEdificio(&datos.mina, mina);
-        mina->sprite = g_spriteMina;
-        j->mina = mina;
-    } else {
-        j->mina = NULL;
-    }
-    
-    if (datos.tieneCuartel && cuartel != NULL) {
-        guardadoAEdificio(&datos.cuartel, cuartel);
-        cuartel->sprite = g_spriteCuartel;
-        j->cuartel = cuartel;
-    } else {
-        j->cuartel = NULL;
-    }
-    
-    // --- Estado de vista ---
-    j->vistaActual = (EstadoVista)datos.vistaActual;
-    j->islaActual = datos.islaActual;
-    
-    // --- Seleccionar isla y recargar mapa ---
-    mapaSeleccionarIsla(datos.islaActual);
-    mapaSetGenerarRecursos(false);
-    cargarRecursosGraficos();
-    mapaSetGenerarRecursos(true);
-    
-    // --- Restaurar mapa de objetos ---
-    memcpy(mapaObjetos, datos.mapaObjetosGuardado, sizeof(mapaObjetos));
-    
-    // --- Reconstruir mapa de colisiones ---
-    mapaReconstruirCollisionMap();
-    
-    if (j->ayuntamiento != NULL) {
-        Edificio *e = (Edificio *)j->ayuntamiento;
-        mapaMarcarEdificio(e->x, e->y, e->ancho, e->alto);
-    }
-    if (j->mina != NULL) {
-        Edificio *e = (Edificio *)j->mina;
-        mapaMarcarEdificio(e->x, e->y, e->ancho, e->alto);
-    }
-    if (j->cuartel != NULL) {
-        Edificio *e = (Edificio *)j->cuartel;
-        mapaMarcarEdificio(e->x, e->y, e->ancho, e->alto);
-    }
-    
-    // --- Cámara ---
-    cam->x = datos.camaraX;
-    cam->y = datos.camaraY;
-    cam->zoom = datos.camaraZoom;
-    
-    printf("[CARGA] Partida cargada: %s (Isla %d)\n", nombreJugador, j->islaActual);
-    return true;
+  }
+
+  // --- Edificios ---
+  if (datos.tieneAyuntamiento && ayuntamiento != NULL) {
+    guardadoAEdificio(&datos.ayuntamiento, ayuntamiento);
+    ayuntamiento->sprite = g_spriteAyuntamiento;
+    j->ayuntamiento = ayuntamiento;
+  } else {
+    j->ayuntamiento = NULL;
+  }
+
+  if (datos.tieneMina && mina != NULL) {
+    guardadoAEdificio(&datos.mina, mina);
+    mina->sprite = g_spriteMina;
+    j->mina = mina;
+  } else {
+    j->mina = NULL;
+  }
+
+  if (datos.tieneCuartel && cuartel != NULL) {
+    guardadoAEdificio(&datos.cuartel, cuartel);
+    cuartel->sprite = g_spriteCuartel;
+    j->cuartel = cuartel;
+  } else {
+    j->cuartel = NULL;
+  }
+
+  // --- Estado de vista ---
+  j->vistaActual = (EstadoVista)datos.vistaActual;
+  j->islaActual = datos.islaActual;
+
+  // --- Seleccionar isla y recargar mapa ---
+  mapaSeleccionarIsla(datos.islaActual);
+  mapaSetGenerarRecursos(false);
+  cargarRecursosGraficos();
+  mapaSetGenerarRecursos(true);
+
+  // --- Restaurar mapa de objetos ---
+  memcpy(mapaObjetos, datos.mapaObjetosGuardado, sizeof(mapaObjetos));
+
+  // --- Reconstruir mapa de colisiones ---
+  mapaReconstruirCollisionMap();
+
+  if (j->ayuntamiento != NULL) {
+    Edificio *e = (Edificio *)j->ayuntamiento;
+    mapaMarcarEdificio(e->x, e->y, e->ancho, e->alto);
+  }
+  if (j->mina != NULL) {
+    Edificio *e = (Edificio *)j->mina;
+    mapaMarcarEdificio(e->x, e->y, e->ancho, e->alto);
+  }
+  if (j->cuartel != NULL) {
+    Edificio *e = (Edificio *)j->cuartel;
+    mapaMarcarEdificio(e->x, e->y, e->ancho, e->alto);
+  }
+
+  // --- Cámara ---
+  cam->x = datos.camaraX;
+  cam->y = datos.camaraY;
+  cam->zoom = datos.camaraZoom;
+
+  printf("[CARGA] Partida cargada: %s (Isla %d)\n", nombreJugador,
+         j->islaActual);
+  return true;
 }
 
 int obtenerPartidasGuardadas(InfoPartida partidas[MAX_PARTIDAS]) {
-    int count = 0;
-    WIN32_FIND_DATAA findData;
-    char busqueda[256];
-    
-    // Inicializar array
-    for (int i = 0; i < MAX_PARTIDAS; i++) {
-        partidas[i].existe = false;
-    }
-    
-    snprintf(busqueda, sizeof(busqueda), "%s\\*%s", SAVE_FOLDER, SAVE_EXTENSION);
-    
-    HANDLE hFind = FindFirstFileA(busqueda, &findData);
-    if (hFind == INVALID_HANDLE_VALUE) {
-        return 0;
-    }
-    
-    do {
-        if (count >= MAX_PARTIDAS) break;
-        
-        char rutaCompleta[256];
-        snprintf(rutaCompleta, sizeof(rutaCompleta), "%s\\%s", SAVE_FOLDER, findData.cFileName);
-        
-        FILE *f = fopen(rutaCompleta, "rb");
-        if (f) {
-            SaveHeader header;
-            if (fread(&header, sizeof(SaveHeader), 1, f) == 1) {
-                if (header.magic == SAVE_MAGIC) {
-                    partidas[count].existe = true;
-                    strncpy(partidas[count].nombreJugador, header.nombreJugador, 
-                            sizeof(partidas[count].nombreJugador) - 1);
-                    strncpy(partidas[count].timestamp, header.timestamp,
-                            sizeof(partidas[count].timestamp) - 1);
-                    partidas[count].islaActual = header.islaActual;
-                    strncpy(partidas[count].rutaArchivo, rutaCompleta,
-                            sizeof(partidas[count].rutaArchivo) - 1);
-                    count++;
-                }
-            }
-            fclose(f);
+  int count = 0;
+  WIN32_FIND_DATAA findData;
+  char busqueda[256];
+
+  // Inicializar array
+  for (int i = 0; i < MAX_PARTIDAS; i++) {
+    partidas[i].existe = false;
+  }
+
+  snprintf(busqueda, sizeof(busqueda), "%s\\*%s", SAVE_FOLDER, SAVE_EXTENSION);
+
+  HANDLE hFind = FindFirstFileA(busqueda, &findData);
+  if (hFind == INVALID_HANDLE_VALUE) {
+    return 0;
+  }
+
+  do {
+    if (count >= MAX_PARTIDAS)
+      break;
+
+    char rutaCompleta[256];
+    snprintf(rutaCompleta, sizeof(rutaCompleta), "%s\\%s", SAVE_FOLDER,
+             findData.cFileName);
+
+    FILE *f = fopen(rutaCompleta, "rb");
+    if (f) {
+      SaveHeader header;
+      if (fread(&header, sizeof(SaveHeader), 1, f) == 1) {
+        if (header.magic == SAVE_MAGIC) {
+          partidas[count].existe = true;
+          strncpy(partidas[count].nombreJugador, header.nombreJugador,
+                  sizeof(partidas[count].nombreJugador) - 1);
+          strncpy(partidas[count].timestamp, header.timestamp,
+                  sizeof(partidas[count].timestamp) - 1);
+          partidas[count].islaActual = header.islaActual;
+          strncpy(partidas[count].rutaArchivo, rutaCompleta,
+                  sizeof(partidas[count].rutaArchivo) - 1);
+          count++;
         }
-    } while (FindNextFileA(hFind, &findData) != 0);
-    
-    FindClose(hFind);
-    return count;
+      }
+      fclose(f);
+    }
+  } while (FindNextFileA(hFind, &findData) != 0);
+
+  FindClose(hFind);
+  return count;
 }
 
 bool eliminarPartida(const char *nombreJugador) {
-    char ruta[256];
-    obtenerRutaGuardado(nombreJugador, ruta, sizeof(ruta));
-    return (remove(ruta) == 0);
+  char ruta[256];
+  obtenerRutaGuardado(nombreJugador, ruta, sizeof(ruta));
+  return (remove(ruta) == 0);
 }
 
 // ============================================================================
 // MENÚ DE PAUSA EN PANTALLA (GDI) - Sin parpadeo
 // ============================================================================
 
-static const char *OPCIONES_PAUSA[] = {
-    "Continuar",
-    "Guardar partida",
-    "Cargar partida",
-    "Salir al menu"
-};
+static const char *OPCIONES_PAUSA[] = {"Continuar", "Guardar partida",
+                                       "Cargar partida", "Salir al menu"};
 static const int OPCIONES_PAUSA_TOTAL = 4;
 
 void menuPausaInicializar(MenuPausa *menu) {
-    menu->activo = false;
-    menu->seleccion = 0;
-    menu->modo = MODO_PRINCIPAL;
-    menu->nombreInput[0] = '\0';
-    menu->cursorPos = 0;
-    menu->nombreExiste = false;
-    menu->numPartidas = 0;
-    menu->partidaSeleccionada = 0;
-    menu->mensaje[0] = '\0';
-    menu->timerMensaje = 0;
-    menu->rutaGuardado[0] = '\0';
-    menu->volverAlMenu = false;
-    menu->partidaGuardada = false;
+  menu->activo = false;
+  menu->seleccion = 0;
+  menu->modo = MODO_PRINCIPAL;
+  menu->nombreInput[0] = '\0';
+  menu->cursorPos = 0;
+  menu->nombreExiste = false;
+  menu->numPartidas = 0;
+  menu->partidaSeleccionada = 0;
+  menu->mensaje[0] = '\0';
+  menu->timerMensaje = 0;
+  menu->rutaGuardado[0] = '\0';
+  menu->volverAlMenu = false;
+  menu->partidaGuardada = false;
 }
 
 void menuPausaAbrir(MenuPausa *menu) {
-    menu->activo = true;
-    menu->seleccion = 0;
-    menu->modo = MODO_PRINCIPAL;
-    menu->nombreInput[0] = '\0';
-    menu->cursorPos = 0;
-    menu->nombreExiste = false;
-    menu->volverAlMenu = false;
+  menu->activo = true;
+  menu->seleccion = 0;
+  menu->modo = MODO_PRINCIPAL;
+  menu->nombreInput[0] = '\0';
+  menu->cursorPos = 0;
+  menu->nombreExiste = false;
+  menu->volverAlMenu = false;
 }
 
 void menuPausaCerrar(MenuPausa *menu) {
-    menu->activo = false;
-    menu->modo = MODO_PRINCIPAL;
+  menu->activo = false;
+  menu->modo = MODO_PRINCIPAL;
 }
 
 void menuPausaActualizar(MenuPausa *menu) {
-    if (menu->timerMensaje > 0) {
-        menu->timerMensaje--;
-        if (menu->timerMensaje == 0) {
-            menu->mensaje[0] = '\0';
-            menu->rutaGuardado[0] = '\0';
-        }
+  if (menu->timerMensaje > 0) {
+    menu->timerMensaje--;
+    if (menu->timerMensaje == 0) {
+      menu->mensaje[0] = '\0';
+      menu->rutaGuardado[0] = '\0';
     }
+  }
 }
 
 // Dibuja un panel con fondo sólido (sin transparencia para evitar parpadeo)
 static void dibujarPanelSolido(HDC hdc, int x, int y, int ancho, int alto) {
-    // Fondo sólido oscuro
-    HBRUSH brushFondo = CreateSolidBrush(RGB(25, 25, 35));
-    RECT rectFondo = {x, y, x + ancho, y + alto};
-    FillRect(hdc, &rectFondo, brushFondo);
-    DeleteObject(brushFondo);
-    
-    // Borde dorado
-    HPEN penBorde = CreatePen(PS_SOLID, 3, RGB(180, 140, 60));
-    HPEN oldPen = (HPEN)SelectObject(hdc, penBorde);
-    HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-    HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, nullBrush);
-    
-    RoundRect(hdc, x, y, x + ancho, y + alto, 15, 15);
-    
-    SelectObject(hdc, oldPen);
-    SelectObject(hdc, oldBrush);
-    DeleteObject(penBorde);
+  // Fondo sólido oscuro
+  HBRUSH brushFondo = CreateSolidBrush(RGB(25, 25, 35));
+  RECT rectFondo = {x, y, x + ancho, y + alto};
+  FillRect(hdc, &rectFondo, brushFondo);
+  DeleteObject(brushFondo);
+
+  // Borde dorado
+  HPEN penBorde = CreatePen(PS_SOLID, 3, RGB(180, 140, 60));
+  HPEN oldPen = (HPEN)SelectObject(hdc, penBorde);
+  HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+  HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, nullBrush);
+
+  RoundRect(hdc, x, y, x + ancho, y + alto, 15, 15);
+
+  SelectObject(hdc, oldPen);
+  SelectObject(hdc, oldBrush);
+  DeleteObject(penBorde);
 }
 
 void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {

@@ -27,18 +27,14 @@ static const char *kCaballeroRutasAlt[4] = {
 };
 
 static const char *kGuerreroRutas[4] = {
-	"..\\assets\\guerrero\\guerrero_front.bmp",
-	"..\\assets\\guerrero\\guerrero_back.bmp",
-	"..\\assets\\guerrero\\guerrero_left.bmp",
-	"..\\assets\\guerrero\\guerrero_right.bmp"
-};
+    "..\\assets\\guerrero\\guerrero_front.bmp",
+    "..\\assets\\guerrero\\guerrero_back.bmp",
+    "..\\assets\\guerrero\\guerrero_left.bmp",
+    "..\\assets\\guerrero\\guerrero_right.bmp"};
 
 static const char *kGuerreroRutasAlt[4] = {
-	"assets/guerrero/guerrero_front.bmp",
-	"assets/guerrero/guerrero_back.bmp",
-	"assets/guerrero/guerrero_left.bmp",
-	"assets/guerrero/guerrero_right.bmp"
-};
+    "assets/guerrero/guerrero_front.bmp", "assets/guerrero/guerrero_back.bmp",
+    "assets/guerrero/guerrero_left.bmp", "assets/guerrero/guerrero_right.bmp"};
 
 static HBITMAP hCaballeroBmp[4] = {NULL};
 static HBITMAP hGuerreroBmp[4] = {NULL};
@@ -47,72 +43,76 @@ static HBITMAP hFondoIsla = NULL; // BMP de la isla destino para el fondo
 typedef enum { ANIM_IDLE, ANIM_MOVE, ANIM_ATTACK, ANIM_DEATH } AnimState;
 
 typedef struct {
-	HBITMAP idle[2];            // 0 left, 1 right
-	HBITMAP walk[2];            // loop mientras se desplaza
-	HBITMAP attack[2][3];       // 3 frames
-	HBITMAP death[2][2];        // 2 frames
+  HBITMAP idle[2];      // 0 left, 1 right
+  HBITMAP walk[2];      // loop mientras se desplaza
+  HBITMAP attack[2][3]; // 3 frames
+  HBITMAP death[2][2];  // 2 frames
 } SpriteSet;
 
 typedef struct {
-	Unidad *ref;   // Unidad real (para sincronizar bajas)
-	bool esEnemigo;
-	bool vivo;
-	float x, y;    // Coordenadas de escena de batalla (px)
-	float vel;     // Avance por tick (px)
-    int hp;
-    int hpMax;
-    int danio;
-    int defensa;
-    int crit;
-    Direccion dir;
-    int animFrame;
-    AnimState animState;
-    float animTimer;
-    int animFrameMax;
-    TipoUnidad tipo;
+  Unidad *ref; // Unidad real (para sincronizar bajas)
+  bool esEnemigo;
+  bool vivo;
+  float x, y; // Coordenadas de escena de batalla (px)
+  float vel;  // Avance por tick (px)
+  int hp;
+  int hpMax;
+  int danio;
+  int defensa;
+  int crit;
+  Direccion dir;
+  int animFrame;
+  AnimState animState;
+  float animTimer;
+  int animFrameMax;
+  TipoUnidad tipo;
 } BattleUnit;
 
 typedef struct {
-    bool activa;
-    int islaDestino;
-    float tickAcumulado;
-    float animAccum;
-    BatallaResultado resultadoPendiente;
-    struct Jugador *jugador; // Referencia para aplicar bajas
-    BattleUnit aliados[BATTLE_MAX_UNITS];
-    BattleUnit enemigos[BATTLE_MAX_UNITS];
-    int numAliados;
-    int numEnemigos;
+  bool activa;
+  int islaDestino;
+  float tickAcumulado;
+  float animAccum;
+  BatallaResultado resultadoPendiente;
+  struct Jugador *jugador; // Referencia para aplicar bajas
+  BattleUnit aliados[BATTLE_MAX_UNITS];
+  BattleUnit enemigos[BATTLE_MAX_UNITS];
+  int numAliados;
+  int numEnemigos;
 } BattleState;
 
 static BattleState gBatalla = {0};
-static ULONGLONG gInicioMs = 0;
+static DWORD gInicioMs = 0;
 
 // ---------------------------------------------------------------------------
 // Utilidades internas
 // ---------------------------------------------------------------------------
-static int clampInt(int v, int lo, int hi) { return (v < lo) ? lo : (v > hi) ? hi : v; }
+static int clampInt(int v, int lo, int hi) {
+  return (v < lo) ? lo : (v > hi) ? hi : v;
+}
 static int dirIndex(Direccion d) { return (d == DIR_RIGHT) ? 1 : 0; }
 
 static HBITMAP cargarBmp(const char *ruta1, const char *ruta2, int w, int h) {
-	HBITMAP bmp = (HBITMAP)LoadImageA(NULL, ruta1, IMAGE_BITMAP, w, h,
-																		LR_LOADFROMFILE | LR_CREATEDIBSECTION);
-	if (!bmp && ruta2) {
-		bmp = (HBITMAP)LoadImageA(NULL, ruta2, IMAGE_BITMAP, w, h,
-															LR_LOADFROMFILE | LR_CREATEDIBSECTION);
-	}
-	return bmp;
+  HBITMAP bmp = (HBITMAP)LoadImageA(NULL, ruta1, IMAGE_BITMAP, w, h,
+                                    LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+  if (!bmp && ruta2) {
+    bmp = (HBITMAP)LoadImageA(NULL, ruta2, IMAGE_BITMAP, w, h,
+                              LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+  }
+  return bmp;
 }
 
 static void asegurarSprites(void) {
-	for (int i = 0; i < 4; i++) {
-		if (!hCaballeroBmp[i]) {
-			hCaballeroBmp[i] = cargarBmp(kCaballeroRutas[i], kCaballeroRutasAlt[i], 64, 64);
-		}
-		if (!hGuerreroBmp[i]) {
-			hGuerreroBmp[i] = cargarBmp(kGuerreroRutas[i], kGuerreroRutasAlt[i], 64, 64);
-		}
-	}
+  for (int i = 0; i < 4; i++) {
+    if (!hCaballeroBmp[i]) {
+      hCaballeroBmp[i] =
+          cargarBmp(kCaballeroRutas[i], kCaballeroRutasAlt[i], 64, 64);
+    }
+    if (!hGuerreroBmp[i]) {
+      hGuerreroBmp[i] =
+          cargarBmp(kGuerreroRutas[i], kGuerreroRutasAlt[i], 64, 64);
+    }
+  }
 }
 
 // --------------------------------------------------------------------------------
@@ -121,9 +121,12 @@ static void asegurarSprites(void) {
 static SpriteSet gSprGuerrero = {0};
 static SpriteSet gSprCaballero = {0};
 
-static void cargarSpriteDir(HBITMAP *dst, const char *pathL, const char *pathR) {
-	if (!dst[0]) dst[0] = cargarBmp(pathL, NULL, 64, 64);
-	if (!dst[1]) dst[1] = cargarBmp(pathR, NULL, 64, 64);
+static void cargarSpriteDir(HBITMAP *dst, const char *pathL,
+                            const char *pathR) {
+  if (!dst[0])
+    dst[0] = cargarBmp(pathL, NULL, 64, 64);
+  if (!dst[1])
+    dst[1] = cargarBmp(pathR, NULL, 64, 64);
 }
 
 static void cargarGuerreroAnim(void) {
@@ -231,16 +234,19 @@ static void cargarCaballeroAnim(void) {
 }
 
 static void cargarFondoIsla(int islaDestino) {
-	if (hFondoIsla) return;
-	char ruta1[MAX_PATH];
-	char ruta2[MAX_PATH];
-	char ruta3[MAX_PATH];
-	snprintf(ruta1, sizeof(ruta1), "..\\assets\\islas\\isla%d.bmp", islaDestino);
-	snprintf(ruta2, sizeof(ruta2), "assets/islas/isla%d.bmp", islaDestino);
-	snprintf(ruta3, sizeof(ruta3), ".\\assets\\islas\\isla%d.bmp", islaDestino);
-	hFondoIsla = cargarBmp(ruta1, ruta2, 0, 0);
-	if (!hFondoIsla) hFondoIsla = cargarBmp(ruta3, NULL, 0, 0);
-	printf("[BATALLA] Carga fondo isla %d: %s %s %s -> %s\n", islaDestino, ruta1, ruta2, ruta3, hFondoIsla ? "OK" : "FAIL");
+  if (hFondoIsla)
+    return;
+  char ruta1[MAX_PATH];
+  char ruta2[MAX_PATH];
+  char ruta3[MAX_PATH];
+  snprintf(ruta1, sizeof(ruta1), "..\\assets\\islas\\isla%d.bmp", islaDestino);
+  snprintf(ruta2, sizeof(ruta2), "assets/islas/isla%d.bmp", islaDestino);
+  snprintf(ruta3, sizeof(ruta3), ".\\assets\\islas\\isla%d.bmp", islaDestino);
+  hFondoIsla = cargarBmp(ruta1, ruta2, 0, 0);
+  if (!hFondoIsla)
+    hFondoIsla = cargarBmp(ruta3, NULL, 0, 0);
+  printf("[BATALLA] Carga fondo isla %d: %s %s %s -> %s\n", islaDestino, ruta1,
+         ruta2, ruta3, hFondoIsla ? "OK" : "FAIL");
 }
 
 static void statsPorTipo(TipoUnidad t, int *hp, int *danio, int *def, int *crit) {
@@ -292,9 +298,9 @@ static void initUnit(BattleUnit *u, Unidad *ref, bool esEnemigo,
 }
 
 static float dist2(const BattleUnit *a, const BattleUnit *b) {
-	float dx = a->x - b->x;
-	float dy = a->y - b->y;
-	return dx * dx + dy * dy;
+  float dx = a->x - b->x;
+  float dy = a->y - b->y;
+  return dx * dx + dy * dy;
 }
 
 static int cmpBattleUnitPtr(const void *lhs, const void *rhs) {
@@ -305,110 +311,114 @@ static int cmpBattleUnitPtr(const void *lhs, const void *rhs) {
 	return (a->x < b->x) ? -1 : 1;
 }
 static void marcarBajasAliadas(void) {
-	if (!gBatalla.jugador) return;
-	Barco *barco = &gBatalla.jugador->barco;
-	for (int i = 0; i < gBatalla.numAliados; i++) {
-		BattleUnit *u = &gBatalla.aliados[i];
-		if (!u->ref) continue;
-		if (!u->vivo) {
-			u->ref->x = -1000.0f;
-			u->ref->y = -1000.0f;
-			u->ref->moviendose = false;
-			u->ref->seleccionado = false;
-			u->ref->celdaFila = -1;
-			u->ref->celdaCol = -1;
-		}
-	}
+  if (!gBatalla.jugador)
+    return;
+  Barco *barco = &gBatalla.jugador->barco;
+  for (int i = 0; i < gBatalla.numAliados; i++) {
+    BattleUnit *u = &gBatalla.aliados[i];
+    if (!u->ref)
+      continue;
+    if (!u->vivo) {
+      u->ref->x = -1000.0f;
+      u->ref->y = -1000.0f;
+      u->ref->moviendose = false;
+      u->ref->seleccionado = false;
+      u->ref->celdaFila = -1;
+      u->ref->celdaCol = -1;
+    }
+  }
 
-	// Compactar tripulación del barco eliminando punteros caídos
-	int writeIdx = 0;
-	for (int i = 0; i < barco->numTropas; i++) {
-		Unidad *ptr = barco->tropas[i];
-		bool muerta = false;
-		for (int j = 0; j < gBatalla.numAliados; j++) {
-			if (gBatalla.aliados[j].ref == ptr && !gBatalla.aliados[j].vivo) {
-				muerta = true;
-				break;
-			}
-		}
-		if (!muerta && ptr) {
-			barco->tropas[writeIdx++] = ptr;
-		}
-	}
-	for (int k = writeIdx; k < 6; k++) barco->tropas[k] = NULL;
-	barco->numTropas = writeIdx;
+  // Compactar tripulación del barco eliminando punteros caídos
+  int writeIdx = 0;
+  for (int i = 0; i < barco->numTropas; i++) {
+    Unidad *ptr = barco->tropas[i];
+    bool muerta = false;
+    for (int j = 0; j < gBatalla.numAliados; j++) {
+      if (gBatalla.aliados[j].ref == ptr && !gBatalla.aliados[j].vivo) {
+        muerta = true;
+        break;
+      }
+    }
+    if (!muerta && ptr) {
+      barco->tropas[writeIdx++] = ptr;
+    }
+  }
+  for (int k = writeIdx; k < 6; k++)
+    barco->tropas[k] = NULL;
+  barco->numTropas = writeIdx;
 }
 
 static int calcularPresupuesto(int islasConquistadas) {
-	ULONGLONG ahora = GetTickCount64();
-	int minutos = 0;
-	if (gInicioMs > 0 && ahora > gInicioMs) {
-		minutos = (int)((ahora - gInicioMs) / 60000ULL);
-	}
+  DWORD ahora = GetTickCount();
+  int minutos = 0;
+  if (gInicioMs > 0 && ahora > gInicioMs) {
+    minutos = (int)((ahora - gInicioMs) / 60000);
+  }
 
-	int presupuesto = 4;             // base sencilla
-	presupuesto += minutos / 5;      // +1 cada 5 minutos
-	presupuesto += islasConquistadas; // +1 por isla conquistada
-	return clampInt(presupuesto, 3, 12);
+  int presupuesto = 4;              // base sencilla
+  presupuesto += minutos / 5;       // +1 cada 5 minutos
+  presupuesto += islasConquistadas; // +1 por isla conquistada
+  return clampInt(presupuesto, 3, 12);
 }
 
 static void poblarEnemigos(int islasConquistadas) {
-	gBatalla.numEnemigos = 0;
-	int puntos = calcularPresupuesto(islasConquistadas);
+  gBatalla.numEnemigos = 0;
+  int puntos = calcularPresupuesto(islasConquistadas);
 
-	// Caballero cuesta 14/10, guerrero 10/10 (aprox 1.4 vs 1.0)
-	while (puntos >= 14 && gBatalla.numEnemigos < BATTLE_MAX_UNITS) {
-		BattleUnit *u = &gBatalla.enemigos[gBatalla.numEnemigos++];
-		int hp, dmg, def, crit;
-		statsPorTipo(TIPO_CABALLERO, &hp, &dmg, &def, &crit);
-		initUnit(u, NULL, true, hp, dmg, def, crit);
-		u->tipo = TIPO_CABALLERO;
-		puntos -= 14;
-	}
+  // Caballero cuesta 14/10, guerrero 10/10 (aprox 1.4 vs 1.0)
+  while (puntos >= 14 && gBatalla.numEnemigos < BATTLE_MAX_UNITS) {
+    BattleUnit *u = &gBatalla.enemigos[gBatalla.numEnemigos++];
+    int hp, dmg, def, crit;
+    statsPorTipo(TIPO_CABALLERO, &hp, &dmg, &def, &crit);
+    initUnit(u, NULL, true, hp, dmg, def, crit);
+    u->tipo = TIPO_CABALLERO;
+    puntos -= 14;
+  }
 
-	while (puntos >= 10 && gBatalla.numEnemigos < BATTLE_MAX_UNITS) {
-		BattleUnit *u = &gBatalla.enemigos[gBatalla.numEnemigos++];
-		int hp, dmg, def, crit;
-		statsPorTipo(TIPO_GUERRERO, &hp, &dmg, &def, &crit);
-		initUnit(u, NULL, true, hp, dmg, def, crit);
-		u->tipo = TIPO_GUERRERO;
-		puntos -= 10;
-	}
+  while (puntos >= 10 && gBatalla.numEnemigos < BATTLE_MAX_UNITS) {
+    BattleUnit *u = &gBatalla.enemigos[gBatalla.numEnemigos++];
+    int hp, dmg, def, crit;
+    statsPorTipo(TIPO_GUERRERO, &hp, &dmg, &def, &crit);
+    initUnit(u, NULL, true, hp, dmg, def, crit);
+    u->tipo = TIPO_GUERRERO;
+    puntos -= 10;
+  }
 
-	if (gBatalla.numEnemigos < 3) {
-		int falta = 3 - gBatalla.numEnemigos;
-		for (int i = 0; i < falta && gBatalla.numEnemigos < BATTLE_MAX_UNITS; i++) {
-			BattleUnit *u = &gBatalla.enemigos[gBatalla.numEnemigos++];
-			int hp, dmg, def, crit;
-			statsPorTipo(TIPO_GUERRERO, &hp, &dmg, &def, &crit);
-			initUnit(u, NULL, true, hp, dmg, def, crit);
-			u->tipo = TIPO_GUERRERO;
-		}
-	}
+  if (gBatalla.numEnemigos < 3) {
+    int falta = 3 - gBatalla.numEnemigos;
+    for (int i = 0; i < falta && gBatalla.numEnemigos < BATTLE_MAX_UNITS; i++) {
+      BattleUnit *u = &gBatalla.enemigos[gBatalla.numEnemigos++];
+      int hp, dmg, def, crit;
+      statsPorTipo(TIPO_GUERRERO, &hp, &dmg, &def, &crit);
+      initUnit(u, NULL, true, hp, dmg, def, crit);
+      u->tipo = TIPO_GUERRERO;
+    }
+  }
 }
 
 static void posicionarUnidades(void) {
-	// Aliados a la izquierda, enemigos a la derecha, con separación vertical amplia
-	const float offsetAliadosX = 200.0f;
-	const float offsetEnemigosX = 420.0f;
-	const float offsetY = 200.0f;
-	const int maxPorColumna = 6;
+  // Aliados a la izquierda, enemigos a la derecha, con separación vertical
+  // amplia
+  const float offsetAliadosX = 200.0f;
+  const float offsetEnemigosX = 420.0f;
+  const float offsetY = 200.0f;
+  const int maxPorColumna = 6;
 
-	for (int i = 0; i < gBatalla.numAliados; i++) {
-		int col = i / maxPorColumna;
-		int row = i % maxPorColumna;
-		gBatalla.aliados[i].x = offsetAliadosX + col * BATTLE_TILE;
-		gBatalla.aliados[i].y = offsetY + row * (BATTLE_TILE + 12);
-		gBatalla.aliados[i].dir = DIR_RIGHT;
-	}
+  for (int i = 0; i < gBatalla.numAliados; i++) {
+    int col = i / maxPorColumna;
+    int row = i % maxPorColumna;
+    gBatalla.aliados[i].x = offsetAliadosX + col * BATTLE_TILE;
+    gBatalla.aliados[i].y = offsetY + row * (BATTLE_TILE + 12);
+    gBatalla.aliados[i].dir = DIR_RIGHT;
+  }
 
-	for (int i = 0; i < gBatalla.numEnemigos; i++) {
-		int col = i / maxPorColumna;
-		int row = i % maxPorColumna;
-		gBatalla.enemigos[i].x = offsetEnemigosX + col * BATTLE_TILE;
-		gBatalla.enemigos[i].y = offsetY + row * (BATTLE_TILE + 12);
-		gBatalla.enemigos[i].dir = DIR_LEFT;
-	}
+  for (int i = 0; i < gBatalla.numEnemigos; i++) {
+    int col = i / maxPorColumna;
+    int row = i % maxPorColumna;
+    gBatalla.enemigos[i].x = offsetEnemigosX + col * BATTLE_TILE;
+    gBatalla.enemigos[i].y = offsetY + row * (BATTLE_TILE + 12);
+    gBatalla.enemigos[i].dir = DIR_LEFT;
+  }
 }
 
 static void resolverTick(void) {
@@ -420,16 +430,21 @@ static void resolverTick(void) {
 		u->animState = ANIM_IDLE;
 		u->animFrameMax = 1;
 
-		// Buscar enemigo más cercano
-		BattleUnit *target = NULL;
-		float mejorD2 = 0.0f;
-		for (int e = 0; e < gBatalla.numEnemigos; e++) {
-			BattleUnit *v = &gBatalla.enemigos[e];
-			if (!v->vivo) continue;
-			float d2 = dist2(u, v);
-			if (!target || d2 < mejorD2) { target = v; mejorD2 = d2; }
-		}
-		if (!target) break;
+    // Buscar enemigo más cercano
+    BattleUnit *target = NULL;
+    float mejorD2 = 0.0f;
+    for (int e = 0; e < gBatalla.numEnemigos; e++) {
+      BattleUnit *v = &gBatalla.enemigos[e];
+      if (!v->vivo)
+        continue;
+      float d2 = dist2(u, v);
+      if (!target || d2 < mejorD2) {
+        target = v;
+        mejorD2 = d2;
+      }
+    }
+    if (!target)
+      break;
 
 		float dx = target->x - u->x;
 		float dy = target->y - u->y;
@@ -464,15 +479,20 @@ static void resolverTick(void) {
 		u->animState = ANIM_IDLE;
 		u->animFrameMax = 1;
 
-		BattleUnit *target = NULL;
-		float mejorD2 = 0.0f;
-		for (int a = 0; a < gBatalla.numAliados; a++) {
-			BattleUnit *v = &gBatalla.aliados[a];
-			if (!v->vivo) continue;
-			float d2 = dist2(u, v);
-			if (!target || d2 < mejorD2) { target = v; mejorD2 = d2; }
-		}
-		if (!target) break;
+    BattleUnit *target = NULL;
+    float mejorD2 = 0.0f;
+    for (int a = 0; a < gBatalla.numAliados; a++) {
+      BattleUnit *v = &gBatalla.aliados[a];
+      if (!v->vivo)
+        continue;
+      float d2 = dist2(u, v);
+      if (!target || d2 < mejorD2) {
+        target = v;
+        mejorD2 = d2;
+      }
+    }
+    if (!target)
+      break;
 
 		float dx = target->x - u->x;
 		float dy = target->y - u->y;
@@ -553,93 +573,104 @@ static void resolverTick(void) {
 	for (int a = 0; a < gBatalla.numAliados; a++) if (gBatalla.aliados[a].vivo) { algunAliado = true; break; }
 	for (int e = 0; e < gBatalla.numEnemigos; e++) if (gBatalla.enemigos[e].vivo) { algunEnemigo = true; break; }
 
-	if (!algunAliado && !algunEnemigo) {
-		gBatalla.resultadoPendiente = BATALLA_RESULTADO_DERROTA;
-		gBatalla.activa = false;
-		marcarBajasAliadas();
-	} else if (!algunAliado) {
-		gBatalla.resultadoPendiente = BATALLA_RESULTADO_DERROTA;
-		gBatalla.activa = false;
-		marcarBajasAliadas();
-	} else if (!algunEnemigo) {
-		gBatalla.resultadoPendiente = BATALLA_RESULTADO_VICTORIA;
-		gBatalla.activa = false;
-		marcarBajasAliadas();
-	}
+  if (!algunAliado && !algunEnemigo) {
+    gBatalla.resultadoPendiente = BATALLA_RESULTADO_DERROTA;
+    gBatalla.activa = false;
+    marcarBajasAliadas();
+  } else if (!algunAliado) {
+    gBatalla.resultadoPendiente = BATALLA_RESULTADO_DERROTA;
+    gBatalla.activa = false;
+    marcarBajasAliadas();
+  } else if (!algunEnemigo) {
+    gBatalla.resultadoPendiente = BATALLA_RESULTADO_VICTORIA;
+    gBatalla.activa = false;
+    marcarBajasAliadas();
+  }
 }
 
 // ---------------------------------------------------------------------------
 // API pública
 // ---------------------------------------------------------------------------
 void batallasInicializar(void) {
-	gInicioMs = GetTickCount64();
-	srand((unsigned int)time(NULL));
-	asegurarSprites();
-	cargarGuerreroAnim();
-	cargarCaballeroAnim();
+  gInicioMs = GetTickCount();
+  srand((unsigned int)time(NULL));
+  asegurarSprites();
+  cargarGuerreroAnim();
+  cargarCaballeroAnim();
 }
 
 bool batallasPrepararDesdeViaje(struct Jugador *j, int islaDestino,
-																int islasConquistadas, bool esIslaInicial) {
-	if (esIslaInicial) return false; // Isla inicial nunca tiene enemigos
-	if (!j) return false;
-	if (j->barco.numTropas <= 0) return false; // Sin tropas, no puede iniciar
+                                int islasConquistadas, bool esIslaInicial) {
+  if (esIslaInicial)
+    return false; // Isla inicial nunca tiene enemigos
+  if (!j)
+    return false;
+  if (j->barco.numTropas <= 0)
+    return false; // Sin tropas, no puede iniciar
 
-	asegurarSprites();
-	cargarGuerreroAnim();
-	cargarCaballeroAnim();
-	cargarFondoIsla(islaDestino);
+  asegurarSprites();
+  cargarGuerreroAnim();
+  cargarCaballeroAnim();
+  cargarFondoIsla(islaDestino);
 
-	memset(&gBatalla, 0, sizeof(gBatalla));
-	gBatalla.islaDestino = islaDestino;
-	gBatalla.jugador = j;
+  memset(&gBatalla, 0, sizeof(gBatalla));
+  gBatalla.islaDestino = islaDestino;
+  gBatalla.jugador = j;
 
-	// Copiar tropas aliadas desde el barco
-	gBatalla.numAliados = 0;
-	for (int i = 0; i < j->barco.numTropas && gBatalla.numAliados < BATTLE_MAX_UNITS; i++) {
-		Unidad *tropa = j->barco.tropas[i];
-		if (!tropa) continue;
-		int hp, dmg, def, crit;
-		statsPorTipo(tropa->tipo, &hp, &dmg, &def, &crit);
-		BattleUnit *u = &gBatalla.aliados[gBatalla.numAliados++];
-		initUnit(u, tropa, false, hp, dmg, def, crit);
-	}
+  // Copiar tropas aliadas desde el barco
+  gBatalla.numAliados = 0;
+  for (int i = 0;
+       i < j->barco.numTropas && gBatalla.numAliados < BATTLE_MAX_UNITS; i++) {
+    Unidad *tropa = j->barco.tropas[i];
+    if (!tropa)
+      continue;
+    int hp, dmg, def, crit;
+    statsPorTipo(tropa->tipo, &hp, &dmg, &def, &crit);
+    BattleUnit *u = &gBatalla.aliados[gBatalla.numAliados++];
+    initUnit(u, tropa, false, hp, dmg, def, crit);
+  }
 
-	if (gBatalla.numAliados == 0) return false;
+  if (gBatalla.numAliados == 0)
+    return false;
 
-	poblarEnemigos(islasConquistadas);
-	posicionarUnidades();
-	gBatalla.tickAcumulado = 0.0f;
-	gBatalla.activa = true;
-	gBatalla.resultadoPendiente = BATALLA_RESULTADO_NONE;
-	return true;
+  poblarEnemigos(islasConquistadas);
+  posicionarUnidades();
+  gBatalla.tickAcumulado = 0.0f;
+  gBatalla.activa = true;
+  gBatalla.resultadoPendiente = BATALLA_RESULTADO_NONE;
+  return true;
 }
 
 bool batallasEnCurso(void) { return gBatalla.activa; }
 
 void batallasActualizar(float dt) {
-	if (!gBatalla.activa) return;
-	gBatalla.tickAcumulado += dt;
-	gBatalla.animAccum += dt;
-	if (gBatalla.animAccum >= BATTLE_ANIM_STEP_SEC) {
-		gBatalla.animAccum = 0.0f;
-		// Avance de animación para vivos
-		for (int i = 0; i < gBatalla.numAliados; i++) {
-			BattleUnit *u = &gBatalla.aliados[i];
-			if (!u->vivo && u->animState != ANIM_DEATH) continue;
-			u->animFrame = (u->animFrame + 1) % (u->animFrameMax > 0 ? u->animFrameMax : 1);
-		}
-		for (int i = 0; i < gBatalla.numEnemigos; i++) {
-			BattleUnit *u = &gBatalla.enemigos[i];
-			if (!u->vivo && u->animState != ANIM_DEATH) continue;
-			u->animFrame = (u->animFrame + 1) % (u->animFrameMax > 0 ? u->animFrameMax : 1);
-		}
-	}
+  if (!gBatalla.activa)
+    return;
+  gBatalla.tickAcumulado += dt;
+  gBatalla.animAccum += dt;
+  if (gBatalla.animAccum >= BATTLE_ANIM_STEP_SEC) {
+    gBatalla.animAccum = 0.0f;
+    // Avance de animación para vivos
+    for (int i = 0; i < gBatalla.numAliados; i++) {
+      BattleUnit *u = &gBatalla.aliados[i];
+      if (!u->vivo && u->animState != ANIM_DEATH)
+        continue;
+      u->animFrame =
+          (u->animFrame + 1) % (u->animFrameMax > 0 ? u->animFrameMax : 1);
+    }
+    for (int i = 0; i < gBatalla.numEnemigos; i++) {
+      BattleUnit *u = &gBatalla.enemigos[i];
+      if (!u->vivo && u->animState != ANIM_DEATH)
+        continue;
+      u->animFrame =
+          (u->animFrame + 1) % (u->animFrameMax > 0 ? u->animFrameMax : 1);
+    }
+  }
 
-	if (gBatalla.tickAcumulado >= 1.0f) {
-		gBatalla.tickAcumulado = 0.0f;
-		resolverTick();
-	}
+  if (gBatalla.tickAcumulado >= 1.0f) {
+    gBatalla.tickAcumulado = 0.0f;
+    resolverTick();
+  }
 }
 
 static void dibujarUnidad(HDC hdc, BattleUnit *u, Camara cam) {
@@ -665,78 +696,90 @@ static void dibujarUnidad(HDC hdc, BattleUnit *u, Camara cam) {
 		break;
 	}
 
-	if (!frame) {
-		// Placeholder si falta sprite
-		HBRUSH b = CreateSolidBrush(u->esEnemigo ? RGB(220, 40, 40) : RGB(40, 200, 60));
-		int sx = (int)((u->x - cam.x) * cam.zoom);
-		int sy = (int)((u->y - cam.y) * cam.zoom);
-		RECT r = {sx, sy, sx + 48, sy + 48};
-		FillRect(hdc, &r, b);
-		DeleteObject(b);
-		return;
-	}
+  if (!frame) {
+    // Placeholder si falta sprite
+    HBRUSH b =
+        CreateSolidBrush(u->esEnemigo ? RGB(220, 40, 40) : RGB(40, 200, 60));
+    int sx = (int)((u->x - cam.x) * cam.zoom);
+    int sy = (int)((u->y - cam.y) * cam.zoom);
+    RECT r = {sx, sy, sx + 48, sy + 48};
+    FillRect(hdc, &r, b);
+    DeleteObject(b);
+    return;
+  }
 
-	HDC mem = CreateCompatibleDC(hdc);
-	HBITMAP old = (HBITMAP)SelectObject(mem, frame);
-	int size = (int)(64 * cam.zoom);
-	int sx = (int)((u->x - cam.x) * cam.zoom);
-	int sy = (int)((u->y - cam.y) * cam.zoom);
-	TransparentBlt(hdc, sx, sy, size, size, mem, 0, 0, 64, 64, RGB(255, 255, 255));
-	SelectObject(mem, old);
-	DeleteDC(mem);
+  HDC mem = CreateCompatibleDC(hdc);
+  HBITMAP old = (HBITMAP)SelectObject(mem, frame);
+  int size = (int)(64 * cam.zoom);
+  int sx = (int)((u->x - cam.x) * cam.zoom);
+  int sy = (int)((u->y - cam.y) * cam.zoom);
+  TransparentBlt(hdc, sx, sy, size, size, mem, 0, 0, 64, 64,
+                 RGB(255, 255, 255));
+  SelectObject(mem, old);
+  DeleteDC(mem);
 
-	// Círculo de selección
-	HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-	HPEN pen = CreatePen(PS_SOLID, 2, u->esEnemigo ? RGB(220, 40, 40) : RGB(40, 200, 60));
-	SelectObject(hdc, nullBrush);
-	SelectObject(hdc, pen);
-	Ellipse(hdc, sx, sy + size - 10, sx + size, sy + size + 5);
-	DeleteObject(pen);
+  // Círculo de selección
+  HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+  HPEN pen = CreatePen(PS_SOLID, 2,
+                       u->esEnemigo ? RGB(220, 40, 40) : RGB(40, 200, 60));
+  SelectObject(hdc, nullBrush);
+  SelectObject(hdc, pen);
+  Ellipse(hdc, sx, sy + size - 10, sx + size, sy + size + 5);
+  DeleteObject(pen);
 
-	// Barra de vida
-	int barWidth = (int)(48 * cam.zoom);
-	int barHeight = (int)(6 * cam.zoom);
-	int barX = sx + (size - barWidth) / 2;
-	int barY = sy - barHeight - 2;
+  // Barra de vida
+  int barWidth = (int)(48 * cam.zoom);
+  int barHeight = (int)(6 * cam.zoom);
+  int barX = sx + (size - barWidth) / 2;
+  int barY = sy - barHeight - 2;
 
-	RECT bg = {barX, barY, barX + barWidth, barY + barHeight};
-	HBRUSH rojo = CreateSolidBrush(RGB(120, 20, 20));
-	FillRect(hdc, &bg, rojo);
-	DeleteObject(rojo);
+  RECT bg = {barX, barY, barX + barWidth, barY + barHeight};
+  HBRUSH rojo = CreateSolidBrush(RGB(120, 20, 20));
+  FillRect(hdc, &bg, rojo);
+  DeleteObject(rojo);
 
-	int vidaPix = (u->hpMax > 0) ? (barWidth * u->hp) / u->hpMax : 0;
-	RECT vida = {barX, barY, barX + vidaPix, barY + barHeight};
-	HBRUSH verde = CreateSolidBrush(RGB(30, 200, 30));
-	FillRect(hdc, &vida, verde);
-	DeleteObject(verde);
+  int vidaPix = (u->hpMax > 0) ? (barWidth * u->hp) / u->hpMax : 0;
+  RECT vida = {barX, barY, barX + vidaPix, barY + barHeight};
+  HBRUSH verde = CreateSolidBrush(RGB(30, 200, 30));
+  FillRect(hdc, &vida, verde);
+  DeleteObject(verde);
 }
 
 void batallasRender(HDC hdc, RECT rect, Camara cam) {
-	if (!gBatalla.activa) return;
+  if (!gBatalla.activa)
+    return;
 
-	if (hFondoIsla) {
-		HDC mem = CreateCompatibleDC(hdc);
-		HBITMAP old = (HBITMAP)SelectObject(mem, hFondoIsla);
-		BITMAP info;
-		GetObject(hFondoIsla, sizeof(info), &info);
+  if (hFondoIsla) {
+    HDC mem = CreateCompatibleDC(hdc);
+    HBITMAP old = (HBITMAP)SelectObject(mem, hFondoIsla);
+    BITMAP info;
+    GetObject(hFondoIsla, sizeof(info), &info);
 
-		int srcW = (int)((rect.right - rect.left) / cam.zoom);
-		int srcH = (int)((rect.bottom - rect.top) / cam.zoom);
-		int srcX = (int)cam.x;
-		int srcY = (int)cam.y;
-		if (srcW <= 0 || srcH <= 0) { srcW = info.bmWidth; srcH = info.bmHeight; }
-		if (srcX < 0) srcX = 0; if (srcY < 0) srcY = 0;
-		if (srcX + srcW > info.bmWidth) srcX = info.bmWidth - srcW;
-		if (srcY + srcH > info.bmHeight) srcY = info.bmHeight - srcH;
-		StretchBlt(hdc, 0, 0, rect.right - rect.left, rect.bottom - rect.top,
-					 mem, srcX, srcY, srcW, srcH, SRCCOPY);
-		SelectObject(mem, old);
-		DeleteDC(mem);
-	} else {
-		HBRUSH fondo = CreateSolidBrush(RGB(40, 120, 70));
-		FillRect(hdc, &rect, fondo);
-		DeleteObject(fondo);
-	}
+    int srcW = (int)((rect.right - rect.left) / cam.zoom);
+    int srcH = (int)((rect.bottom - rect.top) / cam.zoom);
+    int srcX = (int)cam.x;
+    int srcY = (int)cam.y;
+    if (srcW <= 0 || srcH <= 0) {
+      srcW = info.bmWidth;
+      srcH = info.bmHeight;
+    }
+    if (srcX < 0)
+      srcX = 0;
+    if (srcY < 0)
+      srcY = 0;
+    if (srcX + srcW > info.bmWidth)
+      srcX = info.bmWidth - srcW;
+    if (srcY + srcH > info.bmHeight)
+      srcY = info.bmHeight - srcH;
+    StretchBlt(hdc, 0, 0, rect.right - rect.left, rect.bottom - rect.top, mem,
+               srcX, srcY, srcW, srcH, SRCCOPY);
+    SelectObject(mem, old);
+    DeleteDC(mem);
+  } else {
+    HBRUSH fondo = CreateSolidBrush(RGB(40, 120, 70));
+    FillRect(hdc, &rect, fondo);
+    DeleteObject(fondo);
+  }
 
 	BattleUnit *ordenados[BATTLE_MAX_UNITS * 2];
 	int n = 0;
@@ -750,10 +793,14 @@ void batallasRender(HDC hdc, RECT rect, Camara cam) {
 	for (int i = 0; i < n; i++) dibujarUnidad(hdc, ordenados[i], cam);
 }
 
-bool batallasObtenerResultado(BatallaResultado *outResultado, int *outIslaDestino) {
-	if (gBatalla.resultadoPendiente == BATALLA_RESULTADO_NONE) return false;
-	if (outResultado) *outResultado = gBatalla.resultadoPendiente;
-	if (outIslaDestino) *outIslaDestino = gBatalla.islaDestino;
-	gBatalla.resultadoPendiente = BATALLA_RESULTADO_NONE;
-	return true;
+bool batallasObtenerResultado(BatallaResultado *outResultado,
+                              int *outIslaDestino) {
+  if (gBatalla.resultadoPendiente == BATALLA_RESULTADO_NONE)
+    return false;
+  if (outResultado)
+    *outResultado = gBatalla.resultadoPendiente;
+  if (outIslaDestino)
+    *outIslaDestino = gBatalla.islaDestino;
+  gBatalla.resultadoPendiente = BATALLA_RESULTADO_NONE;
+  return true;
 }
