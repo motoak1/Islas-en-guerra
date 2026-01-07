@@ -245,6 +245,33 @@ void mapaMarcarEdificio(float x, float y, int ancho, int alto) {
   }
 }
 
+// Desmarca un edificio en el collision map (cuando se destruye o explota)
+void mapaDesmarcarEdificio(float x, float y, int ancho, int alto) {
+  if (gCollisionMap == NULL)
+    return;
+
+  // Calcular celdas que ocupa el edificio (TILE_SIZE=64)
+  int celInicioFila = (int)(y / TILE_SIZE);
+  int celInicioCol = (int)(x / TILE_SIZE);
+  int celFinFila = (int)((y + alto) / TILE_SIZE);
+  int celFinCol = (int)((x + ancho) / TILE_SIZE);
+
+  for (int f = celInicioFila; f <= celFinFila && f < GRID_SIZE; f++) {
+    for (int c = celInicioCol; c <= celFinCol && c < GRID_SIZE; c++) {
+      if (f >= 0 && c >= 0) {
+        gCollisionMap[f][c] = 0; // Desbloquear celda
+
+        // También limpiar el símbolo en mapaObjetos si era un edificio
+        char s = mapaObjetos[f][c];
+        if (s == SIMBOLO_EDIFICIO || s == SIMBOLO_MINA ||
+            s == SIMBOLO_CUARTEL) {
+          mapaObjetos[f][c] = SIMBOLO_VACIO;
+        }
+      }
+    }
+  }
+}
+
 void mapaLiberarCollisionMap(void) {
   if (!gCollisionMap)
     return;

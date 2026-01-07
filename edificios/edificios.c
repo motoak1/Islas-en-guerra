@@ -1,5 +1,6 @@
 // edificios/edificios.c
 #include "edificios.h"
+#include "../mapa/mapa.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -121,6 +122,9 @@ void edificioActualizar(Edificio *e) {
         e->hierroRestante <= 0) {
       e->agotada = true;
       e->construido = false; // "EXPLOTÓ": Desaparece del mapa
+
+      // NUEVO: Liberar el espacio en el mapa de colisiones y matriz de objetos
+      mapaDesmarcarEdificio(e->x, e->y, e->ancho, e->alto);
 
       // Mostrar mensaje de evento
       MessageBoxA(NULL,
