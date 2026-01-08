@@ -160,8 +160,9 @@ void batallasActualizar(struct Jugador *j) {
 
 		float dx = al->x - en->x; float dy = al->y - en->y; float d2 = dx*dx + dy*dy;
 		if (d2 > rangoAtk * rangoAtk) {
-			// acercarse mutuamente (enemigo se mueve)
+			// acercarse mutuamente (ambos se mueven)
 			moverHaciaObjetivo(en, al, velMov);
+			moverHaciaObjetivo(al, en, velMov);
 			en->recibiendoAtaque = false; al->recibiendoAtaque = false;
 			continue;
 		}
