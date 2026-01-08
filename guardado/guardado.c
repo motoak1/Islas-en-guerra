@@ -614,7 +614,7 @@ void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {
     int panelAncho = 580;  // Aumentado de 450 a 580 para que quepa todo el texto
     int panelAlto = 340;   // Aumentado de 320 a 340
     
-    if (menu->modo == MODO_GUARDAR || menu->modo == MODO_PRINCIPAL + 10) {
+    if (menu->modo == MODO_GUARDAR || menu->modo == MODO_NUEVA_PARTIDA) {
         panelAlto = 340;   // Aumentado de 310 a 340 para evitar superposición
     } else if (menu->modo == MODO_CARGAR) {
         panelAlto = 380;   // Aumentado de 360 a 380
@@ -652,7 +652,7 @@ void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {
         case MODO_CARGAR: titulo = "CARGAR PARTIDA"; break;
         case MODO_CONFIRMAR_SALIR: titulo = "SALIR AL MENU"; break;
         default:
-            if (menu->modo == MODO_PRINCIPAL + 10) {
+          if (menu->modo == MODO_NUEVA_PARTIDA) {
                 titulo = "NUEVA PARTIDA";
             }
             break;
@@ -824,7 +824,7 @@ void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {
         SIZE noSize;
         GetTextExtentPoint32A(hdcBuffer, opNo, strlen(opNo), &noSize);
         TextOutA(hdcBuffer, panelX + (panelAncho - noSize.cx) / 2, btnY + 35, opNo, strlen(opNo));
-    } else if (menu->modo == MODO_PRINCIPAL + 10) {
+    } else if (menu->modo == MODO_NUEVA_PARTIDA) {
         // Pantalla de ingresar nombre para nueva partida
         SetTextColor(hdcBuffer, RGB(200, 200, 200));
         const char *instruc = "Ingresa el nombre de la nueva partida:";
@@ -908,7 +908,7 @@ void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {
     
     // Instrucciones en la parte inferior (solo para modos PRINCIPAL, CARGAR y CONFIRMAR_SALIR)
     // No mostrar en MODO_GUARDAR ni modo de ingreso de nombre para evitar superposición
-    if (menu->modo != MODO_GUARDAR && menu->modo != MODO_PRINCIPAL + 10) {
+    if (menu->modo != MODO_GUARDAR && menu->modo != MODO_NUEVA_PARTIDA) {
         SelectObject(hdcBuffer, fontPequena);
         SetTextColor(hdcBuffer, RGB(120, 120, 120));
         const char *instruc = "Flechas: navegar | Enter: confirmar | ESC: volver";
@@ -925,12 +925,12 @@ void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {
 }
 
 bool menuPausaProcesarCaracter(MenuPausa *menu, WPARAM caracter) {
-    if (!menu->activo || (menu->modo != MODO_GUARDAR && menu->modo != MODO_PRINCIPAL + 10)) {
+  if (!menu->activo || (menu->modo != MODO_GUARDAR && menu->modo != MODO_NUEVA_PARTIDA)) {
         return false;
     }
     
     // Solo procesar caracteres imprimibles en el modo de ingreso de nombre
-    if (menu->modo == MODO_PRINCIPAL + 10) {
+  if (menu->modo == MODO_NUEVA_PARTIDA) {
         if (caracter >= 32 && caracter < 127) {
             if (menu->cursorPos < MAX_NOMBRE_JUGADOR - 1) {
                 menu->nombreInput[menu->cursorPos] = (char)caracter;
@@ -958,7 +958,7 @@ bool menuPausaProcesarTecla(MenuPausa *menu, WPARAM tecla, struct Jugador *j,
     
     // ESC para cerrar o volver
     if (tecla == VK_ESCAPE) {
-        if (menu->modo == MODO_PRINCIPAL + 10) {
+        if (menu->modo == MODO_NUEVA_PARTIDA) {
             // Si está en modo de ingreso de nombre, volver a la lista de guardado
             menu->modo = MODO_GUARDAR;
             menu->nombreInput[0] = '\0';
@@ -976,7 +976,7 @@ bool menuPausaProcesarTecla(MenuPausa *menu, WPARAM tecla, struct Jugador *j,
     if (menu->modo == MODO_GUARDAR) {
         // Tecla N para crear nueva partida
         if (tecla == 'N' || tecla == 'n') {
-            menu->modo = MODO_PRINCIPAL + 10;  // Modo temporal para pedir nombre
+            menu->modo = MODO_NUEVA_PARTIDA;  // Modo temporal para pedir nombre
             menu->nombreInput[0] = '\0';
             menu->cursorPos = 0;
             menu->nombreExiste = false;
@@ -1005,7 +1005,7 @@ bool menuPausaProcesarTecla(MenuPausa *menu, WPARAM tecla, struct Jugador *j,
     }
     
     // Modo especial para pedir nombre de nueva partida
-    if (menu->modo == MODO_PRINCIPAL + 10) {
+    if (menu->modo == MODO_NUEVA_PARTIDA) {
         if (tecla == VK_BACK && menu->cursorPos > 0) {
             menu->cursorPos--;
             menu->nombreInput[menu->cursorPos] = '\0';

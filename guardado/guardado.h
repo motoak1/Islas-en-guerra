@@ -193,7 +193,8 @@ typedef enum {
   MODO_PRINCIPAL = 0,      // Menú principal de pausa
   MODO_GUARDAR = 1,        // Pantalla de guardar (pide nombre)
   MODO_CARGAR = 2,         // Pantalla de cargar (lista partidas)
-  MODO_CONFIRMAR_SALIR = 3 // Confirmación antes de salir
+  MODO_CONFIRMAR_SALIR = 3, // Confirmación antes de salir
+  MODO_NUEVA_PARTIDA = 10   // Ingreso de nombre para nueva partida
 } ModoPausa;
 
 // Estado del menú de pausa
