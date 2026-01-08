@@ -12,6 +12,30 @@ static int sPairEnemyToAlly[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
 static int sPairAllyToEnemy[12] = {-1};
 static ULONGLONG sLastAttackMsEnemy[8] = {0};
 static ULONGLONG sLastAttackMsAlly[12] = {0};
+// Garantiza que una unidad tenga stats básicos asignados
+static void asegurarStatsUnidad(Unidad *u) {
+	if (!u) return;
+	// Vida por tipo si falta
+	if (u->vidaMax <= 0) {
+		if (u->tipo == TIPO_CABALLERO) { u->vidaMax = CABALLERO_VIDA; u->vida = CABALLERO_VIDA; }
+		else if (u->tipo == TIPO_CABALLERO_SIN_ESCUDO) { u->vidaMax = CABALLERO_SIN_ESCUDO_VIDA; u->vida = CABALLERO_SIN_ESCUDO_VIDA; }
+		else if (u->tipo == TIPO_GUERRERO) { u->vidaMax = GUERRERO_VIDA; u->vida = GUERRERO_VIDA; }
+	}
+	// Daño, defensa y crítico por tipo si no están configurados
+	if (u->tipo == TIPO_CABALLERO) {
+		if (u->damage <= 0) u->damage = CABALLERO_DANO;
+		if (u->defensa <= 0) u->defensa = CABALLERO_DEFENSA;
+		if (u->critico <= 0) u->critico = CABALLERO_CRITICO;
+	} else if (u->tipo == TIPO_CABALLERO_SIN_ESCUDO) {
+		if (u->damage <= 0) u->damage = CABALLERO_SIN_ESCUDO_DANO;
+		if (u->defensa <= 0) u->defensa = CABALLERO_SIN_ESCUDO_DEFENSA;
+		if (u->critico <= 0) u->critico = CABALLERO_SIN_ESCUDO_CRITICO;
+	} else if (u->tipo == TIPO_GUERRERO) {
+		if (u->damage <= 0) u->damage = GUERRERO_DANO;
+		if (u->defensa <= 0) u->defensa = GUERRERO_DEFENSA;
+		if (u->critico <= 0) u->critico = GUERRERO_CRITICO;
+	}
+}
 
 static int clampIndex(int v, int lo, int hi) { return (v < lo) ? lo : (v > hi ? hi : v); }
 
@@ -67,6 +91,11 @@ void batallasActualizar(struct Jugador *j) {
 	Unidad *enemigos = navegacionObtenerEnemigosActivos(&numEnemigos);
 	if (!enemigos || numEnemigos <= 0) return;
 
+	// Asegurar stats de enemigos (por seguridad en restauraciones)
+	for (int e = 0; e < numEnemigos; e++) {
+		asegurarStatsUnidad(&enemigos[e]);
+	}
+
 	// Asegurar emparejamientos limpios (evita estado inicial incorrecto)
 	for (int i = 0; i < 8; i++) {
 		sPairEnemyToAlly[i] = -1;
@@ -81,6 +110,11 @@ void batallasActualizar(struct Jugador *j) {
 	for (int i = 0; i < 4; i++) aliados[nAliados++] = &j->caballeros[i];
 	for (int i = 0; i < 4; i++) aliados[nAliados++] = &j->caballerosSinEscudo[i];
 	for (int i = 0; i < 4; i++) aliados[nAliados++] = &j->guerreros[i];
+
+	// Asegurar stats de aliados (entrenados o restaurados)
+	for (int a = 0; a < nAliados; a++) {
+		asegurarStatsUnidad(aliados[a]);
+	}
 
 	// 1) Detección: si aliado cerca, emparejar 1vs1
 	const float rangoDeteccion = 180.0f;
