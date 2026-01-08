@@ -260,6 +260,7 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
     // Inicializar vida para mostrar barra de salud desde el inicio
     j->obreros[i].vidaMax = OBRERO_VIDA_MAX;
     j->obreros[i].vida = OBRERO_VIDA_MAX;
+    j->obreros[i].recibiendoAtaque = false;
   }
 
   // No generar guerreros ni caballeros al inicio
@@ -274,6 +275,7 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
     j->caballeros[i].celdaCol = -1;
     j->caballeros[i].rutaCeldas = NULL;
     j->caballeros[i].tipo = TIPO_CABALLERO;
+    j->caballeros[i].recibiendoAtaque = false;
   }
 
   for (int i = 0; i < 4; i++) {
@@ -287,6 +289,7 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
     j->caballerosSinEscudo[i].celdaCol = -1;
     j->caballerosSinEscudo[i].rutaCeldas = NULL;
     j->caballerosSinEscudo[i].tipo = TIPO_CABALLERO_SIN_ESCUDO;
+    j->caballerosSinEscudo[i].recibiendoAtaque = false;
   }
 
   for (int i = 0; i < 4; i++) {
@@ -300,6 +303,7 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
     j->guerreros[i].celdaCol = -1;
     j->guerreros[i].rutaCeldas = NULL;
     j->guerreros[i].tipo = TIPO_GUERRERO;
+    j->guerreros[i].recibiendoAtaque = false;
   }
 
   // ================================================================
@@ -1216,6 +1220,7 @@ bool entrenarObrero(struct Jugador *j, float x, float y) {
       j->obreros[i].animActual = animPorDireccion(DIR_FRONT);
       j->obreros[i].vidaMax = OBRERO_VIDA_MAX;
       j->obreros[i].vida = OBRERO_VIDA_MAX;
+      j->obreros[i].recibiendoAtaque = false;
 
       printf("[CUARTEL] Nuevo obrero entrenado en posición (%.1f, %.1f)\n",
              j->obreros[i].x, j->obreros[i].y);
@@ -1309,6 +1314,7 @@ bool entrenarCaballero(struct Jugador *j, float x, float y) {
       j->caballeros[i].animActual = animPorDireccion(DIR_FRONT);
       j->caballeros[i].vidaMax = CABALLERO_VIDA;
       j->caballeros[i].vida = CABALLERO_VIDA;
+      j->caballeros[i].recibiendoAtaque = false;
 
       printf("[CUARTEL] Nuevo caballero entrenado en posición (%.1f, %.1f)\n",
              j->caballeros[i].x, j->caballeros[i].y);
@@ -1405,9 +1411,10 @@ bool entrenarGuerrero(struct Jugador *j, float x, float y) {
       j->guerreros[i].vidaMax = 120;
       j->guerreros[i].vida = 120;
       j->guerreros[i].damage = 30;
-      j->guerreros[i].critico = 0.10f;
+      j->guerreros[i].critico = GUERRERO_CRITICO;
       j->guerreros[i].defensa = 20;
       j->guerreros[i].alcance = 64; // Melee (1 tile)
+      j->guerreros[i].recibiendoAtaque = false;
 
       printf("[CUARTEL] Nuevo guerrero entrenado en posición (%.1f, %.1f)\n",
              j->guerreros[i].x, j->guerreros[i].y);

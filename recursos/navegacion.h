@@ -2,7 +2,6 @@
 #define NAVEGACION_H
 
 #include "recursos.h"
-#include "../batallas/batallas.h"
 #include <windows.h>
 
 // Verifica si un punto está dentro del barco (para detección de clicks)
@@ -17,10 +16,8 @@ void reiniciarIslaDesconocida(struct Jugador* j);
 // NUEVO: Viaja directamente a una isla sin animación
 bool viajarAIsla(struct Jugador* j, int islaDestino);
 
-// Registrar la isla inicial (nunca genera batalla) y recibir resultados
+// Registrar la isla inicial
 void navegacionRegistrarIslaInicial(int isla);
-void navegacionProcesarResultadoBatalla(struct Jugador* j, BatallaResultado r,
-										int islaDestino);
 
 // Posición fija del barco por isla (exportada para uso externo)
 void navegacionObtenerPosicionBarcoIsla(int isla, float *outX, float *outY, int *outDir);
@@ -28,8 +25,14 @@ void navegacionObtenerPosicionBarcoIsla(int isla, float *outX, float *outY, int 
 // Acceso a enemigos activos en la isla actual
 Unidad *navegacionObtenerEnemigosActivos(int *cantidad);
 
-// Actualización de combate automático entre tropas y enemigos
-void navegacionActualizarCombateAuto(struct Jugador *j, float dt);
+// Obtiene la isla inicial registrada al inicio de la partida
+int navegacionObtenerIslaInicial(void);
+
+// Consulta si una isla está conquistada
+bool navegacionIsIslaConquistada(int isla);
+
+// True si la isla actual del jugador NO está conquistada
+bool navegacionIslaActualNoConquistada(const struct Jugador *j);
 
 #endif
 

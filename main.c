@@ -1,4 +1,3 @@
-#include "batallas/batallas.h"
 #include "edificios/edificios.h"
 #include "guardado/guardado.h"
 #include "mapa/mapa.h"
@@ -8,6 +7,7 @@
 #include "recursos/ui_compra.h"
 #include "recursos/ui_embarque.h"
 #include "recursos/ui_entrena.h"
+#include "batallas/batallas.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -176,7 +176,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
   case WM_CREATE:
     // Inicializar recursos del jugador y obreros
     IniciacionRecursos(&jugador1, "Jugador 1");
-    batallasInicializar();
 
     // NUEVO: Guardar isla inicial seleccionada
     jugador1.islaActual = menuObtenerIsla(); // 1, 2, o 3
@@ -275,30 +274,21 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
         InvalidateRect(hwnd, NULL, FALSE);
         return 0;
       }
+      // Actualizaciones de juego cuando no hay menú de pausa
+      actualizarPersonajes(&jugador1);
+      mapaActualizarVacas();
+      menuCompraActualizar(&menuCompra);
 
-      if (batallasEnCurso()) {
-        batallasActualizar(0.016f);
-      } else {
-        actualizarPersonajes(&jugador1);
-        mapaActualizarVacas(); // NUEVO: Actualizar vacas (movimiento
-                               // automático)
-        navegacionActualizarCombateAuto(&jugador1, 0.016f);
-        menuCompraActualizar(&menuCompra);
-
-        // Actualizar mina si existe
-        if (jugador1.mina != NULL) {
-          edificioActualizar((Edificio *)jugador1.mina);
-        }
-
-        // Actualizar menú de entrenamiento
-        menuEntrenamientoActualizar(&menuEntrenamiento);
+      // Actualizar mina si existe
+      if (jugador1.mina != NULL) {
+        edificioActualizar((Edificio *)jugador1.mina);
       }
 
-      BatallaResultado res;
-      int islaRes;
-      if (batallasObtenerResultado(&res, &islaRes)) {
-        navegacionProcesarResultadoBatalla(&jugador1, res, islaRes);
-      }
+      // Actualizar menú de entrenamiento
+      menuEntrenamientoActualizar(&menuEntrenamiento);
+
+      // Actualizar batallas (enemigos y combates al viajar)
+      batallasActualizar(&jugador1);
 
       InvalidateRect(hwnd, NULL, FALSE);
     }
@@ -543,16 +533,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
     // Asegurar que el rect esté actualizado para el culling de los edificios
     GetClientRect(hwnd, &rect);
 
-    if (batallasEnCurso()) {
-      batallasRender(hdc, rect, camara);
-    } else {
-      // Pasar el menú de pausa para que se dibuje DENTRO del buffer (sin parpadeo)
-      dibujarMundo(hdc, rect, camara, &jugador1, &menuCompra, &menuEmbarque,
-                   mouseFilaHover, mouseColHover, &menuPausa);
-    }
-
-    // El menú de pausa ahora se dibuja dentro de dibujarMundo (en el buffer)
-    // Ya no se dibuja aquí para evitar parpadeo
+    // Dibujar siempre el mundo (sin escena independiente)
+    // El menú de pausa se dibuja dentro del buffer para evitar parpadeo
+    dibujarMundo(hdc, rect, camara, &jugador1, &menuCompra, &menuEmbarque,
+                 mouseFilaHover, mouseColHover, &menuPausa);
 
     EndPaint(hwnd, &ps);
     return 0;

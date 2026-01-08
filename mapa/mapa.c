@@ -72,6 +72,17 @@ static HBITMAP hGuerreroBmp[4] = {NULL};       // Front, Back, Left, Right
 static HBITMAP hCaballeroAtk[2][3] = {{NULL}}; // dir (0=left,1=right) x frames
 static HBITMAP hGuerreroAtk[2][2] = {{NULL}};
 
+// Sprites adicionales para combates (quieto, caminar, defensa, muerte)
+static HBITMAP hCaballeroStand[2] = {NULL};   // [0=left,1=right]
+static HBITMAP hCaballeroDefense[2] = {NULL}; // [0=left,1=right]
+static HBITMAP hCaballeroDie[2] = {NULL};     // [0=left,1=right] die_1
+static HBITMAP hCaballeroDie2[2] = {NULL};    // [0=left,1=right] die_2
+
+static HBITMAP hGuerreroStand[2] = {NULL}; // [0=left,1=right]
+static HBITMAP hGuerreroWalk[2] = {NULL};  // [0=left,1=right]
+static HBITMAP hGuerreroDie[2] = {NULL};   // [0=left,1=right] die_1
+static HBITMAP hGuerreroDie2[2] = {NULL};  // [0=left,1=right] die_2
+
 static HBITMAP hVacaBmp[4] = {NULL};
 static bool gGenerarRecursos = true;
 
@@ -990,6 +1001,71 @@ void cargarRecursosGraficos() {
     }
   }
 
+  // --- COMBATE: CABALLERO (stand, defense, die) ---
+  const char *cabStandLR[2] = {
+      "../assets/caballero/caballero_war_stand_left.bmp",
+      "../assets/caballero/caballero_war_stand_right.bmp"};
+  const char *cabStandLRAlt[2] = {"assets/caballero/caballero_war_stand_left.bmp",
+                                  "assets/caballero/caballero_war_stand_right.bmp"};
+  const char *cabDefLR[2] = {"../assets/caballero/caballero_defense_left.bmp",
+                             "../assets/caballero/caballero_defense_right.bmp"};
+  const char *cabDefLRAlt[2] = {"assets/caballero/caballero_defense_left.bmp",
+                                "assets/caballero/caballero_defense_right.bmp"};
+  const char *cabDie1LR[2] = {"../assets/caballero/caballero_die_1_left.bmp",
+                              "../assets/caballero/caballero_die_1_right.bmp"};
+  const char *cabDie1LRAlt[2] = {"assets/caballero/caballero_die_1_left.bmp",
+                                 "assets/caballero/caballero_die_1_right.bmp"};
+  const char *cabDie2LR[2] = {"../assets/caballero/caballero_die_2_left.bmp",
+                              "../assets/caballero/caballero_die_2_right.bmp"};
+  const char *cabDie2LRAlt[2] = {"assets/caballero/caballero_die_2_left.bmp",
+                                 "assets/caballero/caballero_die_2_right.bmp"};
+  for (int i = 0; i < 2; i++) {
+    hCaballeroStand[i] = (HBITMAP)LoadImageA(NULL, cabStandLR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hCaballeroStand[i])
+      hCaballeroStand[i] = (HBITMAP)LoadImageA(NULL, cabStandLRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hCaballeroDefense[i] = (HBITMAP)LoadImageA(NULL, cabDefLR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hCaballeroDefense[i])
+      hCaballeroDefense[i] = (HBITMAP)LoadImageA(NULL, cabDefLRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hCaballeroDie[i] = (HBITMAP)LoadImageA(NULL, cabDie1LR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hCaballeroDie[i])
+      hCaballeroDie[i] = (HBITMAP)LoadImageA(NULL, cabDie1LRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hCaballeroDie2[i] = (HBITMAP)LoadImageA(NULL, cabDie2LR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hCaballeroDie2[i])
+      hCaballeroDie2[i] = (HBITMAP)LoadImageA(NULL, cabDie2LRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+  }
+
+  // --- COMBATE: GUERRERO (stand, walk, die) ---
+  const char *gueStandLR[2] = {"../assets/guerrero/guerrero_war_stand_left.bmp",
+                               "../assets/guerrero/guerrero_war_stand_right.bmp"};
+  const char *gueStandLRAlt[2] = {"assets/guerrero/guerrero_war_stand_left.bmp",
+                                  "assets/guerrero/guerrero_war_stand_right.bmp"};
+  const char *gueWalkLR[2] = {"../assets/guerrero/guerrero_war_walk_left.bmp",
+                              "../assets/guerrero/guerrero_war_walk_right.bmp"};
+  const char *gueWalkLRAlt[2] = {"assets/guerrero/guerrero_war_walk_left.bmp",
+                                 "assets/guerrero/guerrero_war_walk_right.bmp"};
+  const char *gueDie1LR[2] = {"../assets/guerrero/guerrero_war_die_1_left.bmp",
+                              "../assets/guerrero/guerrero_war_die_1_right.bmp"};
+  const char *gueDie1LRAlt[2] = {"assets/guerrero/guerrero_war_die_1_left.bmp",
+                                 "assets/guerrero/guerrero_war_die_1_right.bmp"};
+  const char *gueDie2LR[2] = {"../assets/guerrero/guerrero_war_die_2_left.bmp",
+                              "../assets/guerrero/guerrero_war_die_2_right.bmp"};
+  const char *gueDie2LRAlt[2] = {"assets/guerrero/guerrero_war_die_2_left.bmp",
+                                 "assets/guerrero/guerrero_war_die_2_right.bmp"};
+  for (int i = 0; i < 2; i++) {
+    hGuerreroStand[i] = (HBITMAP)LoadImageA(NULL, gueStandLR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hGuerreroStand[i])
+      hGuerreroStand[i] = (HBITMAP)LoadImageA(NULL, gueStandLRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hGuerreroWalk[i] = (HBITMAP)LoadImageA(NULL, gueWalkLR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hGuerreroWalk[i])
+      hGuerreroWalk[i] = (HBITMAP)LoadImageA(NULL, gueWalkLRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hGuerreroDie[i] = (HBITMAP)LoadImageA(NULL, gueDie1LR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hGuerreroDie[i])
+      hGuerreroDie[i] = (HBITMAP)LoadImageA(NULL, gueDie1LRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    hGuerreroDie2[i] = (HBITMAP)LoadImageA(NULL, gueDie2LR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hGuerreroDie2[i])
+      hGuerreroDie2[i] = (HBITMAP)LoadImageA(NULL, gueDie2LRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+  }
+
   // --- CARGAR SPRITES DE BARCO (192x192) ---
   const char *rutasBarcoAlt[] = {BARCO_F_ALT, BARCO_B_ALT, BARCO_L_ALT,
                                  BARCO_R_ALT};
@@ -1223,6 +1299,7 @@ void mapaActualizarVacas(void) {
 
 static void dibujarUnidadCombat(HDC hdcBuffer, HDC hdcSprites, Unidad *u,
                                 Camara cam, int anchoP, int altoP,
+                                bool permitirStand,
                                 bool esEnemigo, bool atacando, int atkFrame) {
   if (!u || u->x < 0 || u->y < 0)
     return;
@@ -1235,19 +1312,72 @@ static void dibujarUnidadCombat(HDC hdcBuffer, HDC hdcSprites, Unidad *u,
 
   HBITMAP sprite = NULL;
   int dirIdx = (u->dir == DIR_RIGHT) ? 1 : 0;
+  bool muerto = (u->vida <= 0);
   if (u->tipo == TIPO_CABALLERO) {
-    if (atacando && hCaballeroAtk[dirIdx][atkFrame % 3]) {
+    if (muerto) {
+      // Animar muerte con dos frames: die_1 luego die_2
+      ULONGLONG ahora = GetTickCount64();
+      if (u->tiempoMuerteMs == 0) u->tiempoMuerteMs = ahora;
+      ULONGLONG dt = ahora - u->tiempoMuerteMs;
+      if (dt < 350 && hCaballeroDie[dirIdx]) {
+        sprite = hCaballeroDie[dirIdx];
+      } else if (hCaballeroDie2[dirIdx]) {
+        sprite = hCaballeroDie2[dirIdx];
+      } else {
+        sprite = hCaballeroDie[dirIdx];
+      }
+    } else if (u->recibiendoAtaque && hCaballeroDefense[dirIdx]) {
+      sprite = hCaballeroDefense[dirIdx];
+    } else if (atacando && hCaballeroAtk[dirIdx][atkFrame % 3]) {
       sprite = hCaballeroAtk[dirIdx][atkFrame % 3];
+    } else if (!u->moviendose && permitirStand && hCaballeroStand[dirIdx]) {
+      sprite = hCaballeroStand[dirIdx];
     } else {
       sprite = hCaballeroBmp[u->dir];
     }
   } else if (u->tipo == TIPO_CABALLERO_SIN_ESCUDO) {
-    sprite = hCaballeroSinEscudoBmp[u->dir];
-  } else {
-    if (atacando && hGuerreroAtk[dirIdx][atkFrame % 2]) {
-      sprite = hGuerreroAtk[dirIdx][atkFrame % 2];
+    if (muerto) {
+      ULONGLONG ahora = GetTickCount64();
+      if (u->tiempoMuerteMs == 0) u->tiempoMuerteMs = ahora;
+      ULONGLONG dt = ahora - u->tiempoMuerteMs;
+      if (dt < 350 && hCaballeroDie[dirIdx]) {
+        sprite = hCaballeroDie[dirIdx];
+      } else if (hCaballeroDie2[dirIdx]) {
+        sprite = hCaballeroDie2[dirIdx];
+      } else {
+        sprite = hCaballeroDie[dirIdx];
+      }
+    } else if (atacando && hCaballeroAtk[dirIdx][atkFrame % 3]) {
+      sprite = hCaballeroAtk[dirIdx][atkFrame % 3];
+    } else if (!u->moviendose && permitirStand && hCaballeroStand[dirIdx]) {
+      sprite = hCaballeroStand[dirIdx];
     } else {
-      sprite = hGuerreroBmp[u->dir];
+      sprite = hCaballeroSinEscudoBmp[u->dir];
+    }
+  } else { // GUERRERO
+    if (muerto) {
+      ULONGLONG ahora = GetTickCount64();
+      if (u->tiempoMuerteMs == 0) u->tiempoMuerteMs = ahora;
+      ULONGLONG dt = ahora - u->tiempoMuerteMs;
+      if (dt < 350 && hGuerreroDie[dirIdx]) {
+        sprite = hGuerreroDie[dirIdx];
+      } else if (hGuerreroDie2[dirIdx]) {
+        sprite = hGuerreroDie2[dirIdx];
+      } else {
+        sprite = hGuerreroDie[dirIdx];
+      }
+    } else if (u->recibiendoAtaque && hCaballeroDefense[dirIdx]) {
+      // Por especificación, usar sprite de defensa del caballero
+      sprite = hCaballeroDefense[dirIdx];
+    } else if (atacando && hGuerreroAtk[dirIdx][atkFrame % 2]) {
+      sprite = hGuerreroAtk[dirIdx][atkFrame % 2];
+    } else if (u->moviendose && hGuerreroWalk[dirIdx]) {
+      sprite = hGuerreroWalk[dirIdx];
+    } else if (!u->moviendose && permitirStand && hGuerreroStand[dirIdx]) {
+      sprite = hGuerreroStand[dirIdx];
+    } else {
+      // En islas conquistadas, preferir sprite de movimiento
+      sprite = hGuerreroWalk[dirIdx] ? hGuerreroWalk[dirIdx] : hGuerreroBmp[u->dir];
     }
   }
 
@@ -1439,11 +1569,13 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
   {
     static ULONGLONG sUltimoAtkMs = 0;
     ULONGLONG ahora = GetTickCount64();
-    if (sUltimoAtkMs == 0 || (ahora > sUltimoAtkMs && (ahora - sUltimoAtkMs) >= 150ULL)) {
+    if (sUltimoAtkMs == 0 || (ahora > sUltimoAtkMs && (ahora - sUltimoAtkMs) >= 500ULL)) {
       frameAtaque = (frameAtaque + 1) % 6;
       sUltimoAtkMs = ahora;
     }
   }
+  // Determinar si se permite mostrar sprites de stand en la isla actual
+  bool permitirStand = navegacionIslaActualNoConquistada(pJugador);
 
   Unidad *aliadosLista[12];
   int numAliadosLista = 0;
@@ -1581,7 +1713,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
           bool atacando =
               (idxCab >= 0 && idxCab < 12) ? ataqueAliados[idxCab] : false;
           dibujarUnidadCombat(hdcBuffer, hdcSprites, c, cam, anchoP, altoP,
-                              false, atacando, frameAtaque);
+                              permitirStand, false, atacando, frameAtaque);
 
           // Dibujar barra de vida
           dibujarBarraVida(hdcBuffer, pantX, pantY, c->vida, c->vidaMax,
@@ -1624,7 +1756,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
           bool atacando =
               (idxCse >= 0 && idxCse < 12) ? ataqueAliados[idxCse] : false;
           dibujarUnidadCombat(hdcBuffer, hdcSprites, c, cam, anchoP, altoP,
-                              false, atacando, frameAtaque);
+                              permitirStand, false, atacando, frameAtaque);
           if (c->seleccionado) {
             HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
             HPEN verde = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
@@ -1653,7 +1785,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
           bool atacando =
               (idxG >= 0 && idxG < 12) ? ataqueAliados[idxG] : false;
           dibujarUnidadCombat(hdcBuffer, hdcSprites, g, cam, anchoP, altoP,
-                              false, atacando, frameAtaque);
+                              permitirStand, false, atacando, frameAtaque);
 
           // Dibujar barra de vida
           dibujarBarraVida(hdcBuffer, pantX, pantY, g->vida, g->vidaMax,
@@ -1687,7 +1819,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
               pantY < altoP) {
                 bool atacando = (idx >= 0 && idx < 8) ? ataqueEnemigos[idx] : false;
                 dibujarUnidadCombat(hdcBuffer, hdcSprites, e, cam, anchoP, altoP,
-                  true, atacando, frameAtaque);
+                  permitirStand, true, atacando, frameAtaque);
                 // Barra de vida enemiga (rojo)
                 dibujarBarraVidaColor(hdcBuffer, pantX, pantY, e->vida, e->vidaMax, cam.zoom, RGB(200, 60, 60));
                 HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);

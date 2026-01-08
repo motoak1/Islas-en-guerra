@@ -85,13 +85,18 @@ typedef struct {
   // --- Tipo de unidad ---
   TipoUnidad tipo; // TIPO_OBRERO o TIPO_CABALLERO
 
-  // --- Stats de combate ---
+  // --- Atributos de unidad ---
   int vida;
   int vidaMax;
   int damage;
   int critico; // Probabilidad de crítico (0-100)
   int defensa;
   int alcance;
+  // --- Estado de combate ---
+  bool recibiendoAtaque; // Flag para mostrar animación de defensa/impacto
+  // --- Animación de muerte ---
+  ULONGLONG tiempoMuerteMs; // Momento en que murió (0 si vivo)
+  int frameMuerte;          // Frame de muerte actual (0/1)
 } Unidad;
 
 // Estado de vista del juego
