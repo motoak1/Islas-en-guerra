@@ -70,12 +70,12 @@ static void moverHaciaObjetivo(Unidad *u, const Unidad *obj, float vel) {
 		int nx = (int)(ux / (float)TILE_SIZE);
 		int ny = (int)(uy / (float)TILE_SIZE);
 		if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE) {
-			if (col[ny][nx] == 0) { // libre
-				// liberar celda actual
-				int cx = (int)(u->x / (float)TILE_SIZE);
-				int cy = (int)(u->y / (float)TILE_SIZE);
-				if (cy >= 0 && cy < GRID_SIZE && cx >= 0 && cx < GRID_SIZE) col[cy][cx] = 0;
-				// mover y reservar
+			int cx = (int)(u->x / (float)TILE_SIZE);
+			int cy = (int)(u->y / (float)TILE_SIZE);
+			bool mismaCelda = (nx == cx && ny == cy);
+			// Permitir avanzar dentro de la misma celda aunque esté marcada como ocupada por la propia unidad
+			if (mismaCelda || col[ny][nx] == 0) {
+				if (!mismaCelda && cy >= 0 && cy < GRID_SIZE && cx >= 0 && cx < GRID_SIZE) col[cy][cx] = 0;
 				u->x = ux; u->y = uy;
 				col[ny][nx] = 3;
 			} else {
