@@ -80,6 +80,7 @@ static HBITMAP hCaballeroStand[2] = {NULL};   // [0=left,1=right]
 static HBITMAP hCaballeroDefense[2] = {NULL}; // [0=left,1=right]
 static HBITMAP hCaballeroDie[2] = {NULL};     // [0=left,1=right] die_1
 static HBITMAP hCaballeroDie2[2] = {NULL};    // [0=left,1=right] die_2
+static HBITMAP hCaballeroSEStand[2] = {NULL}; // [0=left,1=right] Caballero sin escudo (stand)
 
 static HBITMAP hGuerreroStand[2] = {NULL}; // [0=left,1=right]
 static HBITMAP hGuerreroWalk[2] = {NULL};  // [0=left,1=right]
@@ -1069,6 +1070,19 @@ void cargarRecursosGraficos() {
       hGuerreroDie2[i] = (HBITMAP)LoadImageA(NULL, gueDie2LRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
   }
 
+  // --- COMBATE: CABALLERO SIN ESCUDO (stand) ---
+  const char *cseStandLR[2] = {
+      "../assets/caballero/caballero_war_NO_stand_left.bmp",
+      "../assets/caballero/caballero_war_NO_stand_right.bmp"};
+  const char *cseStandLRAlt[2] = {
+      "assets/caballero/caballero_war_NO_stand_left.bmp",
+      "assets/caballero/caballero_war_NO_stand_right.bmp"};
+  for (int i = 0; i < 2; i++) {
+    hCaballeroSEStand[i] = (HBITMAP)LoadImageA(NULL, cseStandLR[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+    if (!hCaballeroSEStand[i])
+      hCaballeroSEStand[i] = (HBITMAP)LoadImageA(NULL, cseStandLRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
+  }
+
   // --- CARGAR SPRITES DE BARCO (192x192) ---
   const char *rutasBarcoAlt[] = {BARCO_F_ALT, BARCO_B_ALT, BARCO_L_ALT,
                                  BARCO_R_ALT};
@@ -1385,6 +1399,9 @@ static void dibujarUnidadCombat(HDC hdcBuffer, HDC hdcSprites, Unidad *u,
       // Preferir sprites propios de CSE, caer a los del caballero si faltan
       sprite = hCaballeroSEAtk[dirIdx][atkFrame % 3] ? hCaballeroSEAtk[dirIdx][atkFrame % 3]
                                                      : hCaballeroAtk[dirIdx][atkFrame % 3];
+    } else if (!u->moviendose && permitirStand && hCaballeroSEStand[dirIdx]) {
+      // Stand del caballero sin escudo solo en islas no conquistadas
+      sprite = hCaballeroSEStand[dirIdx];
     } else {
       sprite = hCaballeroSinEscudoBmp[u->dir];
     }
