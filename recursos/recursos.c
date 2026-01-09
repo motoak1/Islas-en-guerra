@@ -623,6 +623,13 @@ void actualizarPersonajes(struct Jugador *j) {
                                 obreroColActual(u));
     if (!u->moviendose)
       continue;
+
+    if (!u->rutaCeldas || u->rutaIdx < 0 || u->rutaIdx >= u->rutaLen) {
+      // Batalla puede marcar moviendose sin path (persecucion manual)
+      u->moviendose = false;
+      continue;
+    }
+
     int target = u->rutaCeldas[u->rutaIdx];
     int nF = target / GRID_SIZE, nC = target % GRID_SIZE;
 
