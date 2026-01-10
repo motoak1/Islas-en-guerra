@@ -804,7 +804,7 @@ bool viajarAIsla(struct Jugador *j, int islaDestino) {
       for (int i = 0; i < maxEnemigos; i++) {
         Unidad *e = &estadoDestino->enemigos[i];
         float ang = (float)(i * (360.0 / maxEnemigos));
-        float rad = 180.0f;
+        float rad = 220.0f;
         float ex = baseX + rad * cosf(ang * (3.1415926f / 180.0f));
         float ey = baseY + rad * sinf(ang * (3.1415926f / 180.0f));
         e->x = ex;
