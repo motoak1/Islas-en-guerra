@@ -1751,7 +1751,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
         }
 
         // Círculo de selección
-        if (o->seleccionado) {
+        if (o->seleccionado && unidadBarraVisible(o)) {
           HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
           HPEN verde = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
           SelectObject(hdcBuffer, nullBrush);
@@ -1808,7 +1808,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
           }
 
           // Círculo de selección
-          if (c->seleccionado) {
+          if (c->seleccionado && unidadBarraVisible(c)) {
             HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
             HPEN verde = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
             SelectObject(hdcBuffer, nullBrush);
@@ -1847,7 +1847,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
               (idxCse >= 0 && idxCse < 12) ? ataqueAliados[idxCse] : false;
           dibujarUnidadCombat(hdcBuffer, hdcSprites, c, cam, anchoP, altoP,
                               permitirStand, false, atacando, frameAtaque);
-          if (c->seleccionado) {
+          if (c->seleccionado && unidadBarraVisible(c)) {
             HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
             HPEN verde = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
             SelectObject(hdcBuffer, nullBrush);
@@ -1883,7 +1883,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
                              cam.zoom);
           }
           // Círculo de selección (verde, unificado con aliados)
-          if (g->seleccionado) {
+          if (g->seleccionado && unidadBarraVisible(g)) {
             HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
             HPEN verde = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
             SelectObject(hdcBuffer, nullBrush);
@@ -1916,17 +1916,18 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
                 }
                 dibujarUnidadCombat(hdcBuffer, hdcSprites, e, cam, anchoP, altoP,
                   permitirStandEnemigo, true, atacando, frameAtaque);
+                bool hudVisible = unidadBarraVisible(e);
                 // Barra de vida enemiga (rojo)
-                if (unidadBarraVisible(e)) {
+                if (hudVisible) {
                   dibujarBarraVidaColor(hdcBuffer, pantX, pantY, e->vida, e->vidaMax, cam.zoom, RGB(200, 60, 60));
+                  HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+                  HPEN rojo = CreatePen(PS_SOLID, 2, RGB(200, 60, 60));
+                  SelectObject(hdcBuffer, nullBrush);
+                  SelectObject(hdcBuffer, rojo);
+                  Ellipse(hdcBuffer, pantX, pantY + tam - 10, pantX + tam,
+                    pantY + tam + 5);
+                  DeleteObject(rojo);
                 }
-                HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-                HPEN rojo = CreatePen(PS_SOLID, 2, RGB(200, 60, 60));
-                SelectObject(hdcBuffer, nullBrush);
-                SelectObject(hdcBuffer, rojo);
-                Ellipse(hdcBuffer, pantX, pantY + tam - 10, pantX + tam,
-                  pantY + tam + 5);
-                DeleteObject(rojo);
           }
         }
       }
