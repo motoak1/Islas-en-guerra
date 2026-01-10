@@ -740,6 +740,21 @@ bool viajarAIsla(struct Jugador *j, int islaDestino) {
     return true;
   }
 
+  typedef struct {
+    Unidad *ptr;
+    Unidad copia;
+  } TropaSnapshot;
+  TropaSnapshot tropasEnRuta[15];
+  int numTropasEnRuta = 0;
+  for (int i = 0; i < 15; i++) {
+    Unidad *t = j->barco.tropas[i];
+    if (!t)
+      continue;
+    tropasEnRuta[numTropasEnRuta].ptr = t;
+    tropasEnRuta[numTropasEnRuta].copia = *t;
+    numTropasEnRuta++;
+  }
+
   bool islaYaVisitada = (islaDestino >= 1 && islaDestino <= 3) &&
                         sIslas[islaDestino].inicializado;
 
@@ -762,6 +777,13 @@ bool viajarAIsla(struct Jugador *j, int islaDestino) {
   if (islaYaVisitada) {
     mapaRestaurarEstadoIsla(islaDestino);
     restaurarEstadoIslaJugador(j, islaDestino);
+    if (numTropasEnRuta > 0) {
+      for (int i = 0; i < numTropasEnRuta; i++) {
+        if (tropasEnRuta[i].ptr) {
+          *(tropasEnRuta[i].ptr) = tropasEnRuta[i].copia;
+        }
+      }
+    }
   } else {
     // Primera vez en la isla: resetear y generar base
     reiniciarIslaDesconocida(j);
