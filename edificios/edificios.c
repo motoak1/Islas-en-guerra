@@ -175,21 +175,6 @@ void edificiosCargarSprites() {
 
   char fullPath[MAX_PATH_LEN];
 
-  // Lista de intentos para el Ayuntamiento
-  const char *attemptsAyunt[] = {
-      "\\assets\\ayuntamiento2.bmp", "\\assets\\ayuntamiento.bmp",
-      "\\..\\assets\\ayuntamiento2.bmp", "\\ayuntamiento2.bmp"};
-
-  g_spriteAyuntamiento = NULL;
-  for (int i = 0; i < 4; i++) {
-    sprintf(fullPath, "%s%s", pathExe, attemptsAyunt[i]);
-    g_spriteAyuntamiento =
-        (HBITMAP)LoadImageA(NULL, fullPath, IMAGE_BITMAP, 128, 128,
-                            LR_LOADFROMFILE | LR_CREATEDIBSECTION);
-    if (g_spriteAyuntamiento)
-      break;
-  }
-
   // Lista de intentos para la Mina
   const char *attemptsMina[] = {"\\assets\\mina.bmp", "\\..\\assets\\mina.bmp",
                                 "\\mina.bmp"};
@@ -203,41 +188,13 @@ void edificiosCargarSprites() {
       break;
   }
 
-  // Lista de intentos para el Cuartel
-  const char *attemptsCuartel[] = {
-      "\\assets\\cuartel.bmp", "\\..\\assets\\cuartel.bmp", "\\cuartel.bmp"};
-
-  g_spriteCuartel = NULL;
-  for (int i = 0; i < 3; i++) {
-    sprintf(fullPath, "%s%s", pathExe, attemptsCuartel[i]);
-    g_spriteCuartel =
-        (HBITMAP)LoadImageA(NULL, fullPath, IMAGE_BITMAP, 128, 128,
-                            LR_LOADFROMFILE | LR_CREATEDIBSECTION);
-    if (g_spriteCuartel) {
-      printf("[SISTEMA] Imagen del cuartel cargada con exito.\n");
-      break;
-    }
-  }
-
-  if (g_spriteAyuntamiento && g_spriteMina && g_spriteCuartel) {
+  if ( g_spriteMina) {
     printf("[SISTEMA] Recursos de edificios cargados con exito.\n");
   } else {
     printf("[ERROR] Fallo en carga de sprites:\n");
-    if (!g_spriteAyuntamiento)
-      printf(" - Fallo Ayuntamiento\n");
     if (!g_spriteMina)
       printf(" - Fallo Mina\n");
-    if (!g_spriteCuartel)
-      printf(" - Fallo Cuartel (assets/cuartel.bmp)\n");
 
-    char errorMsg[1024];
-    sprintf(errorMsg,
-            "No se pudieron cargar algunos sprites de edificios.\nDirectorio "
-            "del EXE: %s\n\nVerifica que la carpeta 'assets' contenga "
-            "'ayuntamiento2.bmp', 'mina.bmp' y 'cuartel.bmp'.\n\nRevisa la "
-            "consola negra para mas detalles.",
-            pathExe);
-    MessageBoxA(GetActiveWindow(), errorMsg, "Aviso de Carga", MB_OK | MB_ICONWARNING);
   }
 
   // ============================================================================
