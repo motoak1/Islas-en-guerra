@@ -7,8 +7,8 @@
 #define COLOR_AZUL_MARINO 1
 #define COLOR_VERDE_OSCURO 2
 #define COLOR_ROJO 4
-#define COLOR_AZUL_CLARO 3 // Nuevo color para el agua
-#define COLOR_BLANCO 15
+#define COLOR_AZUL_CLARO 9
+#define COLOR_BLANCO 7
 #define COLOR_AMARILLO 14
 #define COLOR_VERDE_CLARO 10
 #define COLOR_GRIS 8 // Color para el borde
@@ -72,5 +72,15 @@ void mostrarInstrucciones();
  * Permite la navegación y selección de opciones (Jugar, Instrucciones, Salir).
  */
 void mostrarMenu();
+
+// Indica la acción seleccionada en el menú principal tras cerrar la ventana.
+// 0 = Nueva partida, 1 = Cargar partida
+int menuObtenerAccion();
+
+// Isla seleccionada para iniciar la partida (1-3).
+int menuObtenerIsla();
+
+// Nombre de la partida seleccionada para cargar (puede ser NULL si es nueva partida).
+const char* menuObtenerNombrePartida();
 
 #endif // MENU_H
