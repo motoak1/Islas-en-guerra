@@ -287,6 +287,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
       // Actualizaciones de juego cuando no hay menú de pausa
       actualizarPersonajes(&jugador1);
       mapaActualizarVacas();
+      mapaActualizarArboles();
       menuCompraActualizar(&menuCompra);
 
       // Actualizar mina si existe

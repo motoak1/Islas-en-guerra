@@ -20,7 +20,7 @@ static bool unidadCercaDeBarco(const Unidad *u, const Barco *barco) {
     return false;
 
   const float BARCO_SIZE = 192.0f;
-  const float RADIO_EMBARQUE = 490.0f; // ~1.5 tiles desde el casco
+  const float RADIO_EMBARQUE = 250.0f; // Reducido para evitar detectar tropas lejanas
 
   // Distancia mínima desde la unidad al rectángulo del barco
   float nearestX = u->x;

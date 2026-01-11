@@ -101,5 +101,9 @@ void navegacionRestaurarIslaInicial(int isla, bool definida);
 bool navegacionIslaInicialDefinida(void);
 void navegacionActivarEnemigosIsla(int isla);
 
+// Cuenta las unidades de un tipo en TODAS las islas (activas y guardadas)
+int navegacionContarUnidadesGlobal(const struct Jugador *j, TipoUnidad tipo);
+
+
 #endif
 

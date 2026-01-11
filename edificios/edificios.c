@@ -72,9 +72,9 @@ void edificioInicializar(Edificio *e, TipoEdificio tipo, float x, float y) {
 
   // Inicializar recursos totales de la mina (solo para minas)
   if (tipo == EDIFICIO_MINA) {
-    e->oroRestante = 1500;    // Aumentado de 500 -> 1500
-    e->piedraRestante = 1500; // Aumentado de 500 -> 1500
-    e->hierroRestante = 800;  // Aumentado de 250 -> 800
+    e->oroRestante = 800;     // Intercambiado: Era 1500 (Ahora escaso)
+    e->piedraRestante = 1500; 
+    e->hierroRestante = 1500; // Intercambiado: Era 800 (Ahora abundante)
     e->agotada = false;
     printf("[MINA] Inicializada con: %d Oro, %d Piedra, %d Hierro\n",
            e->oroRestante, e->piedraRestante, e->hierroRestante);
@@ -110,10 +110,9 @@ void edificioActualizar(Edificio *e) {
     // Generar recursos solo si hay reservas disponibles
     int oroGenerado = 0, piedraGenerada = 0, hierroGenerado = 0;
 
-    // Generar +35 de oro, hasta un tope de 300 acumulados Y sin exceder
-    // recursos restantes
+    // Generar +20 de oro (Escaso, valioso)
     if (e->oroAcumulado < 300 && e->oroRestante > 0) {
-      int cantidad = (e->oroRestante >= 35) ? 35 : e->oroRestante;
+      int cantidad = (e->oroRestante >= 20) ? 20 : e->oroRestante;
       e->oroAcumulado += cantidad;
       e->oroRestante -= cantidad;
       oroGenerado = cantidad;
@@ -127,9 +126,9 @@ void edificioActualizar(Edificio *e) {
       piedraGenerada = cantidad;
     }
 
-    // Generar +20 de hierro (más escaso)
+    // Generar +35 de hierro (Abundante, comun)
     if (e->hierroAcumulado < 300 && e->hierroRestante > 0) {
-      int cantidad = (e->hierroRestante >= 20) ? 20 : e->hierroRestante;
+      int cantidad = (e->hierroRestante >= 35) ? 35 : e->hierroRestante;
       e->hierroAcumulado += cantidad;
       e->hierroRestante -= cantidad;
       hierroGenerado = cantidad;
