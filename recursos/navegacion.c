@@ -574,8 +574,8 @@ static void inicializarEstructurasIslaBase(struct Jugador *j,
   const float AYUNT_Y = 1024.0f - 64.0f;
   const float MINA_X = 1024.0f - 64.0f;
   const float MINA_Y = 450.0f;
-  const float CUAR_X = 1024.0f - 64.0f;
-  const float CUAR_Y = 1600.0f;
+  const float CUAR_X = 1024.0f - 200.0f;
+  const float CUAR_Y = 1350.0f;
 
   edificioInicializar(&estado->ayuntamiento, EDIFICIO_AYUNTAMIENTO, AYUNT_X,
                       AYUNT_Y);
