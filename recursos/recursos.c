@@ -1577,44 +1577,67 @@ bool recursosIntentarTalar(struct Jugador *j, float mundoX, float mundoY) {
   if (tipoObjeto == SIMBOLO_ARBOL) {
     printf("[DEBUG] Talar: Arbol detectado en Celda[%d][%d]\n", fArbol, cArbol);
 
-    // 2. Buscar si hay algún OBRERO o GUERRERO SELECCIONADO cerca
+    // ================================================================
+    // RESTRICCIÓN DE TALA: OBREROS Y GUERREROS PUEDEN TALAR
+    // ================================================================
+    // Según las reglas del juego:
+    // - Obreros: Pueden talar árboles ✓
+    // - Guerreros: Pueden talar árboles ✓
+    // - Caballeros (con escudo): NO pueden talar (solo cazar vacas) ✗
+    // - Caballeros sin escudo: NO pueden talar (solo cazar vacas) ✗
+    // ================================================================
+    
     // Usamos el CENTRO del árbol (un tile de 64px) para la distancia
     float centroArbolX = (float)(cArbol * TILE_SIZE) + 32.0f;
     float centroArbolY = (float)(fArbol * TILE_SIZE) + 32.0f;
 
-    Unidad *recortadorCercano = NULL;
+    Unidad *taladorCercano = NULL;
     float distMinima = 9999.0f;
     const float DISTANCIA_MAXIMA = 180.0f;
 
-    // Buscar Obreros
-    for (int i = 0; i < MAX_OBREROS; i++) {
-      Unidad *o = &j->obreros[i];
-      if (!o->seleccionado)
+    // Buscar Obreros seleccionados cerca del árbol
+    // Usamos aritmética de punteros para recorrer el array
+    Unidad *ptrObrero = j->obreros;
+    for (int i = 0; i < MAX_OBREROS; i++, ptrObrero++) {
+      // Solo considerar obreros seleccionados y activos
+      if (!ptrObrero->seleccionado || ptrObrero->x < 0 || ptrObrero->vida <= 0)
         continue;
-      float dx = (o->x + 32.0f) - centroArbolX;
-      float dy = (o->y + 32.0f) - centroArbolY;
+      
+      // Calcular distancia desde el centro del obrero al centro del árbol
+      float dx = (ptrObrero->x + 32.0f) - centroArbolX;
+      float dy = (ptrObrero->y + 32.0f) - centroArbolY;
       float dist = sqrtf(dx * dx + dy * dy);
+      
       if (dist < DISTANCIA_MAXIMA && dist < distMinima) {
         distMinima = dist;
-        recortadorCercano = o;
+        taladorCercano = ptrObrero;
       }
     }
 
-    // Buscar Guerreros
-    for (int i = 0; i < MAX_GUERREROS; i++) {
-      Unidad *u = &j->guerreros[i];
-      if (!u->seleccionado || u->x < 0)
+    // Buscar Guerreros seleccionados cerca del árbol
+    // Los guerreros también pueden talar árboles
+    Unidad *ptrGuerrero = j->guerreros;
+    for (int i = 0; i < MAX_GUERREROS; i++, ptrGuerrero++) {
+      // Solo considerar guerreros seleccionados y activos
+      if (!ptrGuerrero->seleccionado || ptrGuerrero->x < 0 || ptrGuerrero->vida <= 0)
         continue;
-      float dx = (u->x + 32.0f) - centroArbolX;
-      float dy = (u->y + 32.0f) - centroArbolY;
+      
+      // Calcular distancia desde el centro del guerrero al centro del árbol
+      float dx = (ptrGuerrero->x + 32.0f) - centroArbolX;
+      float dy = (ptrGuerrero->y + 32.0f) - centroArbolY;
       float dist = sqrtf(dx * dx + dy * dy);
+      
       if (dist < DISTANCIA_MAXIMA && dist < distMinima) {
         distMinima = dist;
-        recortadorCercano = u;
+        taladorCercano = ptrGuerrero;
       }
     }
 
-    if (recortadorCercano != NULL) {
+    // NOTA: NO buscamos caballeros (con o sin escudo) porque NO pueden talar
+    // Los caballeros solo pueden cazar vacas, no tienen habilidad de tala
+
+    // Permitir talar si hay un OBRERO o GUERRERO cerca
+    if (taladorCercano != NULL) {
       // 3. Confirmación del usuario
       int respuesta =
           MessageBox(GetActiveWindow(), "¿Quieres talar este arbol y obtener madera?",
