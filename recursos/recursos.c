@@ -1746,7 +1746,7 @@ bool recursosIntentarRecogerMina(struct Jugador *j, float mundoX,
         e->oroAcumulado = 0;
         e->piedraAcumulada = 0;
         e->hierroAcumulado = 0;
-        MessageBox(GetActiveWindow(), "¡Recursos recogidos con exito!", "Recursos",
+        MessageBox(GetActiveWindow(), "Recursos recogidos con exito!", "Recursos",
                    MB_OK | MB_ICONINFORMATION);
       }
       return true;
