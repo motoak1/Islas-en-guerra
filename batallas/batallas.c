@@ -166,7 +166,7 @@ void simularBatalla(struct Jugador *j) {
 	}
 
 	// 1) Detección: si aliado cerca, emparejar 1vs1
-	const float rangoDeteccion = 100.0f;
+	const float rangoDeteccion = 128.0f;
 	const float rangoAtk = RANGO_GOLPE_MELEE; // melee
 
 	for (int e = 0; e < numEnemigos; e++) {
