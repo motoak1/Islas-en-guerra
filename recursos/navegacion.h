@@ -34,5 +34,9 @@ bool navegacionIsIslaConquistada(int isla);
 // True si la isla actual del jugador NO está conquistada
 bool navegacionIslaActualNoConquistada(const struct Jugador *j);
 
+// Cuenta las unidades de un tipo en TODAS las islas (activas y guardadas)
+int navegacionContarUnidadesGlobal(const struct Jugador *j, TipoUnidad tipo);
+
+
 #endif
 

@@ -164,8 +164,9 @@ void menuEntrenamientoDibujar(HDC hdc, MenuEntrenamiento *menu,
   // Recursos
   char buffer[100];
   SetTextColor(hdc, RGB(255, 255, 255));
-  sprintf(buffer, "Oro: %d  |  Comida: %d  |  Madera: %d  |  Hierro: %d",
-          jugador->Oro, jugador->Comida, jugador->Madera, jugador->Hierro);
+  sprintf(buffer, "Oro:%d | Com:%d | Mad:%d | Pie:%d | Hie:%d",
+          jugador->Oro, jugador->Comida, jugador->Madera, jugador->Piedra,
+          jugador->Hierro);
   TextOut(hdc, menu->pantallaX + 20, menu->pantallaY + 70, buffer,
           strlen(buffer));
 

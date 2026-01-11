@@ -14,50 +14,50 @@
 #include <windows.h>
 
 // Definiciones manuales de rutas
-#define RUTA_MAPA "../assets/islas/isla1.bmp"
+#define RUTA_MAPA "assets/islas/isla1.bmp"
 #define RUTA_MAPA_ALT "assets/islas/isla1.bmp"
 
-#define ARBOL1 "../assets/arboles/arbol1.bmp"
+#define ARBOL1 "assets/arboles/arbol1.bmp"
 #define ARBOL1_ALT "assets/arboles/arbol1.bmp"
 
-#define ARBOL2 "../assets/arboles/arbol2.bmp"
+#define ARBOL2 "assets/arboles/arbol2.bmp"
 #define ARBOL2_ALT "assets/arboles/arbol2.bmp"
 
-#define ARBOL3 "../assets/arboles/arbol3.bmp"
+#define ARBOL3 "assets/arboles/arbol3.bmp"
 #define ARBOL3_ALT "assets/arboles/arbol3.bmp"
 
-#define ARBOL4 "../assets/arboles/arbol4.bmp"
+#define ARBOL4 "assets/arboles/arbol4.bmp"
 #define ARBOL4_ALT "assets/arboles/arbol4.bmp"
 
-#define obrero_front "../assets/obrero/obrero_front.bmp"
-#define obrero_back "../assets/obrero/obrero_back.bmp"
-#define obrero_left "../assets/obrero/obrero_left.bmp"
-#define obrero_right "../assets/obrero/obrero_right.bmp"
+#define obrero_front "assets/obrero/obrero_front.bmp"
+#define obrero_back "assets/obrero/obrero_back.bmp"
+#define obrero_left "assets/obrero/obrero_left.bmp"
+#define obrero_right "assets/obrero/obrero_right.bmp"
 
-#define caballero_front "../assets/caballero/caballero_shield_front.bmp"
-#define caballero_back "../assets/caballero/caballero_shield_back.bmp"
-#define caballero_left "../assets/caballero/caballero_shield_left.bmp"
-#define caballero_right "../assets/caballero/caballero_shield_right.bmp"
+#define caballero_front "assets/caballero/caballero_shield_front.bmp"
+#define caballero_back "assets/caballero/caballero_shield_back.bmp"
+#define caballero_left "assets/caballero/caballero_shield_left.bmp"
+#define caballero_right "assets/caballero/caballero_shield_right.bmp"
 
-#define caballeroSinEscudo_front "../assets/caballero/caballero_front.bmp"
-#define caballeroSinEscudo_back "../assets/caballero/caballero_back.bmp"
-#define caballeroSinEscudo_left "../assets/caballero/caballero_left.bmp"
-#define caballeroSinEscudo_right "../assets/caballero/caballero_right.bmp"
+#define caballeroSinEscudo_front "assets/caballero/caballero_front.bmp"
+#define caballeroSinEscudo_back "assets/caballero/caballero_back.bmp"
+#define caballeroSinEscudo_left "assets/caballero/caballero_left.bmp"
+#define caballeroSinEscudo_right "assets/caballero/caballero_right.bmp"
 
-#define guerrero_front "../assets/guerrero/guerrero_front.bmp"
-#define guerrero_back "../assets/guerrero/guerrero_back.bmp"
-#define guerrero_left "../assets/guerrero/guerrero_left.bmp"
-#define guerrero_right "../assets/guerrero/guerrero_right.bmp"
+#define guerrero_front "assets/guerrero/guerrero_front.bmp"
+#define guerrero_back "assets/guerrero/guerrero_back.bmp"
+#define guerrero_left "assets/guerrero/guerrero_left.bmp"
+#define guerrero_right "assets/guerrero/guerrero_right.bmp"
 
 #define GUERRERO_F_ALT "assets/guerrero/guerrero_front.bmp"
 #define GUERRERO_B_ALT "assets/guerrero/guerrero_back.bmp"
 #define GUERRERO_L_ALT "assets/guerrero/guerrero_left.bmp"
 #define GUERRERO_R_ALT "assets/guerrero/guerrero_right.bmp"
 
-#define VACA_F "../assets/vaca/vaca_front.bmp"
-#define VACA_B "../assets/vaca/vaca_back.bmp"
-#define VACA_L "../assets/vaca/vaca_left.bmp"
-#define VACA_R "../assets/vaca/vaca_right.bmp"
+#define VACA_F "assets/vaca/vaca_front.bmp"
+#define VACA_B "assets/vaca/vaca_back.bmp"
+#define VACA_L "assets/vaca/vaca_left.bmp"
+#define VACA_R "assets/vaca/vaca_right.bmp"
 
 #define VACA_F_ALT "assets/vaca/vaca_front.bmp"
 #define VACA_B_ALT "assets/vaca/vaca_back.bmp"
@@ -126,15 +126,10 @@ static bool unidadBarraVisible(Unidad *u) {
 #define OBRERO_L_ALT "assets/obrero/obrero_left.bmp"
 #define OBRERO_R_ALT "assets/obrero/obrero_right.bmp"
 
-#define BARCO_F_ALT "../assets/barco/barco_front.bmp"
-#define BARCO_B_ALT "../assets/barco/barco_back.bmp"
-#define BARCO_L_ALT "../assets/barco/barco_left.bmp"
-#define BARCO_R_ALT "../assets/barco/barco_right.bmp"
-
-#define BARCO_F_ALT "../assets/barco/barco_front.bmp"
-#define BARCO_B_ALT "../assets/barco/barco_back.bmp"
-#define BARCO_L_ALT "../assets/barco/barco_left.bmp"
-#define BARCO_R_ALT "../assets/barco/barco_right.bmp"
+#define BARCO_F_ALT "assets/barco/barco_front.bmp"
+#define BARCO_B_ALT "assets/barco/barco_back.bmp"
+#define BARCO_L_ALT "assets/barco/barco_left.bmp"
+#define BARCO_R_ALT "assets/barco/barco_right.bmp"
 
 static HBITMAP hMapaBmp =
     NULL; // Mapa de isla individual (isla1, isla2, o isla3)
@@ -921,7 +916,7 @@ void cargarRecursosGraficos() {
 
   // NUEVO: Cargar mapa global con las 3 islas (mapaDemo2.bmp)
   hMapaGlobalBmp =
-      (HBITMAP)LoadImageA(NULL, "../assets/mapaDemo2.bmp", IMAGE_BITMAP, 0, 0,
+      (HBITMAP)LoadImageA(NULL, "assets/mapaDemo2.bmp", IMAGE_BITMAP, 0, 0,
                           LR_LOADFROMFILE | LR_CREATEDIBSECTION);
   if (!hMapaGlobalBmp) {
     hMapaGlobalBmp =
@@ -1035,20 +1030,20 @@ void cargarRecursosGraficos() {
 
   // --- COMBATE: CABALLERO (stand, defense, die) ---
   const char *cabStandLR[2] = {
-      "../assets/caballero/caballero_war_stand_left.bmp",
-      "../assets/caballero/caballero_war_stand_right.bmp"};
+      "assets/caballero/caballero_war_stand_left.bmp",
+      "assets/caballero/caballero_war_stand_right.bmp"};
   const char *cabStandLRAlt[2] = {"assets/caballero/caballero_war_stand_left.bmp",
                                   "assets/caballero/caballero_war_stand_right.bmp"};
-  const char *cabDefLR[2] = {"../assets/caballero/caballero_defense_left.bmp",
-                             "../assets/caballero/caballero_defense_right.bmp"};
+  const char *cabDefLR[2] = {"assets/caballero/caballero_defense_left.bmp",
+                             "assets/caballero/caballero_defense_right.bmp"};
   const char *cabDefLRAlt[2] = {"assets/caballero/caballero_defense_left.bmp",
                                 "assets/caballero/caballero_defense_right.bmp"};
-  const char *cabDie1LR[2] = {"../assets/caballero/caballero_die_1_left.bmp",
-                              "../assets/caballero/caballero_die_1_right.bmp"};
+  const char *cabDie1LR[2] = {"assets/caballero/caballero_die_1_left.bmp",
+                              "assets/caballero/caballero_die_1_right.bmp"};
   const char *cabDie1LRAlt[2] = {"assets/caballero/caballero_die_1_left.bmp",
                                  "assets/caballero/caballero_die_1_right.bmp"};
-  const char *cabDie2LR[2] = {"../assets/caballero/caballero_die_2_left.bmp",
-                              "../assets/caballero/caballero_die_2_right.bmp"};
+  const char *cabDie2LR[2] = {"assets/caballero/caballero_die_2_left.bmp",
+                              "assets/caballero/caballero_die_2_right.bmp"};
   const char *cabDie2LRAlt[2] = {"assets/caballero/caballero_die_2_left.bmp",
                                  "assets/caballero/caballero_die_2_right.bmp"};
   for (int i = 0; i < 2; i++) {
@@ -1067,20 +1062,20 @@ void cargarRecursosGraficos() {
   }
 
   // --- COMBATE: GUERRERO (stand, walk, die) ---
-  const char *gueStandLR[2] = {"../assets/guerrero/guerrero_war_stand_left.bmp",
-                               "../assets/guerrero/guerrero_war_stand_right.bmp"};
+  const char *gueStandLR[2] = {"assets/guerrero/guerrero_war_stand_left.bmp",
+                               "assets/guerrero/guerrero_war_stand_right.bmp"};
   const char *gueStandLRAlt[2] = {"assets/guerrero/guerrero_war_stand_left.bmp",
                                   "assets/guerrero/guerrero_war_stand_right.bmp"};
-  const char *gueWalkLR[2] = {"../assets/guerrero/guerrero_war_walk_left.bmp",
-                              "../assets/guerrero/guerrero_war_walk_right.bmp"};
+  const char *gueWalkLR[2] = {"assets/guerrero/guerrero_war_walk_left.bmp",
+                              "assets/guerrero/guerrero_war_walk_right.bmp"};
   const char *gueWalkLRAlt[2] = {"assets/guerrero/guerrero_war_walk_left.bmp",
                                  "assets/guerrero/guerrero_war_walk_right.bmp"};
-  const char *gueDie1LR[2] = {"../assets/guerrero/guerrero_war_die_1_left.bmp",
-                              "../assets/guerrero/guerrero_war_die_1_right.bmp"};
+  const char *gueDie1LR[2] = {"assets/guerrero/guerrero_war_die_1_left.bmp",
+                              "assets/guerrero/guerrero_war_die_1_right.bmp"};
   const char *gueDie1LRAlt[2] = {"assets/guerrero/guerrero_war_die_1_left.bmp",
                                  "assets/guerrero/guerrero_war_die_1_right.bmp"};
-  const char *gueDie2LR[2] = {"../assets/guerrero/guerrero_war_die_2_left.bmp",
-                              "../assets/guerrero/guerrero_war_die_2_right.bmp"};
+  const char *gueDie2LR[2] = {"assets/guerrero/guerrero_war_die_2_left.bmp",
+                              "assets/guerrero/guerrero_war_die_2_right.bmp"};
   const char *gueDie2LRAlt[2] = {"assets/guerrero/guerrero_war_die_2_left.bmp",
                                  "assets/guerrero/guerrero_war_die_2_right.bmp"};
   for (int i = 0; i < 2; i++) {
@@ -1100,8 +1095,8 @@ void cargarRecursosGraficos() {
 
   // --- COMBATE: CABALLERO SIN ESCUDO (stand) ---
   const char *cseStandLR[2] = {
-      "../assets/caballero/caballero_war_NO_stand_left.bmp",
-      "../assets/caballero/caballero_war_NO_stand_right.bmp"};
+      "assets/caballero/caballero_war_NO_stand_left.bmp",
+      "assets/caballero/caballero_war_NO_stand_right.bmp"};
   const char *cseStandLRAlt[2] = {
       "assets/caballero/caballero_war_NO_stand_left.bmp",
       "assets/caballero/caballero_war_NO_stand_right.bmp"};
@@ -1117,13 +1112,13 @@ void cargarRecursosGraficos() {
 
   // Ataque caballero (left/right, 3 frames)
   const char *cabAtkL[3] = {
-      "../assets/caballero/caballero_war_move_1_left.bmp",
-      "../assets/caballero/caballero_war_move_2_left.bmp",
-      "../assets/caballero/caballero_war_move_3_left.bmp"};
+      "assets/caballero/caballero_war_move_1_left.bmp",
+      "assets/caballero/caballero_war_move_2_left.bmp",
+      "assets/caballero/caballero_war_move_3_left.bmp"};
   const char *cabAtkR[3] = {
-      "../assets/caballero/caballero_war_move_1_right.bmp",
-      "../assets/caballero/caballero_war_move_2_right.bmp",
-      "../assets/caballero/caballero_war_move_3_right.bmp"};
+      "assets/caballero/caballero_war_move_1_right.bmp",
+      "assets/caballero/caballero_war_move_2_right.bmp",
+      "assets/caballero/caballero_war_move_3_right.bmp"};
   const char *cabAtkLAlt[3] = {
       "assets/caballero/caballero_war_move_1_left.bmp",
       "assets/caballero/caballero_war_move_2_left.bmp",
@@ -1134,13 +1129,13 @@ void cargarRecursosGraficos() {
       "assets/caballero/caballero_war_move_3_right.bmp"};
     // Caballero sin escudo: nuevos sprites de ataque (NO_move)
     const char *cseAtkL[3] = {
-      "../assets/caballero/caballero_war_NO_move_1_left.bmp",
-      "../assets/caballero/caballero_war_NO_move_2_left.bmp",
-      "../assets/caballero/caballero_war_NO_move_3_left.bmp"};
+      "assets/caballero/caballero_war_NO_move_1_left.bmp",
+      "assets/caballero/caballero_war_NO_move_2_left.bmp",
+      "assets/caballero/caballero_war_NO_move_3_left.bmp"};
     const char *cseAtkR[3] = {
-      "../assets/caballero/caballero_war_NO_move_1_right.bmp",
-      "../assets/caballero/caballero_war_NO_move_2_right.bmp",
-      "../assets/caballero/caballero_war_NO_move_3_right.bmp"};
+      "assets/caballero/caballero_war_NO_move_1_right.bmp",
+      "assets/caballero/caballero_war_NO_move_2_right.bmp",
+      "assets/caballero/caballero_war_NO_move_3_right.bmp"};
     const char *cseAtkLAlt[3] = {
       "assets/caballero/caballero_war_NO_move_1_left.bmp",
       "assets/caballero/caballero_war_NO_move_2_left.bmp",
@@ -1178,8 +1173,8 @@ void cargarRecursosGraficos() {
   }
 
   // Ataque guerrero (left/right, 2 frames)
-  const char *gueAtkL[2] = {"../assets/guerrero/guerrero_war_move_1_left.bmp",
-                            "../assets/guerrero/guerrero_war_move_2_left.bmp"};
+  const char *gueAtkL[2] = {"assets/guerrero/guerrero_war_move_1_left.bmp",
+                            "assets/guerrero/guerrero_war_move_2_left.bmp"};
   const char *gueAtkR[2] = {"../assets/guerrero/guerrero_war_move_1_right.bmp",
                             "../assets/guerrero/guerrero_war_move_2_right.bmp"};
   const char *gueAtkLAlt[2] = {"assets/guerrero/guerrero_war_move_1_left.bmp",
@@ -1713,7 +1708,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
     // Puntero base al array de obreros
     Unidad *baseObreros = pJugador->obreros;
 
-    for (Unidad *o = baseObreros; o < baseObreros + 6; o++) {
+    for (Unidad *o = baseObreros; o < baseObreros + MAX_OBREROS; o++) {
       // La base del obrero (pies) está en o->y + TILE_SIZE
       float basePies = o->y + (float)TILE_SIZE;
 
@@ -1785,7 +1780,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
 
     // C) DIBUJAR CABALLEROS (NUEVO)
     Unidad *baseCaballeros = pJugador->caballeros;
-    for (Unidad *c = baseCaballeros; c < baseCaballeros + 4; c++) {
+    for (Unidad *c = baseCaballeros; c < baseCaballeros + MAX_CABALLEROS; c++) {
       float basePies = c->y + (float)TILE_SIZE;
 
       if (basePies >= (float)yMinFila && basePies < (float)yMaxFila) {
@@ -1823,7 +1818,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
 
     // C.5) DIBUJAR CABALLEROS SIN ESCUDO (NUEVO)
     Unidad *baseCSE = pJugador->caballerosSinEscudo;
-    for (Unidad *c = baseCSE; c < baseCSE + 4; c++) {
+    for (Unidad *c = baseCSE; c < baseCSE + MAX_CABALLEROS_SIN_ESCUDO; c++) {
       float basePies = c->y + (float)TILE_SIZE;
 
       if (basePies >= (float)yMinFila && basePies < (float)yMaxFila) {
@@ -1862,7 +1857,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
 
     // D) DIBUJAR GUERREROS (NUEVO)
     Unidad *baseGuerreros = pJugador->guerreros;
-    for (Unidad *g = baseGuerreros; g < baseGuerreros + 2; g++) {
+    for (Unidad *g = baseGuerreros; g < baseGuerreros + MAX_GUERREROS; g++) {
       float basePies = g->y + (float)TILE_SIZE;
 
       if (basePies >= (float)yMinFila && basePies < (float)yMaxFila) {
@@ -2326,57 +2321,73 @@ void mapaActualizarArboles(void) {
   static int frameCounter = 0;
   frameCounter++;
 
-  // Verificar cada ~5 segundos (aprox 300 frames a 60fps)
+  // Verificar cada ~5.0 segundos (300 frames) para regeneracion lenta
   if (frameCounter < 300)
     return;
   frameCounter = 0;
 
   int totalArboles = mapaContarArboles();
+  // Si hay menos de 20 árboles, regenerar
   if (totalArboles >= 20)
     return;
 
-  printf("[DEBUG] Regenerando arbol (Actual: %d/20)...\n", totalArboles);
+  if (!hMapaBmp)
+      return;
 
-  // Intentar colocar un nuevo arbol en un lugar aleatorio valido
+  printf("[DEBUG] Regenerando arboles (Faltan %d)...\n", 20 - totalArboles);
+
   HDC hdcPantalla = GetDC(NULL);
   HDC hdcMem = CreateCompatibleDC(hdcPantalla);
   HBITMAP hOldBmp = (HBITMAP)SelectObject(hdcMem, hMapaBmp);
 
+  int **colMat = mapaObtenerCollisionMap();
   bool colocado = false;
   int intentos = 0;
-  while (!colocado && intentos < 100) {
+  
+  // Intentar agresivamente encontrar un lugar (200 intentos)
+  while (!colocado && intentos < 200) {
     intentos++;
     int fila = rand() % GRID_SIZE;
     int col = rand() % GRID_SIZE;
 
-    // Solo celdas vacias
-    if (mapaObjetos[fila][col] != 0)
+    // 1. La celda debe estar totalmente vacía en el mapa de objetos
+    if (mapaObjetos[fila][col] != SIMBOLO_VACIO)
       continue;
 
-    // Verificar si es tierra
+    // 2. No debe haber colisiones (edificios, agua, piedras)
+    if (colMat && colMat[fila][col] != 0)
+      continue;
+
+    // 3. VERIFICACIÓN ESTRICTA DE PASTO
+    // Usamos GetPixel para asegurar que SUELO SEA VERDE (Pasto)
+    // Esto evita agua, arena, rocas, nieve, etc.
     int px = (col * TILE_SIZE) + (TILE_SIZE / 2);
     int py = (fila * TILE_SIZE) + (TILE_SIZE / 2);
+
     COLORREF color = GetPixel(hdcMem, px, py);
-    if (color == CLR_INVALID)
-      continue;
+    if (color != CLR_INVALID) {
+         BYTE r = GetRValue(color);
+         BYTE g = GetGValue(color);
+         BYTE b = GetBValue(color);
 
-    BYTE r = GetRValue(color);
-    BYTE g = GetGValue(color);
-    BYTE b = GetBValue(color);
+         // Criterio mas estricto para evitar ARENA (Rojo y Verde altos)
+         // La arena suele tener componente Rojo alta (mezcla amarillo). El pasto tiene Rojo bajo.
+         // Exigimos que el Verde supere al Rojo por un margen amplio (40) y limitamos el brillo Rojo maximo.
+         bool esPasto = (g > r + 40 && g > b + 30 && r < 160 && g > 50);
 
-    // Criterio de tierra (mismo que en generarBosqueAutomatico)
-    bool esAgua = (b > r + 20 && b > g + 20);
-    if (!esAgua && g > r && g > b && g > 70 && b < 80 && r < 100) {
-      mapaObjetos[fila][col] = SIMBOLO_ARBOL;
-      // Actualizar colisiones
-      int **colMat = mapaObtenerCollisionMap();
-      if (colMat)
-        colMat[fila][col] = 1;
-      colocado = true;
-      printf("[DEBUG] Arbol regenerado en [%d][%d]\n", fila, col);
+         if (esPasto) {
+             // Colocar árbol
+             mapaObjetos[fila][col] = SIMBOLO_ARBOL;
+             // Marcar colisión
+             if (colMat) colMat[fila][col] = 1;
+             
+             colocado = true;
+             printf("[DEBUG] Arbol regenerado en [%d][%d] (RGB: %d,%d,%d)\n", fila, col, r, g, b);
+         }
     }
   }
 
+  // Limpieza GDI
   SelectObject(hdcMem, hOldBmp);
   DeleteDC(hdcMem);
   ReleaseDC(NULL, hdcPantalla);

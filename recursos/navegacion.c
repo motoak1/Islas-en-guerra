@@ -20,10 +20,10 @@ typedef struct {
   Edificio ayuntamiento;
   Edificio mina;
   Edificio cuartel;
-  Unidad obreros[6];
-  Unidad caballeros[4];
-  Unidad caballerosSinEscudo[4];
-  Unidad guerreros[4];
+  Unidad obreros[MAX_OBREROS];
+  Unidad caballeros[MAX_CABALLEROS];
+  Unidad caballerosSinEscudo[MAX_CABALLEROS_SIN_ESCUDO];
+  Unidad guerreros[MAX_GUERREROS];
   Unidad enemigos[8];
   int numEnemigos;
   bool enemigosGenerados;
@@ -196,21 +196,65 @@ static int clampIntLocal(int v, int lo, int hi) {
   return v;
 }
 
-static int contarTropasJugador(const struct Jugador *j) {
+// Función para contar unidades globales (incluyendo otras islas)
+int navegacionContarUnidadesGlobal(const struct Jugador *j, TipoUnidad tipo) {
   int total = 0;
-  const Unidad *arrs[] = {j->caballeros, j->caballerosSinEscudo, j->guerreros};
-  const int lens[] = {4, 4, 4};
 
-  for (int g = 0; g < 3; g++) {
-    const Unidad *u = arrs[g];
-    int len = lens[g];
-    for (int i = 0; i < len; i++) {
-      if (u[i].x >= 0 && u[i].y >= 0)
-        total++;
+  // 1. Contar unidades ACTIVAS en la isla actual (j->obreros, etc)
+  int maxLimit = 0;
+  const Unidad *ptr = NULL;
+
+  switch(tipo) {
+    case TIPO_OBRERO: 
+        maxLimit = MAX_OBREROS; ptr = j->obreros; break;
+    case TIPO_CABALLERO: 
+        maxLimit = MAX_CABALLEROS; ptr = j->caballeros; break;
+    case TIPO_CABALLERO_SIN_ESCUDO: 
+        maxLimit = MAX_CABALLEROS_SIN_ESCUDO; ptr = j->caballerosSinEscudo; break;
+    case TIPO_GUERRERO: 
+        maxLimit = MAX_GUERREROS; ptr = j->guerreros; break;
+    default: return 0;
+  }
+
+  for (int i = 0; i < maxLimit; i++) {
+    if (ptr[i].x >= 0 && ptr[i].y >= 0) total++;
+  }
+
+  // 2. Sumar unidades de OTROS islas guardadas en sIslas
+  for (int k = 1; k <= 3; k++) {
+    if (k == j->islaActual) continue; // Ya contadas (o por guardar)
+    if (!sIslas[k].inicializado) continue;
+
+    const Unidad *ptrGuardado = NULL;
+    switch(tipo) {
+        case TIPO_OBRERO: ptrGuardado = sIslas[k].obreros; break;
+        case TIPO_CABALLERO: ptrGuardado = sIslas[k].caballeros; break;
+        case TIPO_CABALLERO_SIN_ESCUDO: ptrGuardado = sIslas[k].caballerosSinEscudo; break;
+        case TIPO_GUERRERO: ptrGuardado = sIslas[k].guerreros; break;
+    }
+
+    if (ptrGuardado) {
+        for (int i = 0; i < maxLimit; i++) {
+            if (ptrGuardado[i].x >= 0 && ptrGuardado[i].y >= 0) total++;
+        }
     }
   }
 
-  total += j->barco.numTropas;
+  // No necesitamos sumar las del barco explícitamente si ya se consideran "activas" o "fuera".
+  // Pero las del barco están en j->barco.tropas.
+  // IMPORTANTE: Cuando una unidad sube al barco, ¿sigue en j->obreros con coords validas?
+  // Normalmente se desactiva (x=-1000) o se mantiene hasta que viajas?
+  // Revisando ui_embarque.c (no visible), asumimos que al subir al barco desaparecen del mapa (x<0).
+  // Si es así, debemos sumarlas aquí.
+  
+  if (j->barco.numTropas > 0) {
+      for(int i=0; i<j->barco.numTropas; i++) {
+          if (j->barco.tropas[i] && j->barco.tropas[i]->tipo == tipo) {
+              total++;
+          }
+      }
+  }
+
   return total;
 }
 
@@ -381,7 +425,7 @@ static void inicializarEstructurasIslaBase(struct Jugador *j,
 // Envía todas las unidades fuera del mapa (se usarán solo las del barco al
 // desembarcar)
 static void vaciarUnidades(struct Jugador *j) {
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0; i < MAX_OBREROS; i++) {
     j->obreros[i].x = -1000.0f;
     j->obreros[i].y = -1000.0f;
     j->obreros[i].moviendose = false;
@@ -389,7 +433,7 @@ static void vaciarUnidades(struct Jugador *j) {
     j->obreros[i].celdaFila = -1;
     j->obreros[i].celdaCol = -1;
   }
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < MAX_CABALLEROS; i++) {
     j->caballeros[i].x = -1000.0f;
     j->caballeros[i].y = -1000.0f;
     j->caballeros[i].moviendose = false;
@@ -397,7 +441,7 @@ static void vaciarUnidades(struct Jugador *j) {
     j->caballeros[i].celdaFila = -1;
     j->caballeros[i].celdaCol = -1;
   }
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < MAX_CABALLEROS_SIN_ESCUDO; i++) {
     j->caballerosSinEscudo[i].x = -1000.0f;
     j->caballerosSinEscudo[i].y = -1000.0f;
     j->caballerosSinEscudo[i].moviendose = false;
@@ -405,7 +449,7 @@ static void vaciarUnidades(struct Jugador *j) {
     j->caballerosSinEscudo[i].celdaFila = -1;
     j->caballerosSinEscudo[i].celdaCol = -1;
   }
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < MAX_GUERREROS; i++) {
     j->guerreros[i].x = -1000.0f;
     j->guerreros[i].y = -1000.0f;
     j->guerreros[i].moviendose = false;
@@ -475,13 +519,13 @@ static void guardarEstadoIslaJugador(struct Jugador *j) {
     estado->cuartel = *((Edificio *)j->cuartel);
 
   // Copiar unidades (posiciones actuales en esta isla)
-  for (int i = 0; i < 6; i++)
+  for (int i = 0; i < MAX_OBREROS; i++)
     estado->obreros[i] = j->obreros[i];
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < MAX_CABALLEROS; i++)
     estado->caballeros[i] = j->caballeros[i];
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < MAX_CABALLEROS_SIN_ESCUDO; i++)
     estado->caballerosSinEscudo[i] = j->caballerosSinEscudo[i];
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < MAX_GUERREROS; i++)
     estado->guerreros[i] = j->guerreros[i];
 
   estado->numEnemigos = sNumEnemigosActivos;
@@ -515,13 +559,13 @@ static void restaurarEstadoIslaJugador(struct Jugador *j, int isla) {
   j->cuartel = estado->tieneCuartel ? &estado->cuartel : NULL;
 
   // Restaurar unidades de esta isla
-  for (int i = 0; i < 6; i++)
+  for (int i = 0; i < MAX_OBREROS; i++)
     j->obreros[i] = estado->obreros[i];
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < MAX_CABALLEROS; i++)
     j->caballeros[i] = estado->caballeros[i];
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < MAX_CABALLEROS_SIN_ESCUDO; i++)
     j->caballerosSinEscudo[i] = estado->caballerosSinEscudo[i];
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < MAX_GUERREROS; i++)
     j->guerreros[i] = estado->guerreros[i];
 
   if (estado->enemigosGenerados) {
@@ -587,10 +631,9 @@ void desembarcarTropas(Barco *barco, struct Jugador *j) {
 
   // Si no se encontró tierra, usar posición de emergencia
   if (!tierraEncontrada) {
-    printf("[WARNING] No se encontró tierra cerca del barco, usando posición "
-           "de emergencia\n");
-    tierraX = 32; // Centro del mapa
-    tierraY = 32;
+    printf("[WARNING] No se encontró tierra cerca del barco, desembarcando EN EL SITIO (emergencia)\n");
+    tierraX = barcoCeldaX; 
+    tierraY = barcoCeldaY;
   }
 
   printf("[DEBUG] Punto de desembarco en celda: [%d][%d]\n", tierraY, tierraX);

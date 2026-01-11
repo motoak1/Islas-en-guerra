@@ -1,4 +1,5 @@
 #include "recursos.h"
+#include "navegacion.h" // Incluir para navegacionContarUnidadesGlobal
 #include "../edificios/edificios.h"
 #include "../mapa/mapa.h"
 #include "../mapa/menu.h"
@@ -240,14 +241,19 @@ static bool pathfindSimple(int startF, int startC, int goalF, int goalC,
 void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
   strcpy(j->Nombre, Nombre);
   j->Comida = 200;
-  j->Oro = 100;
+  j->Oro = 0;
   j->Madera = 150;
   j->Piedra = 100;
-  j->Hierro = 0;
+  j->Hierro = 100;
   j->CantidadEspadas = 0;
   for (int i = 0; i < MAX_OBREROS; i++) {
-    j->obreros[i].x = 900.0f + (i * 64.0f);
-    j->obreros[i].y = 900.0f;
+    if (i < 6) {
+        j->obreros[i].x = 900.0f + (i * 64.0f);
+        j->obreros[i].y = 900.0f;
+    } else {
+        j->obreros[i].x = -1000.0f;
+        j->obreros[i].y = -1000.0f;
+    }
     j->obreros[i].destinoX = j->obreros[i].x;
     j->obreros[i].destinoY = j->obreros[i].y;
     j->obreros[i].moviendose = false;
@@ -328,7 +334,9 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
 
   // Registrar obreros
   for (int i = 0; i < MAX_OBREROS; i++) {
-    mapaRegistrarObjeto(j->obreros[i].x, j->obreros[i].y, SIMBOLO_OBRERO);
+    if (j->obreros[i].x >= 0) {
+        mapaRegistrarObjeto(j->obreros[i].x, j->obreros[i].y, SIMBOLO_OBRERO);
+    }
   }
   printf("[DEBUG] %d obreros registrados en matriz\n", 6);
 
@@ -1536,8 +1544,7 @@ bool recursosIntentarCazar(struct Jugador *j, float mundoX, float mundoY) {
       // Eliminar vaca de la matriz y del array
       mapaEliminarObjeto(vacaFila, vacaCol);
       j->Comida += 100;
-      MessageBox(GetActiveWindow(), "¡Vaca cazada! +100 Comida", "Recursos",
-                 MB_OK | MB_ICONINFORMATION);
+      // MENSAJE ELIMINADO POR SOLICITUD
     }
     return true; // Click manejado
   }
@@ -1733,7 +1740,7 @@ void panelRecursosDibujar(HDC hdcBuffer, struct Jugador *j, int anchoPantalla) {
   // ================================================================
   const int PANEL_ANCHO = 230;
   const int PANEL_ALTO =
-      210; // Aumentado para incluir Hierro y evitar desbordamiento
+      230; // Aumentado para incluir Nivel de Barco
   const int MARGEN = 10;
   const int ESPACIADO_LINEA = 22;
 
@@ -1854,49 +1861,21 @@ void panelRecursosDibujar(HDC hdcBuffer, struct Jugador *j, int anchoPantalla) {
   LineTo(hdcBuffer, panelX + PANEL_ANCHO - 12, yPos - 5);
   DeleteObject(penSep2);
 
-  // Contar unidades usando aritmética de punteros
-  // IMPORTANTE: Solo contar unidades ACTIVAS (posición >= 0 significa visible
-  // en mapa)
-  int numObreros = 0, numCaballeros = 0, numGuerreros = 0;
-
-  // Contar obreros activos (posición x >= 0 y y >= 0)
-  Unidad *ptrOb = j->obreros;
-  for (int i = 0; i < MAX_OBREROS; i++, ptrOb++) {
-    if (ptrOb->x >= 0 && ptrOb->y >= 0) {
-      numObreros++;
-    }
-  }
-
-  // Contar caballeros activos (posición x >= 0 y y >= 0)
-  Unidad *ptrCab = j->caballeros;
-  for (int i = 0; i < MAX_CABALLEROS; i++, ptrCab++) {
-    if (ptrCab->x >= 0 && ptrCab->y >= 0) {
-      numCaballeros++;
-    }
-  }
-
-  // Contar caballeros sin escudo activos
-  int numCabSinEsc = 0;
-  Unidad *ptrCS = j->caballerosSinEscudo;
-  for (int i = 0; i < MAX_CABALLEROS_SIN_ESCUDO; i++, ptrCS++) {
-    if (ptrCS->x >= 0 && ptrCS->y >= 0) {
-      numCabSinEsc++;
-    }
-  }
-
-  // Contar guerreros activos (posición x >= 0 y y >= 0)
-  Unidad *ptrGue = j->guerreros;
-  for (int i = 0; i < MAX_GUERREROS; i++, ptrGue++) {
-    if (ptrGue->x >= 0 && ptrGue->y >= 0) {
-      numGuerreros++;
-    }
-  }
+  // Contar unidades globales (Isla actual + Otras islas + Barco)
+  int numObreros = navegacionContarUnidadesGlobal(j, TIPO_OBRERO);
+  int numCaballeros = navegacionContarUnidadesGlobal(j, TIPO_CABALLERO);
+  int numCabSinEsc = navegacionContarUnidadesGlobal(j, TIPO_CABALLERO_SIN_ESCUDO);
+  int numGuerreros = navegacionContarUnidadesGlobal(j, TIPO_GUERRERO);
 
   // Mostrar conteo de unidades (color pergamino claro) - Acentos corregidos
   SetTextColor(hdcBuffer, RGB(240, 220, 180));
   sprintf(buffer, "Ob:%d CE:%d CS:%d Gu:%d", numObreros, numCaballeros,
           numCabSinEsc, numGuerreros);
   TextOutA(hdcBuffer, panelX + 5, yPos + 3, buffer, strlen(buffer));
+
+  // Mostrar Nivel de Barco
+  sprintf(buffer, "Nivel Barco: %d", j->barco.nivelMejora);
+  TextOutA(hdcBuffer, panelX + 5, yPos + 23, buffer, strlen(buffer));
 
   // ================================================================
   // LIMPIEZA DE RECURSOS GDI
@@ -2085,22 +2064,22 @@ bool mejorarBarco(struct Jugador *j) {
   int siguienteNivel = nivelActual + 1;
   int oro, madera, piedra, hierro;
 
-  // Determinar costos según el siguiente nivel
+  // Determinar costos según el siguiente nivel (Valores alineados con ui_entrena.h)
   if (siguienteNivel == 2) {
-    oro = 500;
-    madera = 400;
-    piedra = 300;
-    hierro = 200;
+    oro = 250;
+    madera = 200;
+    piedra = 150;
+    hierro = 100;
   } else if (siguienteNivel == 3) {
+    oro = 500;
+    madera = 450;
+    piedra = 350;
+    hierro = 250;
+  } else { // siguienteNivel == 4
     oro = 1000;
     madera = 800;
     piedra = 600;
-    hierro = 400;
-  } else { // siguienteNivel == 4
-    oro = 1500;
-    madera = 1200;
-    piedra = 900;
-    hierro = 600;
+    hierro = 500;
   }
 
   // Verificar que el jugador tiene suficientes recursos
