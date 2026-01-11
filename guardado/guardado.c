@@ -187,7 +187,7 @@ bool guardarPartidaPorNombre(const char *nombreJugador, struct Jugador *j,
   strncpy(datos.header.nombreJugador, nombreJugador,
           sizeof(datos.header.nombreJugador) - 1);
     datos.header.nombreJugador[sizeof(datos.header.nombreJugador) - 1] = '\0';
-  datos.header.islaActual = j->islaActual;
+    datos.header.islaActual = j->islaActual;
 
   // --- Recursos ---
   datos.Comida = j->Comida;

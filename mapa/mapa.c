@@ -1748,39 +1748,17 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
             pJugador->islaActual);
   }
 
-  // Dibujar mina
+  // (Sección única: dibujar infraestructura disponible)
   if (pJugador->mina != NULL) {
     Edificio *edificioMina = (Edificio *)pJugador->mina;
     edificioDibujar(hdcBuffer, edificioMina, cam.x, cam.y, cam.zoom, anchoP,
-            altoP, pJugador->islaActual);
+                    altoP, pJugador->islaActual);
   }
 
-  // Dibujar cuartel
   if (pJugador->cuartel != NULL) {
     Edificio *edificioCuartel = (Edificio *)pJugador->cuartel;
     edificioDibujar(hdcBuffer, edificioCuartel, cam.x, cam.y, cam.zoom, anchoP,
-            altoP, pJugador->islaActual);
-  }
-
-  // Dibujar mina
-  if (pJugador->mina != NULL) {
-    Edificio *edificioMina = (Edificio *)pJugador->mina;
-    edificioDibujar(hdcBuffer, edificioMina, cam.x, cam.y, cam.zoom, anchoP,
-            altoP, pJugador->islaActual);
-  }
-
-  // Dibujar cuartel
-  if (pJugador->cuartel != NULL) {
-    Edificio *edificioCuartel = (Edificio *)pJugador->cuartel;
-    edificioDibujar(hdcBuffer, edificioCuartel, cam.x, cam.y, cam.zoom, anchoP,
-            altoP, pJugador->islaActual);
-  }
-
-  // Dibujar mina
-  if (pJugador->mina != NULL) {
-    Edificio *edificioMina = (Edificio *)pJugador->mina;
-    edificioDibujar(hdcBuffer, edificioMina, cam.x, cam.y, cam.zoom, anchoP,
-            altoP, pJugador->islaActual);
+                    altoP, pJugador->islaActual);
   }
 
   HDC hdcSprites = CreateCompatibleDC(hdc);
