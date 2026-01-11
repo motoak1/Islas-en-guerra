@@ -2,6 +2,7 @@
 #define NAVEGACION_H
 
 #include "recursos.h"
+#include "../edificios/edificios.h"
 #include <windows.h>
 
 // Verifica si un punto está dentro del barco (para detección de clicks)
@@ -33,6 +34,72 @@ bool navegacionIsIslaConquistada(int isla);
 
 // True si la isla actual del jugador NO está conquistada
 bool navegacionIslaActualNoConquistada(const struct Jugador *j);
+
+typedef struct {
+	float x, y;
+	float destinoX, destinoY;
+	bool moviendose;
+	bool seleccionado;
+	int dir;
+	int frame;
+	int objetivoFila;
+	int objetivoCol;
+	int celdaFila;
+	int celdaCol;
+	int tipo;
+	int vida;
+	int vidaMax;
+	int damage;
+	int critico;
+	int defensa;
+	int alcance;
+	bool recibiendoAtaque;
+	unsigned long long tiempoMuerteMs;
+	int frameMuerte;
+} UnidadIslaSerializable;
+
+typedef struct {
+	int tipo;
+	float x, y;
+	int ancho, alto;
+	bool construido;
+	int oroAcumulado;
+	int piedraAcumulada;
+	int hierroAcumulado;
+	unsigned int ultimoTickGeneracion;
+	int oroRestante;
+	int piedraRestante;
+	int hierroRestante;
+	bool agotada;
+} EdificioIslaSerializable;
+
+typedef struct {
+	bool inicializado;
+	int Comida;
+	int Oro;
+	int Madera;
+	int Piedra;
+	int Hierro;
+	bool tieneAyuntamiento;
+	bool tieneMina;
+	bool tieneCuartel;
+	EdificioIslaSerializable ayuntamiento;
+	EdificioIslaSerializable mina;
+	EdificioIslaSerializable cuartel;
+	UnidadIslaSerializable obreros[6];
+	UnidadIslaSerializable caballeros[4];
+	UnidadIslaSerializable caballerosSinEscudo[4];
+	UnidadIslaSerializable guerreros[4];
+	UnidadIslaSerializable enemigos[8];
+	int numEnemigos;
+	bool enemigosGenerados;
+} EstadoIslaSerializable;
+
+void navegacionExportarEstadosIsla(EstadoIslaSerializable estados[4]);
+void navegacionImportarEstadosIsla(const EstadoIslaSerializable estados[4]);
+void navegacionRestaurarIslaInicial(int isla, bool definida);
+bool navegacionIslaInicialDefinida(void);
+void navegacionActivarEnemigosIsla(int isla);
 
 #endif
 

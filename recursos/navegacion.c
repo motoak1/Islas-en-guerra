@@ -4,6 +4,8 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <windows.h>
 
 // Estado persistente por isla (1..3)
@@ -35,6 +37,230 @@ static bool sIslaInicialDefinida = false;
 static Unidad sEnemigosActivos[8];
 static int sNumEnemigosActivos = 0;
 static int sEnemigosCooldownMs[8] = {0};
+static void limpiarEnemigosActivos(void);
+static void activarEnemigosDesdeEstado(EstadoIsla *estado);
+static void unidadASerializable(const Unidad *src,
+                                UnidadIslaSerializable *dst);
+static void serializableAUnidad(const UnidadIslaSerializable *src,
+                                Unidad *dst);
+static void edificioASerializable(const Edificio *src,
+                                  EdificioIslaSerializable *dst);
+static void serializableAEdificio(const EdificioIslaSerializable *src,
+                                  Edificio *dst);
+
+static void unidadASerializable(const Unidad *src,
+                                UnidadIslaSerializable *dst) {
+  if (!dst || !src)
+    return;
+  dst->x = src->x;
+  dst->y = src->y;
+  dst->destinoX = src->destinoX;
+  dst->destinoY = src->destinoY;
+  dst->moviendose = src->moviendose;
+  dst->seleccionado = src->seleccionado;
+  dst->dir = (int)src->dir;
+  dst->frame = src->frame;
+  dst->objetivoFila = src->objetivoFila;
+  dst->objetivoCol = src->objetivoCol;
+  dst->celdaFila = src->celdaFila;
+  dst->celdaCol = src->celdaCol;
+  dst->tipo = (int)src->tipo;
+  dst->vida = src->vida;
+  dst->vidaMax = src->vidaMax;
+  dst->damage = src->damage;
+  dst->critico = src->critico;
+  dst->defensa = src->defensa;
+  dst->alcance = src->alcance;
+  dst->recibiendoAtaque = src->recibiendoAtaque;
+  dst->tiempoMuerteMs = src->tiempoMuerteMs;
+  dst->frameMuerte = src->frameMuerte;
+}
+
+static void serializableAUnidad(const UnidadIslaSerializable *src,
+                                Unidad *dst) {
+  if (!dst || !src)
+    return;
+  if (dst->rutaCeldas) {
+    free(dst->rutaCeldas);
+    dst->rutaCeldas = NULL;
+  }
+  dst->rutaLen = 0;
+  dst->rutaIdx = 0;
+  dst->animActual = NULL;
+  dst->animTick = 0;
+  dst->x = src->x;
+  dst->y = src->y;
+  dst->destinoX = src->destinoX;
+  dst->destinoY = src->destinoY;
+  dst->moviendose = src->moviendose;
+  dst->seleccionado = src->seleccionado;
+  dst->dir = (Direccion)src->dir;
+  dst->frame = src->frame;
+  dst->objetivoFila = src->objetivoFila;
+  dst->objetivoCol = src->objetivoCol;
+  dst->celdaFila = src->celdaFila;
+  dst->celdaCol = src->celdaCol;
+  dst->tipo = (TipoUnidad)src->tipo;
+  dst->vida = src->vida;
+  dst->vidaMax = src->vidaMax;
+  dst->damage = src->damage;
+  dst->critico = src->critico;
+  dst->defensa = src->defensa;
+  dst->alcance = src->alcance;
+  dst->recibiendoAtaque = src->recibiendoAtaque;
+  dst->tiempoMuerteMs = src->tiempoMuerteMs;
+  dst->frameMuerte = src->frameMuerte;
+}
+
+static void edificioASerializable(const Edificio *src,
+                                  EdificioIslaSerializable *dst) {
+  if (!src || !dst)
+    return;
+  dst->tipo = (int)src->tipo;
+  dst->x = src->x;
+  dst->y = src->y;
+  dst->ancho = src->ancho;
+  dst->alto = src->alto;
+  dst->construido = src->construido;
+  dst->oroAcumulado = src->oroAcumulado;
+  dst->piedraAcumulada = src->piedraAcumulada;
+  dst->hierroAcumulado = src->hierroAcumulado;
+  dst->ultimoTickGeneracion = src->ultimoTickGeneracion;
+  dst->oroRestante = src->oroRestante;
+  dst->piedraRestante = src->piedraRestante;
+  dst->hierroRestante = src->hierroRestante;
+  dst->agotada = src->agotada;
+}
+
+static void serializableAEdificio(const EdificioIslaSerializable *src,
+                                  Edificio *dst) {
+  if (!src || !dst)
+    return;
+  dst->tipo = (TipoEdificio)src->tipo;
+  dst->x = src->x;
+  dst->y = src->y;
+  dst->ancho = src->ancho;
+  dst->alto = src->alto;
+  dst->construido = src->construido;
+  dst->oroAcumulado = src->oroAcumulado;
+  dst->piedraAcumulada = src->piedraAcumulada;
+  dst->hierroAcumulado = src->hierroAcumulado;
+  dst->ultimoTickGeneracion = src->ultimoTickGeneracion;
+  dst->oroRestante = src->oroRestante;
+  dst->piedraRestante = src->piedraRestante;
+  dst->hierroRestante = src->hierroRestante;
+  dst->agotada = src->agotada;
+  dst->sprite = NULL;
+}
+
+// Guardado: expone el snapshot lógico de cada isla para que guardado.c pueda
+// escribirlo en disco junto con el mapa.
+void navegacionExportarEstadosIsla(EstadoIslaSerializable estados[4]) {
+  if (!estados)
+    return;
+  for (int isla = 0; isla < 4; isla++) {
+    EstadoIsla *src = &sIslas[isla];
+    EstadoIslaSerializable *dst = &estados[isla];
+    dst->inicializado = src->inicializado;
+    dst->Comida = src->Comida;
+    dst->Oro = src->Oro;
+    dst->Madera = src->Madera;
+    dst->Piedra = src->Piedra;
+    dst->Hierro = src->Hierro;
+    dst->tieneAyuntamiento = src->tieneAyuntamiento;
+    dst->tieneMina = src->tieneMina;
+    dst->tieneCuartel = src->tieneCuartel;
+    if (src->tieneAyuntamiento)
+      edificioASerializable(&src->ayuntamiento, &dst->ayuntamiento);
+    if (src->tieneMina)
+      edificioASerializable(&src->mina, &dst->mina);
+    if (src->tieneCuartel)
+      edificioASerializable(&src->cuartel, &dst->cuartel);
+
+    for (int i = 0; i < 6; i++)
+      unidadASerializable(&src->obreros[i], &dst->obreros[i]);
+    for (int i = 0; i < 4; i++) {
+      unidadASerializable(&src->caballeros[i], &dst->caballeros[i]);
+      unidadASerializable(&src->caballerosSinEscudo[i],
+                          &dst->caballerosSinEscudo[i]);
+      unidadASerializable(&src->guerreros[i], &dst->guerreros[i]);
+    }
+    for (int i = 0; i < 8; i++)
+      unidadASerializable(&src->enemigos[i], &dst->enemigos[i]);
+    dst->numEnemigos = src->numEnemigos;
+    dst->enemigosGenerados = src->enemigosGenerados;
+  }
+}
+
+// Carga: restaura el snapshot de cada isla desde el archivo sin tener que
+// regenerar edificios, enemigos o recursos.
+void navegacionImportarEstadosIsla(const EstadoIslaSerializable estados[4]) {
+  if (!estados)
+    return;
+  for (int isla = 0; isla < 4; isla++) {
+    EstadoIsla *dst = &sIslas[isla];
+    const EstadoIslaSerializable *src = &estados[isla];
+    dst->inicializado = src->inicializado;
+    dst->Comida = src->Comida;
+    dst->Oro = src->Oro;
+    dst->Madera = src->Madera;
+    dst->Piedra = src->Piedra;
+    dst->Hierro = src->Hierro;
+    dst->tieneAyuntamiento = src->tieneAyuntamiento;
+    dst->tieneMina = src->tieneMina;
+    dst->tieneCuartel = src->tieneCuartel;
+    if (dst->tieneAyuntamiento) {
+      serializableAEdificio(&src->ayuntamiento, &dst->ayuntamiento);
+      dst->ayuntamiento.sprite = g_spriteAyuntamiento;
+    }
+    if (dst->tieneMina) {
+      serializableAEdificio(&src->mina, &dst->mina);
+      dst->mina.sprite = g_spriteMina;
+    }
+    if (dst->tieneCuartel) {
+      serializableAEdificio(&src->cuartel, &dst->cuartel);
+      dst->cuartel.sprite = g_spriteCuartel;
+    }
+
+    for (int i = 0; i < 6; i++)
+      serializableAUnidad(&src->obreros[i], &dst->obreros[i]);
+    for (int i = 0; i < 4; i++) {
+      serializableAUnidad(&src->caballeros[i], &dst->caballeros[i]);
+      serializableAUnidad(&src->caballerosSinEscudo[i],
+                          &dst->caballerosSinEscudo[i]);
+      serializableAUnidad(&src->guerreros[i], &dst->guerreros[i]);
+    }
+    for (int i = 0; i < 8; i++)
+      serializableAUnidad(&src->enemigos[i], &dst->enemigos[i]);
+    dst->numEnemigos = src->numEnemigos;
+    dst->enemigosGenerados = src->enemigosGenerados;
+  }
+}
+
+// Carga: repone la isla inicial almacenada en el guardado para que el flujo de
+// viaje siga coherente tras reanudar.
+void navegacionRestaurarIslaInicial(int isla, bool definida) {
+  sIslaInicial = (isla >= 1 && isla <= 3) ? isla : 1;
+  sIslaInicialDefinida = definida;
+}
+
+// Guardado/carga: expone si la isla inicial ya fue fijada; usado al serializar
+// y al validar datos cargados.
+bool navegacionIslaInicialDefinida(void) { return sIslaInicialDefinida; }
+
+// Carga: reinyecta los enemigos pasivos guardados para la isla restaurada.
+void navegacionActivarEnemigosIsla(int isla) {
+  if (isla < 1 || isla > 3) {
+    limpiarEnemigosActivos();
+    return;
+  }
+  EstadoIsla *estado = &sIslas[isla];
+  if (estado->enemigosGenerados) {
+    activarEnemigosDesdeEstado(estado);
+  } else {
+    limpiarEnemigosActivos();
+  }
+}
 
 // Adelanto de helper usado antes de su definición
 static bool buscarCeldaLibreCerca(int preferX, int preferY, int ancho, int alto,
@@ -348,8 +574,8 @@ static void inicializarEstructurasIslaBase(struct Jugador *j,
   const float AYUNT_Y = 1024.0f - 64.0f;
   const float MINA_X = 1024.0f - 64.0f;
   const float MINA_Y = 450.0f;
-  const float CUAR_X = 1024.0f - 200.0f;
-  const float CUAR_Y = 1350.0f;
+  const float CUAR_X = 1024.0f - 64.0f;
+  const float CUAR_Y = 1600.0f;
 
   edificioInicializar(&estado->ayuntamiento, EDIFICIO_AYUNTAMIENTO, AYUNT_X,
                       AYUNT_Y);
@@ -514,25 +740,6 @@ static void restaurarEstadoIslaJugador(struct Jugador *j, int isla) {
   j->mina = estado->tieneMina ? &estado->mina : NULL;
   j->cuartel = estado->tieneCuartel ? &estado->cuartel : NULL;
 
-  // ============================================================================
-  // ACTUALIZAR DIMENSIONES DE EDIFICIOS A LAS NUEVAS (256x256)
-  // ============================================================================
-  // Esto corrige el problema de sprites viejos al regresar a una isla
-  // Los edificios guardados pueden tener dimensiones antiguas (128x128)
-  // ============================================================================
-  if (j->ayuntamiento) {
-    Edificio *ayunt = (Edificio *)j->ayuntamiento;
-    ayunt->ancho = 256;  // CASTILLO_SIZE
-    ayunt->alto = 256;
-    ayunt->sprite = NULL; // Forzar selección dinámica en edificioDibujar
-  }
-  if (j->cuartel) {
-    Edificio *cuar = (Edificio *)j->cuartel;
-    cuar->ancho = 256;  // CUARTEL_SIZE
-    cuar->alto = 256;
-    cuar->sprite = NULL; // Forzar selección dinámica en edificioDibujar
-  }
-
   // Restaurar unidades de esta isla
   for (int i = 0; i < 6; i++)
     j->obreros[i] = estado->obreros[i];
@@ -548,7 +755,7 @@ static void restaurarEstadoIslaJugador(struct Jugador *j, int isla) {
   } 
 
   printf("[DEBUG] Jugador: estado de isla %d restaurado (Recursos mantenidos "
-         "globales, dimensiones actualizadas)\n",
+         "globales)\n",
          isla);
 }
 

@@ -6,6 +6,7 @@
 
 #include "../edificios/edificios.h"
 #include "../mapa/mapa.h"
+#include "../recursos/navegacion.h"
 #include "../recursos/recursos.h"
 #include <stdbool.h>
 #include <windows.h>
@@ -15,7 +16,7 @@
 // CONSTANTES DEL SISTEMA DE GUARDADO
 // ============================================================================
 #define SAVE_MAGIC 0x49534C41          // "ISLA" en hex (identificador de archivo)
-#define SAVE_VERSION 1                 // Versión del formato de guardado
+#define SAVE_VERSION 2                 // Versión del formato de guardado
 #define SAVE_FOLDER "../saves"            // Carpeta donde se guardan las partidas
 #define SAVE_EXTENSION ".isla"         // Extensión de archivos de guardado
 #define MAX_PARTIDAS 10                // Máximo de partidas guardadas a mostrar
@@ -88,6 +89,12 @@ typedef struct {
   // Agregado para sistema de mejoras
   int nivelMejora;
   int capacidadMaxima;
+
+  // Agregado para sistema de navegación
+  bool navegando;
+  float destinoX;
+  float destinoY;
+  float velocidad;
 } BarcoGuardado;
 
 // ============================================================================
@@ -145,6 +152,12 @@ typedef struct {
   int camaraX;
   int camaraY;
   float camaraZoom;
+
+  // --- Persistencia extendida ---
+  MapaEstadoSerializable estadosMapa[4];
+  EstadoIslaSerializable estadosIsla[4];
+  int islaInicial;
+  bool islaInicialDefinida;
 
 } DatosGuardado;
 

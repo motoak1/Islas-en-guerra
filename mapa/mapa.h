@@ -53,6 +53,14 @@ typedef struct {
   int timerMovimiento; // Contador de frames hasta próximo movimiento
 } Vaca;
 
+typedef struct {
+  bool valido;
+  char objetos[GRID_SIZE][GRID_SIZE];
+  int colisiones[GRID_SIZE][GRID_SIZE];
+  Vaca vacas[10];
+  int numVacas;
+} MapaEstadoSerializable;
+
 // --- COLISIONES / GRID (matriz dinámica con punteros) ---
 // Retorna una matriz GRID_SIZE x GRID_SIZE (int**) donde 1 = ocupado.
 int **mapaObtenerCollisionMap(void);
@@ -98,6 +106,9 @@ void mapaSetGenerarRecursos(bool habilitar);
 void mapaActualizarVacas(void);
 // Obtiene el array de vacas para renderizado
 Vaca *mapaObtenerVacas(int *cantidad);
+void mapaRestaurarVacasExternas(const Vaca *vacas, int cantidad);
+void mapaExportarEstadosIsla(MapaEstadoSerializable estados[4]);
+void mapaImportarEstadosIsla(const MapaEstadoSerializable estados[4]);
 
 // Dibuja el mundo (terreno, árboles, obreros) en el DC especificado
 // Ahora acepta el menú para dibujarlo dentro del mismo buffer (evitar parpadeo)

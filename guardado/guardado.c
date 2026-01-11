@@ -186,6 +186,7 @@ bool guardarPartidaPorNombre(const char *nombreJugador, struct Jugador *j,
   obtenerTimestamp(datos.header.timestamp, sizeof(datos.header.timestamp));
   strncpy(datos.header.nombreJugador, nombreJugador,
           sizeof(datos.header.nombreJugador) - 1);
+    datos.header.nombreJugador[sizeof(datos.header.nombreJugador) - 1] = '\0';
   datos.header.islaActual = j->islaActual;
 
   // --- Recursos ---
@@ -219,6 +220,10 @@ bool guardarPartidaPorNombre(const char *nombreJugador, struct Jugador *j,
   // Agregado para sistema de mejoras
   datos.barco.nivelMejora = j->barco.nivelMejora;
   datos.barco.capacidadMaxima = j->barco.capacidadMaxima;
+  datos.barco.navegando = j->barco.navegando;
+  datos.barco.destinoX = j->barco.destinoX;
+  datos.barco.destinoY = j->barco.destinoY;
+  datos.barco.velocidad = j->barco.velocidad;
 
   for (int i = 0; i < 15; i++) {
     datos.barco.indiceTropas[i] = -1;
@@ -306,6 +311,12 @@ bool guardarPartidaPorNombre(const char *nombreJugador, struct Jugador *j,
   datos.camaraY = cam->y;
   datos.camaraZoom = cam->zoom;
 
+  // --- Estados serializados por isla ---
+  mapaExportarEstadosIsla(datos.estadosMapa);
+  navegacionExportarEstadosIsla(datos.estadosIsla);
+  datos.islaInicial = navegacionObtenerIslaInicial();
+  datos.islaInicialDefinida = navegacionIslaInicialDefinida();
+
   // Escribir todo en binario
   size_t escritos = fwrite(&datos, sizeof(DatosGuardado), 1, f);
   fclose(f);
@@ -345,6 +356,11 @@ bool cargarPartidaPorNombre(const char *nombreJugador, struct Jugador *j,
     return false;
   }
 
+  mapaImportarEstadosIsla(datos.estadosMapa);
+  navegacionImportarEstadosIsla(datos.estadosIsla);
+  navegacionRestaurarIslaInicial(datos.islaInicial,
+                                 datos.islaInicialDefinida);
+
   // --- Recursos ---
   j->Comida = datos.Comida;
   j->Oro = datos.Oro;
@@ -352,6 +368,7 @@ bool cargarPartidaPorNombre(const char *nombreJugador, struct Jugador *j,
   j->Piedra = datos.Piedra;
   j->Hierro = datos.Hierro;
   strncpy(j->Nombre, datos.header.nombreJugador, sizeof(j->Nombre) - 1);
+  j->Nombre[sizeof(j->Nombre) - 1] = '\0';
 
   // --- Unidades ---
   for (int i = 0; i < MAX_OBREROS; i++) {
@@ -377,6 +394,10 @@ bool cargarPartidaPorNombre(const char *nombreJugador, struct Jugador *j,
   // Agregado para sistema de mejoras
   j->barco.nivelMejora = datos.barco.nivelMejora;
   j->barco.capacidadMaxima = datos.barco.capacidadMaxima;
+  j->barco.navegando = datos.barco.navegando;
+  j->barco.destinoX = datos.barco.destinoX;
+  j->barco.destinoY = datos.barco.destinoY;
+  j->barco.velocidad = datos.barco.velocidad;
 
   // Si los datos cargados no tienen valores válidos (partidas antiguas), poner
   // por defecto
@@ -451,6 +472,22 @@ bool cargarPartidaPorNombre(const char *nombreJugador, struct Jugador *j,
   // --- Restaurar mapa de objetos ---
   memcpy(mapaObjetos, datos.mapaObjetosGuardado, sizeof(mapaObjetos));
 
+  int vacasRestaurar = datos.numVacas;
+  if (vacasRestaurar > 10)
+    vacasRestaurar = 10;
+  Vaca vacasRestauradas[10];
+  for (int i = 0; i < vacasRestaurar; i++) {
+    vacasRestauradas[i].x = datos.vacas[i].x;
+    vacasRestauradas[i].y = datos.vacas[i].y;
+    vacasRestauradas[i].dir = (Direccion)datos.vacas[i].dir;
+    vacasRestauradas[i].timerMovimiento = datos.vacas[i].timerMovimiento;
+  }
+  if (vacasRestaurar > 0) {
+    mapaRestaurarVacasExternas(vacasRestauradas, vacasRestaurar);
+  } else {
+    mapaRestaurarVacasExternas(NULL, 0);
+  }
+
   // --- Reconstruir mapa de colisiones ---
   mapaReconstruirCollisionMap();
 
@@ -466,6 +503,8 @@ bool cargarPartidaPorNombre(const char *nombreJugador, struct Jugador *j,
     Edificio *e = (Edificio *)j->cuartel;
     mapaMarcarEdificio(e->x, e->y, e->ancho, e->alto);
   }
+
+  navegacionActivarEnemigosIsla(j->islaActual);
 
   // --- Cámara ---
   cam->x = datos.camaraX;
