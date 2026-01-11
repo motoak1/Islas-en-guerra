@@ -1,18 +1,34 @@
 // edificios/edificios.c
 #include "edificios.h"
 #include "../mapa/mapa.h"
+#include "../recursos/navegacion.h"
 #include <stdio.h>
 #include <string.h>
 #include <windows.h>
 
-#define imgAyuntamiento "../assets/ayuntamiento2.bmp"
+
 #define imgMina "../assets/mina.bmp"
-#define imgCuartel "../assets/cuartel.bmp"
+#define imgCastilloAliado "../assets/castillo_aliado.bmp"
+#define imgCastilloEnemigo "../assets/castillo_enemigo.bmp"
+#define imgCuartelAliado "../assets/cuartel_aliado.bmp"
+#define imgCuartelEnemigo "../assets/cuartel_enemigo.bmp"
+
+// Tamaño del castillo y cuartel (4x4 celdas de 64px = 256px)
+#define CASTILLO_SIZE 256
+#define CUARTEL_SIZE 256
 
 // Sprites globales de edificios
 HBITMAP g_spriteAyuntamiento = NULL;
 HBITMAP g_spriteMina = NULL;
 HBITMAP g_spriteCuartel = NULL;
+
+// Sprites de castillos para islas (256x256)
+HBITMAP g_spriteCastilloAliado = NULL;
+HBITMAP g_spriteCastilloEnemigo = NULL;
+
+// Sprites de cuarteles para islas (256x256)
+HBITMAP g_spriteCuartelAliado = NULL;
+HBITMAP g_spriteCuartelEnemigo = NULL;
 
 void edificioInicializar(Edificio *e, TipoEdificio tipo, float x, float y) {
   e->tipo = tipo;
@@ -23,10 +39,11 @@ void edificioInicializar(Edificio *e, TipoEdificio tipo, float x, float y) {
   // Configurar dimensiones según el tipo
   switch (tipo) {
   case EDIFICIO_AYUNTAMIENTO:
-    e->ancho = 128; // Volver a 128 para coincidir con el tamaño de la imagen
-                    // del usuario
-    e->alto = 128;
-    e->sprite = g_spriteAyuntamiento;
+    // Castillos de 256x256 (4x4 celdas de 64px)
+    e->ancho = CASTILLO_SIZE;
+    e->alto = CASTILLO_SIZE;
+    // Sprite se asigna dinámicamente según estado de conquista en edificioDibujar
+    e->sprite = NULL;
     break;
   case EDIFICIO_MINA:
     e->ancho = 128;
@@ -34,9 +51,11 @@ void edificioInicializar(Edificio *e, TipoEdificio tipo, float x, float y) {
     e->sprite = g_spriteMina;
     break;
   case EDIFICIO_CUARTEL:
-    e->ancho = 128;
-    e->alto = 128;
-    e->sprite = g_spriteCuartel;
+    // Cuarteles de 256x256 (4x4 celdas de 64px)
+    e->ancho = CUARTEL_SIZE;
+    e->alto = CUARTEL_SIZE;
+    // Sprite se asigna dinámicamente según estado de conquista en edificioDibujar
+    e->sprite = NULL;
     break;
   case EDIFICIO_GRANJA:
     e->ancho = 128;
@@ -221,11 +240,95 @@ void edificiosCargarSprites() {
     MessageBoxA(GetActiveWindow(), errorMsg, "Aviso de Carga", MB_OK | MB_ICONWARNING);
   }
 
+  // ============================================================================
+  // CARGAR SPRITES DE CASTILLOS ALIADO Y ENEMIGO (256x256, 4x4 celdas)
+  // ============================================================================
+  const char *attemptsCastilloAliado[] = {
+      "\\assets\\castillo_aliado.bmp", "\\..\\assets\\castillo_aliado.bmp",
+      "\\castillo_aliado.bmp"};
 
+  g_spriteCastilloAliado = NULL;
+  for (int i = 0; i < 3; i++) {
+    sprintf(fullPath, "%s%s", pathExe, attemptsCastilloAliado[i]);
+    g_spriteCastilloAliado =
+        (HBITMAP)LoadImageA(NULL, fullPath, IMAGE_BITMAP, CASTILLO_SIZE, CASTILLO_SIZE,
+                            LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    if (g_spriteCastilloAliado) {
+      printf("[SISTEMA] Imagen castillo_aliado.bmp cargada con exito (256x256).\n");
+      break;
+    }
+  }
+
+  const char *attemptsCastilloEnemigo[] = {
+      "\\assets\\castillo_enemigo.bmp", "\\..\\assets\\castillo_enemigo.bmp",
+      "\\castillo_enemigo.bmp"};
+
+  g_spriteCastilloEnemigo = NULL;
+  for (int i = 0; i < 3; i++) {
+    sprintf(fullPath, "%s%s", pathExe, attemptsCastilloEnemigo[i]);
+    g_spriteCastilloEnemigo =
+        (HBITMAP)LoadImageA(NULL, fullPath, IMAGE_BITMAP, CASTILLO_SIZE, CASTILLO_SIZE,
+                            LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    if (g_spriteCastilloEnemigo) {
+      printf("[SISTEMA] Imagen castillo_enemigo.bmp cargada con exito (256x256).\n");
+      break;
+    }
+  }
+
+  // Verificar si se cargaron los castillos
+  if (!g_spriteCastilloAliado) {
+    printf("[ERROR] No se pudo cargar castillo_aliado.bmp\n");
+  }
+  if (!g_spriteCastilloEnemigo) {
+    printf("[ERROR] No se pudo cargar castillo_enemigo.bmp\n");
+  }
+
+  // ============================================================================
+  // CARGAR SPRITES DE CUARTELES ALIADO Y ENEMIGO (256x256, 4x4 celdas)
+  // ============================================================================
+  const char *attemptsCuartelAliado[] = {
+      "\\assets\\cuartel_aliado.bmp", "\\..\\assets\\cuartel_aliado.bmp",
+      "\\cuartel_aliado.bmp"};
+
+  g_spriteCuartelAliado = NULL;
+  for (int i = 0; i < 3; i++) {
+    sprintf(fullPath, "%s%s", pathExe, attemptsCuartelAliado[i]);
+    g_spriteCuartelAliado =
+        (HBITMAP)LoadImageA(NULL, fullPath, IMAGE_BITMAP, CUARTEL_SIZE, CUARTEL_SIZE,
+                            LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    if (g_spriteCuartelAliado) {
+      printf("[SISTEMA] Imagen cuartel_aliado.bmp cargada con exito (256x256).\n");
+      break;
+    }
+  }
+
+  const char *attemptsCuartelEnemigo[] = {
+      "\\assets\\cuartel_enemigo.bmp", "\\..\\assets\\cuartel_enemigo.bmp",
+      "\\cuartel_enemigo.bmp"};
+
+  g_spriteCuartelEnemigo = NULL;
+  for (int i = 0; i < 3; i++) {
+    sprintf(fullPath, "%s%s", pathExe, attemptsCuartelEnemigo[i]);
+    g_spriteCuartelEnemigo =
+        (HBITMAP)LoadImageA(NULL, fullPath, IMAGE_BITMAP, CUARTEL_SIZE, CUARTEL_SIZE,
+                            LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    if (g_spriteCuartelEnemigo) {
+      printf("[SISTEMA] Imagen cuartel_enemigo.bmp cargada con exito (256x256).\n");
+      break;
+    }
+  }
+
+  // Verificar si se cargaron los cuarteles
+  if (!g_spriteCuartelAliado) {
+    printf("[ERROR] No se pudo cargar cuartel_aliado.bmp\n");
+  }
+  if (!g_spriteCuartelEnemigo) {
+    printf("[ERROR] No se pudo cargar cuartel_enemigo.bmp\n");
+  }
 }
 
 void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
-                     float zoom, int anchoP, int altoP) {
+                     float zoom, int anchoP, int altoP, int islaActual) {
   if (!e->construido)
     return;
 
@@ -244,12 +347,48 @@ void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
   // SEGURIDAD: Si no tiene sprite asignado, intentar usar el global de carga
   HBITMAP spriteADibujar = e->sprite;
   if (!spriteADibujar) {
-    if (e->tipo == EDIFICIO_AYUNTAMIENTO)
-      spriteADibujar = g_spriteAyuntamiento;
+    if (e->tipo == EDIFICIO_AYUNTAMIENTO) {
+      // ================================================================
+      // SELECCIÓN DINÁMICA DE SPRITE SEGÚN ESTADO DE CONQUISTA
+      // ================================================================
+      // - Isla conquistada (incluyendo la inicial): castillo_aliado.bmp
+      // - Isla no conquistada (enemiga): castillo_enemigo.bmp
+      // ================================================================
+      // Usar el parámetro islaActual recibido
+      // Verificar si la isla está conquistada
+      bool esConquistada = navegacionIsIslaConquistada(islaActual);
+      
+      // Selector de sprite basado en estado de conquista
+      if (esConquistada && g_spriteCastilloAliado) {
+        spriteADibujar = g_spriteCastilloAliado;
+      } else if (!esConquistada && g_spriteCastilloEnemigo) {
+        spriteADibujar = g_spriteCastilloEnemigo;
+      } else {
+        // Fallback al sprite original si los nuevos no se cargaron
+        spriteADibujar = g_spriteAyuntamiento;
+      }
+    }
     else if (e->tipo == EDIFICIO_MINA)
       spriteADibujar = g_spriteMina;
-    else if (e->tipo == EDIFICIO_CUARTEL)
-      spriteADibujar = g_spriteCuartel;
+    else if (e->tipo == EDIFICIO_CUARTEL) {
+      // ================================================================
+      // SELECCIÓN DINÁMICA DE SPRITE SEGÚN ESTADO DE CONQUISTA
+      // ================================================================
+      // - Isla conquistada (incluyendo la inicial): cuartel_aliado.bmp
+      // - Isla no conquistada (enemiga): cuartel_enemigo.bmp
+      // ================================================================
+      bool esConquistada = navegacionIsIslaConquistada(islaActual);
+      
+      // Selector de sprite basado en estado de conquista
+      if (esConquistada && g_spriteCuartelAliado) {
+        spriteADibujar = g_spriteCuartelAliado;
+      } else if (!esConquistada && g_spriteCuartelEnemigo) {
+        spriteADibujar = g_spriteCuartelEnemigo;
+      } else {
+        // Fallback al sprite original si los nuevos no se cargaron
+        spriteADibujar = g_spriteCuartel;
+      }
+    }
   }
 
   // DIBUJAR SPRITE
@@ -323,5 +462,23 @@ void edificiosLiberarSprites() {
   if (g_spriteCuartel) {
     DeleteObject(g_spriteCuartel);
     g_spriteCuartel = NULL;
+  }
+  // Liberar sprites de castillos
+  if (g_spriteCastilloAliado) {
+    DeleteObject(g_spriteCastilloAliado);
+    g_spriteCastilloAliado = NULL;
+  }
+  if (g_spriteCastilloEnemigo) {
+    DeleteObject(g_spriteCastilloEnemigo);
+    g_spriteCastilloEnemigo = NULL;
+  }
+  // Liberar sprites de cuarteles
+  if (g_spriteCuartelAliado) {
+    DeleteObject(g_spriteCuartelAliado);
+    g_spriteCuartelAliado = NULL;
+  }
+  if (g_spriteCuartelEnemigo) {
+    DeleteObject(g_spriteCuartelEnemigo);
+    g_spriteCuartelEnemigo = NULL;
   }
 }

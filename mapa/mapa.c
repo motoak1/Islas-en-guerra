@@ -1294,27 +1294,69 @@ void mapaActualizarVacas(void) {
           continue;
         }
 
+        // ================================================================
+        // VALIDACIÓN COMPLETA DE TERRENO (evitar agua y edificios)
+        // ================================================================
+        // Usar mapaCeldaEsTierra() que verifica:
+        // 1. Límites de la matriz
+        // 2. gCollisionMap (0=libre, 1=agua/arbol, 2=edificio, 3=unidad)
+        // 3. mapaObjetos para símbolo de agua ('~')
+        // 4. Color del pixel del mapa (detección de agua por color azul)
+        // ================================================================
+        bool esTierraValida = mapaCeldaEsTierra(celdaY, celdaX);
+        
+        if (!esTierraValida) {
+          continue; // No es tierra válida (agua detectada), probar otra dirección
+        }
+
         // Verificar colision usando aritmetica de punteros
         int valorColision = *(*(gCollisionMap + celdaY) + celdaX);
 
-        // Verificar tambien en mapaObjetos que no haya objetos
-        char simboloDestino = mapaObjetos[celdaY][celdaX];
+        // Verificar en mapaObjetos usando aritmetica de punteros
+        char *ptrSimbolo = *(mapaObjetos + celdaY) + celdaX;
+        char simboloDestino = *ptrSimbolo;
 
         // ================================================================
-        // VERIFICACION DE BLOQUEO COMPLETA:
-        // - collisionMap: 0=libre, 1=agua/arbol, 2=edificio, 3=unidad
-        // - mapaObjetos: '.'=vacio, 'A'=arbol, 'E'=edificio, 'M'=mina,
-        //                'V'=vaca, 'O'/'C'/'G'=personajes
+        // VERIFICACION DE BLOQUEO POR SIMBOLOS:
+        // Lista completa de símbolos que bloquean el paso de vacas:
+        // - '~' = Agua (SIMBOLO_AGUA)
+        // - 'A' = Árbol (SIMBOLO_ARBOL)
+        // - 'E' = Edificio/Ayuntamiento (SIMBOLO_EDIFICIO)
+        // - 'M' = Mina (SIMBOLO_MINA)
+        // - 'Q' = Cuartel (SIMBOLO_CUARTEL)
+        // - 'B' = Barco (SIMBOLO_BARCO)
+        // - 'V' = Otra vaca (SIMBOLO_VACA)
+        // - 'O' = Obrero (SIMBOLO_OBRERO)
+        // - 'C' = Caballero (SIMBOLO_CABALLERO)
+        // - 'G' = Guerrero (SIMBOLO_GUERRERO)
+        // - 'X' = Enemigo (SIMBOLO_ENEMIGO)
         // ================================================================
-        // Solo moverse si AMBAS condiciones son true:
-        // 1. collisionMap == 0 (no hay agua, arbol, edificio ni unidad)
-        // 2. mapaObjetos esta vacio (no hay arbol, edificio, mina, vaca, etc)
-        // ================================================================
+        bool simboloBloqueante = (
+            simboloDestino == SIMBOLO_AGUA ||
+            simboloDestino == SIMBOLO_ARBOL ||
+            simboloDestino == SIMBOLO_EDIFICIO ||
+            simboloDestino == SIMBOLO_MINA ||
+            simboloDestino == SIMBOLO_CUARTEL ||
+            simboloDestino == SIMBOLO_BARCO ||
+            simboloDestino == SIMBOLO_VACA ||
+            simboloDestino == SIMBOLO_OBRERO ||
+            simboloDestino == SIMBOLO_CABALLERO ||
+            simboloDestino == SIMBOLO_GUERRERO ||
+            simboloDestino == SIMBOLO_ENEMIGO
+        );
+        
+        // Celda libre si no hay colisión en collisionMap Y no hay símbolo bloqueante
         bool colisionLibre = (valorColision == 0);
-        bool celdaVacia =
-            (simboloDestino == SIMBOLO_VACIO || simboloDestino == 0);
+        bool celdaVacia = (simboloDestino == SIMBOLO_VACIO || simboloDestino == 0);
+        bool destinoValido = colisionLibre && !simboloBloqueante;
 
-        if (colisionLibre && celdaVacia) {
+        // Si no es destino válido pero la celda parece vacía en mapaObjetos,
+        // verificar collisionMap como respaldo
+        if (!destinoValido && celdaVacia && colisionLibre) {
+          destinoValido = true;
+        }
+
+        if (destinoValido) {
           // Calcular celda actual de la vaca ANTES de moverse
           int viejaCeldaX = (int)(v->x / TILE_SIZE);
           int viejaCeldaY = (int)(v->y / TILE_SIZE);
@@ -1595,45 +1637,29 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
 
   // 1.5. DIBUJAR EDIFICIOS - antes del Y-sorting para que estén debajo de
   // unidades
+  // Se pasa pJugador->islaActual para determinar el sprite correcto del ayuntamiento
+  int islaActualParam = pJugador ? pJugador->islaActual : 1;
+  
   if (pJugador->ayuntamiento != NULL) {
     Edificio *edificio = (Edificio *)pJugador->ayuntamiento;
-    edificioDibujar(hdcBuffer, edificio, cam.x, cam.y, cam.zoom, anchoP, altoP);
+    edificioDibujar(hdcBuffer, edificio, cam.x, cam.y, cam.zoom, anchoP, altoP, islaActualParam);
   }
 
   // Dibujar mina
   if (pJugador->mina != NULL) {
     Edificio *edificioMina = (Edificio *)pJugador->mina;
     edificioDibujar(hdcBuffer, edificioMina, cam.x, cam.y, cam.zoom, anchoP,
-                    altoP);
+                    altoP, islaActualParam);
   }
 
   // Dibujar cuartel
   if (pJugador->cuartel != NULL) {
     Edificio *edificioCuartel = (Edificio *)pJugador->cuartel;
     edificioDibujar(hdcBuffer, edificioCuartel, cam.x, cam.y, cam.zoom, anchoP,
-                    altoP);
+                    altoP, islaActualParam);
   }
 
-  // Dibujar mina
-  if (pJugador->mina != NULL) {
-    Edificio *edificioMina = (Edificio *)pJugador->mina;
-    edificioDibujar(hdcBuffer, edificioMina, cam.x, cam.y, cam.zoom, anchoP,
-                    altoP);
-  }
-
-  // Dibujar cuartel
-  if (pJugador->cuartel != NULL) {
-    Edificio *edificioCuartel = (Edificio *)pJugador->cuartel;
-    edificioDibujar(hdcBuffer, edificioCuartel, cam.x, cam.y, cam.zoom, anchoP,
-                    altoP);
-  }
-
-  // Dibujar mina
-  if (pJugador->mina != NULL) {
-    Edificio *edificioMina = (Edificio *)pJugador->mina;
-    edificioDibujar(hdcBuffer, edificioMina, cam.x, cam.y, cam.zoom, anchoP,
-                    altoP);
-  }
+  // Nota: Eliminé código duplicado que dibujaba mina y cuartel múltiples veces
 
   HDC hdcSprites = CreateCompatibleDC(hdc);
 

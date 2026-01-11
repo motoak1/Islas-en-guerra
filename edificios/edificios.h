@@ -49,8 +49,9 @@ bool edificioContienePunto(const Edificio *e, float mundoX, float mundoY);
 void edificiosCargarSprites();
 
 // Dibuja un edificio en pantalla con la cámara especificada
+// islaActual: La isla donde está el jugador (1-3), usado para determinar sprite de ayuntamiento
 void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
-                     float zoom, int anchoP, int altoP);
+                     float zoom, int anchoP, int altoP, int islaActual);
 
 // Libera recursos gráficos de edificios
 void edificiosLiberarSprites();
@@ -59,5 +60,13 @@ void edificiosLiberarSprites();
 extern HBITMAP g_spriteAyuntamiento;
 extern HBITMAP g_spriteMina;
 extern HBITMAP g_spriteCuartel;
+
+// Sprites de castillos para islas (256x256, ocupan 4x4 celdas)
+extern HBITMAP g_spriteCastilloAliado;
+extern HBITMAP g_spriteCastilloEnemigo;
+
+// Sprites de cuarteles para islas (256x256, ocupan 4x4 celdas)
+extern HBITMAP g_spriteCuartelAliado;
+extern HBITMAP g_spriteCuartelEnemigo;
 
 #endif

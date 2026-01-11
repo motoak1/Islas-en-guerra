@@ -348,8 +348,8 @@ static void inicializarEstructurasIslaBase(struct Jugador *j,
   const float AYUNT_Y = 1024.0f - 64.0f;
   const float MINA_X = 1024.0f - 64.0f;
   const float MINA_Y = 450.0f;
-  const float CUAR_X = 1024.0f - 64.0f;
-  const float CUAR_Y = 1600.0f;
+  const float CUAR_X = 1024.0f - 200.0f;
+  const float CUAR_Y = 1350.0f;
 
   edificioInicializar(&estado->ayuntamiento, EDIFICIO_AYUNTAMIENTO, AYUNT_X,
                       AYUNT_Y);
@@ -514,6 +514,25 @@ static void restaurarEstadoIslaJugador(struct Jugador *j, int isla) {
   j->mina = estado->tieneMina ? &estado->mina : NULL;
   j->cuartel = estado->tieneCuartel ? &estado->cuartel : NULL;
 
+  // ============================================================================
+  // ACTUALIZAR DIMENSIONES DE EDIFICIOS A LAS NUEVAS (256x256)
+  // ============================================================================
+  // Esto corrige el problema de sprites viejos al regresar a una isla
+  // Los edificios guardados pueden tener dimensiones antiguas (128x128)
+  // ============================================================================
+  if (j->ayuntamiento) {
+    Edificio *ayunt = (Edificio *)j->ayuntamiento;
+    ayunt->ancho = 256;  // CASTILLO_SIZE
+    ayunt->alto = 256;
+    ayunt->sprite = NULL; // Forzar selección dinámica en edificioDibujar
+  }
+  if (j->cuartel) {
+    Edificio *cuar = (Edificio *)j->cuartel;
+    cuar->ancho = 256;  // CUARTEL_SIZE
+    cuar->alto = 256;
+    cuar->sprite = NULL; // Forzar selección dinámica en edificioDibujar
+  }
+
   // Restaurar unidades de esta isla
   for (int i = 0; i < 6; i++)
     j->obreros[i] = estado->obreros[i];
@@ -529,7 +548,7 @@ static void restaurarEstadoIslaJugador(struct Jugador *j, int isla) {
   } 
 
   printf("[DEBUG] Jugador: estado de isla %d restaurado (Recursos mantenidos "
-         "globales)\n",
+         "globales, dimensiones actualizadas)\n",
          isla);
 }
 

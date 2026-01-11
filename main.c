@@ -242,7 +242,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 
     // Inicializar cuartel en la parte inferior del mapa (lado opuesto a la
     // mina) Coordenadas: (960, 1600) - centrado horizontalmente, zona inferior
-    edificioInicializar(&cuartel, EDIFICIO_CUARTEL, 1024.0f - 64.0f, 1600.0f);
+    edificioInicializar(&cuartel, EDIFICIO_CUARTEL, 1024.0f - 100.0f, 1400.0f);
     jugador1.cuartel = &cuartel;
 
     // Marcar el cuartel en el mapa de colisiones
