@@ -16,6 +16,21 @@ static bool sHuboAliadoEnBatalla = false; // evita derrota falsa cuando no hay t
 static bool sMensajeVictoriaMostrado = false;
 static int sUltimoConteoEnemigos = -1;
 static int sIslaUltimoConteo = -1;
+
+void batallasReiniciarEstado(void) {
+	for (int i = 0; i < 8; i++) {
+		sPairEnemyToAlly[i] = -1;
+		sLastAttackMsEnemy[i] = 0;
+	}
+	for (int i = 0; i < 12; i++) {
+		sPairAllyToEnemy[i] = -1;
+		sLastAttackMsAlly[i] = 0;
+	}
+	sHuboAliadoEnBatalla = false;
+	sMensajeVictoriaMostrado = false;
+	sUltimoConteoEnemigos = -1;
+	sIslaUltimoConteo = -1;
+}
 // Garantiza que una unidad tenga stats básicos asignados
 static void asegurarStatsUnidad(Unidad *u) {
 	if (!u) return;

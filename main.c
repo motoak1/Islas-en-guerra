@@ -376,6 +376,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
       // Verificar si el usuario quiere volver al menú principal
       if (menuPausa.volverAlMenu) {
         // Cerrar la ventana de juego para volver al menú
+        batallasReiniciarEstado();
         DestroyWindow(hwnd);
       }
       InvalidateRect(hwnd, NULL, FALSE);

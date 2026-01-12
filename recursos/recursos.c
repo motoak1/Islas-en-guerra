@@ -1236,6 +1236,9 @@ bool entrenarObrero(struct Jugador *j, float x, float y) {
       j->obreros[i].vidaMax = OBRERO_VIDA_MAX;
       j->obreros[i].vida = OBRERO_VIDA_MAX;
       j->obreros[i].recibiendoAtaque = false;
+      // Guardado: mantener en cero los campos de muerte para que el snapshot los trate como vivos
+      j->obreros[i].tiempoMuerteMs = 0;
+      j->obreros[i].frameMuerte = 0;
 
       printf("[CUARTEL] Nuevo obrero entrenado en posición (%.1f, %.1f)\n",
              j->obreros[i].x, j->obreros[i].y);
@@ -1330,6 +1333,9 @@ bool entrenarCaballero(struct Jugador *j, float x, float y) {
       j->caballeros[i].vidaMax = CABALLERO_VIDA;
       j->caballeros[i].vida = CABALLERO_VIDA;
       j->caballeros[i].recibiendoAtaque = false;
+      // Guardado: limpiar estado de muerte heredado de slots reutilizados
+      j->caballeros[i].tiempoMuerteMs = 0;
+      j->caballeros[i].frameMuerte = 0;
 
       printf("[CUARTEL] Nuevo caballero entrenado en posición (%.1f, %.1f)\n",
              j->caballeros[i].x, j->caballeros[i].y);
@@ -1430,6 +1436,9 @@ bool entrenarGuerrero(struct Jugador *j, float x, float y) {
       j->guerreros[i].defensa = 20;
       j->guerreros[i].alcance = 64; // Melee (1 tile)
       j->guerreros[i].recibiendoAtaque = false;
+      // Guardado: igualar estado de muerte para nuevas tropas
+      j->guerreros[i].tiempoMuerteMs = 0;
+      j->guerreros[i].frameMuerte = 0;
 
       printf("[CUARTEL] Nuevo guerrero entrenado en posición (%.1f, %.1f)\n",
              j->guerreros[i].x, j->guerreros[i].y);
@@ -2066,6 +2075,10 @@ bool entrenarCaballeroSinEscudo(struct Jugador *j, float x, float y) {
       j->caballerosSinEscudo[i].critico = CABALLERO_SIN_ESCUDO_CRITICO;
       j->caballerosSinEscudo[i].defensa = CABALLERO_SIN_ESCUDO_DEFENSA;
       j->caballerosSinEscudo[i].alcance = 64; // Cuerpo a cuerpo
+      j->caballerosSinEscudo[i].recibiendoAtaque = false;
+      // Guardado: asegurar que nuevas unidades reporten estado vivo
+      j->caballerosSinEscudo[i].tiempoMuerteMs = 0;
+      j->caballerosSinEscudo[i].frameMuerte = 0;
 
       printf("[CUARTEL] Nuevo caballero sin escudo entrenado en posición "
              "(%.1f, %.1f)\n",

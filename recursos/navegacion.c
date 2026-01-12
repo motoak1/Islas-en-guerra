@@ -816,6 +816,16 @@ static void guardarEstadoIslaJugador(struct Jugador *j) {
   printf("[DEBUG] Jugador: estado de isla %d guardado\n", isla);
 }
 
+void navegacionSincronizarIslaActual(struct Jugador *j) {
+  if (!j)
+    return;
+  // Guardado: snapshot temporal antes de exportar estadosIsla
+  guardarEstadoIslaJugador(j);
+  if (j->islaActual >= 1 && j->islaActual <= 3)
+    // Guardado: persistir mapa/objetos de la isla activa
+    mapaGuardarEstadoIsla(j->islaActual);
+}
+
 // Restaura recursos y edificios del jugador al cambiar a otra isla
 static void restaurarEstadoIslaJugador(struct Jugador *j, int isla) {
   if (isla < 1 || isla > 3)
