@@ -8,6 +8,8 @@
 #include <string.h>
 #include <windows.h>
 
+enum { MAX_TROPAS_DESEMBARCO = 15 };
+
 // Estado persistente por isla (1..3)
 typedef struct {
   bool inicializado;
@@ -747,6 +749,36 @@ static void vaciarUnidades(struct Jugador *j) {
   }
 }
 
+// BATALLAS: Mantiene sincronizada la ocupación de la celda para evitar superposiciones
+static void actualizarOcupacionDesembarco(Unidad *tropa, int celdaFila,
+                                          int celdaCol, int **collision) {
+  if (!tropa)
+    return;
+
+  int filaAnterior = tropa->celdaFila;
+  int colAnterior = tropa->celdaCol;
+  bool tieneAnterior = filaAnterior >= 0 && filaAnterior < GRID_SIZE &&
+                       colAnterior >= 0 && colAnterior < GRID_SIZE;
+
+  if (collision && tieneAnterior) {
+    int *filaPtr = *(collision + filaAnterior);
+    if (*(filaPtr + colAnterior) == 3)
+      *(filaPtr + colAnterior) = 0;
+  }
+
+  tropa->celdaFila = celdaFila;
+  tropa->celdaCol = celdaCol;
+
+  if (!collision)
+    return;
+
+  if (celdaFila >= 0 && celdaFila < GRID_SIZE && celdaCol >= 0 &&
+      celdaCol < GRID_SIZE) {
+    int *filaPtr = *(collision + celdaFila);
+    *(filaPtr + celdaCol) = 3; // 3 = ocupado temporalmente por unidad
+  }
+}
+
 // Desembarca tropas juntas cerca del centro de la isla
 static void desembarcarTropasEnCentro(Barco *barco, struct Jugador *j) {
   int baseCeldaX = GRID_SIZE / 2;
@@ -889,6 +921,11 @@ bool barcoContienePunto(Barco *barco, float mundoX, float mundoY) {
 void desembarcarTropas(Barco *barco, struct Jugador *j) {
   printf("[DEBUG] Desembarcando %d tropas...\n", barco->numTropas);
 
+  if (barco->numTropas > MAX_TROPAS_DESEMBARCO) {
+    printf("[WARNING] El barco reporta %d tropas, excediendo el maximo de %d; se limitaran durante el desembarco\n",
+           barco->numTropas, MAX_TROPAS_DESEMBARCO);
+  }
+
   // CRÍTICO: Buscar punto de tierra más cercano al barco
   // El barco está en agua, necesitamos encontrar la tierra adyacente
 
@@ -940,7 +977,8 @@ void desembarcarTropas(Barco *barco, struct Jugador *j) {
   // Usar un buffer de celdas usadas cuyo tamaño se adapta a la cantidad real
   int maxColocables = barco->numTropas;
   if (maxColocables < 0) maxColocables = 0;
-  if (maxColocables > 15) maxColocables = 15; // seguridad absoluta
+  if (maxColocables > MAX_TROPAS_DESEMBARCO)
+    maxColocables = MAX_TROPAS_DESEMBARCO; // seguridad absoluta
   int colocadas = 0;
   int (*usados)[2] = NULL;
   if (maxColocables > 0) {
@@ -990,7 +1028,10 @@ void desembarcarTropas(Barco *barco, struct Jugador *j) {
           tropa->destinoX = tropa->x;
           tropa->destinoY = tropa->y;
           tropa->moviendose = false;
+          tropa->objetivoFila = cy;
+          tropa->objetivoCol = cx;
           tropa->seleccionado = true; // mostrar círculo al llegar a la isla
+          actualizarOcupacionDesembarco(tropa, cy, cx, col);
 
           if (usados && colocadas < maxColocables) {
             usados[colocadas][0] = cx;
