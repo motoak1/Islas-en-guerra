@@ -1,4 +1,5 @@
 // batallas/batallas.c
+#define _WIN32_WINNT 0x0600
 #include "batallas.h"
 #include "../recursos/navegacion.h"
 #include "../mapa/mapa.h"

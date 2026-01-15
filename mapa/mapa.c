@@ -8,6 +8,7 @@
 #include "../recursos/ui_compra.h"
 #include "../recursos/ui_embarque.h"
 #include "../recursos/ui_entrena.h"
+#include "menu.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

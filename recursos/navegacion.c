@@ -1,3 +1,4 @@
+#define _WIN32_WINNT 0x0600
 #include "navegacion.h"
 #include "../edificios/edificios.h"
 #include "../mapa/mapa.h"

@@ -1095,6 +1095,15 @@ void rtsComandarMovimiento(struct Jugador *j, float mundoX, float mundoY) {
   // --- COMANDAR GUERREROS ---
   for (int i = 0; i < MAX_GUERREROS; i++) {
     Unidad *u = &j->guerreros[i];
+    if (u->seleccionado && u->x >= 0 && u->vida > 0) {
+      // Buscar destino libre
+      int destinoF = gF;
+      int destinoC = gC;
+
+      if (CELDA_YA_ASIGNADA(destinoF, destinoC) ||
+          (*(*(col + destinoF) + destinoC) == 3)) {
+        bool encontrado = false;
+        for (int r = 1; r <= 3 && !encontrado; r++) {
           for (int dy = -r; dy <= r && !encontrado; dy++) {
             for (int dx = -r; dx <= r && !encontrado; dx++) {
               int nf = gF + dy;

@@ -1,6 +1,7 @@
 // guardado/guardado.c
 // Implementación del sistema de guardado en archivos binarios
 // Guardado único por nombre de jugador - Sin parpadeo
+#define _WIN32_WINNT 0x0600
 #include "guardado.h"
 #include "../mapa/mapa.h"
 #include "../recursos/recursos.h"
@@ -9,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <windows.h>
 
 
 // ============================================================================
