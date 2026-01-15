@@ -127,15 +127,16 @@ static bool unidadBarraVisible(Unidad *u) {
 #define OBRERO_L_ALT "assets/obrero/obrero_left.bmp"
 #define OBRERO_R_ALT "assets/obrero/obrero_right.bmp"
 
-#define BARCO_F_ALT "../assets/barco/barco_front.bmp"
-#define BARCO_B_ALT "../assets/barco/barco_back.bmp"
-#define BARCO_L_ALT "../assets/barco/barco_left.bmp"
-#define BARCO_R_ALT "../assets/barco/barco_right.bmp"
+#define BARCO_F "../assets/barco/barco_front.bmp"
+#define BARCO_B "../assets/barco/barco_back.bmp"
+#define BARCO_L "../assets/barco/barco_left.bmp"
+#define BARCO_R "../assets/barco/barco_right.bmp"
 
-#define BARCO_F_ALT "../assets/barco/barco_front.bmp"
-#define BARCO_B_ALT "../assets/barco/barco_back.bmp"
-#define BARCO_L_ALT "../assets/barco/barco_left.bmp"
-#define BARCO_R_ALT "../assets/barco/barco_right.bmp"
+#define BARCO_F_ALT "assets/barco/barco_front.bmp"
+#define BARCO_B_ALT "assets/barco/barco_back.bmp"
+#define BARCO_L_ALT "assets/barco/barco_left.bmp"
+#define BARCO_R_ALT "assets/barco/barco_right.bmp"
+
 #define BARCO_DESTRUIDO "../assets/barco/barco_destruido.bmp"
 #define BARCO_DESTRUIDO_ALT "assets/barco/barco_destruido.bmp"
 
@@ -168,6 +169,13 @@ static char gMapaObjetosIsla[4][GRID_SIZE][GRID_SIZE];
 static int gCollisionIsla[4][GRID_SIZE][GRID_SIZE];
 static Vaca gVacasIsla[4][10];
 static int gNumVacasIsla[4] = {0};
+
+// --- VIDA DE ARBOLES (NUEVO) ---
+// Matriz paralela para almacenar la vida de cada árbol (3 = full, 2, 1, 0)
+// Inicialmente 0. Se pone a 3 cuando se genera un árbol.
+static int gArbolesVida[GRID_SIZE][GRID_SIZE] = {0};
+static int gArbolesVidaIsla[4][GRID_SIZE][GRID_SIZE]; // Persistencia por isla
+
 
 static void detectarAguaEnMapa(void);
 void mapaMarcarArea(int f_inicio, int c_inicio, int ancho_celdas,
@@ -441,6 +449,7 @@ void mapaGuardarEstadoIsla(int isla) {
   for (int f = 0; f < GRID_SIZE; f++) {
     for (int c = 0; c < GRID_SIZE; c++) {
       gMapaObjetosIsla[isla][f][c] = mapaObjetos[f][c];
+      gArbolesVidaIsla[isla][f][c] = gArbolesVida[f][c]; // Copiar vida arboles
     }
   }
 
@@ -472,6 +481,7 @@ void mapaRestaurarEstadoIsla(int isla) {
   for (int f = 0; f < GRID_SIZE; f++) {
     for (int c = 0; c < GRID_SIZE; c++) {
       mapaObjetos[f][c] = gMapaObjetosIsla[isla][f][c];
+      gArbolesVida[f][c] = gArbolesVidaIsla[isla][f][c]; // Restaurar vida arboles
     }
   }
 
@@ -954,8 +964,8 @@ void generarBosqueAutomatico() {
   printf("[DEBUG] Edificios y perímetros de seguridad reservados en "
          "mapaObjetos.\n");
 
-  // REQUISITO CRÍTICO: Colocar exactamente 20 árboles (no por probabilidad)
-  const int NUM_ARBOLES_EXACTO = 20;
+  // REQUISITO CRÍTICO: Colocar exactamente 15 árboles (no por probabilidad)
+  const int NUM_ARBOLES_EXACTO = 15;
   int contador = 0;
 
   // Bucle while que continúa hasta colocar exactamente 40 árboles
@@ -988,9 +998,17 @@ void generarBosqueAutomatico() {
     // Verificar que el suelo sea verde (tierra válida para árbol)
     // Solo colocar en tierra (verde domina), no en agua (azul domina)
     // CRITERIO MÁS ESTRICTO: verde debe dominar claramente y azul debe ser bajo
-    if (!esAgua && g > r && g > b && g > 70 && b < 80 && r < 100) {
+    // Verificar que el suelo sea verde (tierra válida para árbol)
+    // CRITERIO FLEXIBILIZADO: Permitir más variaciones de verde/tierra
+    // para asegurar que siempre encontremos 15 lugares
+    bool esVerde = (g > r && g > b); 
+    bool noEsMuyAzul = (b < 150);
+    
+    if (!esAgua && esVerde && noEsMuyAzul) {
       // Colocar árbol usando aritmética de punteros y símbolo de caracter
       *(*(ptrMatriz + fila) + col) = SIMBOLO_ARBOL;
+      // Inicializar vida del árbol (3 golpes)
+      gArbolesVida[fila][col] = 3;
       contador++;
     }
   }
@@ -1261,9 +1279,7 @@ void cargarRecursosGraficos() {
       hCaballeroSEStand[i] = (HBITMAP)LoadImageA(NULL, cseStandLRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
   }
 
-  // --- CARGAR SPRITES DE BARCO (192x192) ---
-  const char *rutasBarcoAlt[] = {BARCO_F_ALT, BARCO_B_ALT, BARCO_L_ALT,
-                                 BARCO_R_ALT};
+
 
   // Ataque caballero (left/right, 3 frames)
   const char *cabAtkL[3] = {
@@ -1349,12 +1365,23 @@ void cargarRecursosGraficos() {
           NULL, gueAtkRAlt[i], IMAGE_BITMAP, 64, 64, LR_LOADFROMFILE);
   }
 
+  // --- CARGAR SPRITES DE BARCO (192x192) ---
+  const char *rutasBarco[] = {BARCO_F, BARCO_B, BARCO_L, BARCO_R};
+  const char *rutasBarcoAlt[] = {BARCO_F_ALT, BARCO_B_ALT, BARCO_L_ALT, BARCO_R_ALT};
+
   for (int i = 0; i < 4; i++) {
-    hBarcoBmp[i] = (HBITMAP)LoadImageA(NULL, rutasBarcoAlt[i], IMAGE_BITMAP,
+    // Intento 1: Ruta principal (../assets)
+    hBarcoBmp[i] = (HBITMAP)LoadImageA(NULL, rutasBarco[i], IMAGE_BITMAP,
                                        192, 192, LR_LOADFROMFILE);
+    
+    // Intento 2: Ruta alterna (assets/)
+    if (!hBarcoBmp[i]) {
+        hBarcoBmp[i] = (HBITMAP)LoadImageA(NULL, rutasBarcoAlt[i], IMAGE_BITMAP,
+                                       192, 192, LR_LOADFROMFILE);
+    }
 
     if (!hBarcoBmp[i]) {
-      printf("[ERROR] No se pudo cargar barco[%d]\n", i);
+      printf("[ERROR] No se pudo cargar barco[%d] (ni '%s' ni '%s')\n", i, rutasBarco[i], rutasBarcoAlt[i]);
     } else {
       printf("[OK] Barco BMP %d cargado correctamente (192x192).\n", i);
     }
@@ -1921,6 +1948,24 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
           SelectObject(hdcSprites, hArboles[0]);
           TransparentBlt(hdcBuffer, pantX, pantY, tamZoom, tamZoom, hdcSprites,
                          0, 0, SPRITE_ARBOL, SPRITE_ARBOL, RGB(255, 255, 255));
+          
+          // DIBUJAR BARRA DE VIDA DEL ARBOL
+          // Vida maxima 3, actual gArbolesVida[f][c]
+          int vidaActual = gArbolesVida[f][c];
+          if (vidaActual > 0 && vidaActual < 3) { // Solo mostrar si esta dañado (opcional, o siempre)
+             // El usuario pidio "encima de cada arbol este una barra de vida"
+             // Asi que la mostramos siempre o solo al dañarse?
+             // "encima de cada arbol este una barra de vida" -> Siempre o casi siempre.
+             // Mostremosla siempre para cumplir literal, o mejor:
+             // Estilo simple: verde/rojo. 
+             // Ajuste de centrado: (128 - 64) / 2 = 32px de offset
+             int offsetX = (int)(32 * cam.zoom);
+             dibujarBarraVida(hdcBuffer, pantX + offsetX, pantY - 10, vidaActual, 3, cam.zoom);
+          } else if (vidaActual == 3) {
+             // Mostrar tambien full vida si se pide "encima de cada arbol"
+             int offsetX = (int)(32 * cam.zoom);
+             dibujarBarraVida(hdcBuffer, pantX + offsetX, pantY - 10, 3, 3, cam.zoom);
+          }
         }
       }
     }
@@ -2105,6 +2150,14 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
       // El barco es 192px de alto, por lo que su base está en y + 192
       float basePies = b->y + 192.0f;
 
+      // Debug temporal cada 60 frames aprox para no spamear
+      static int debugFrame = 0;
+      debugFrame++;
+      if (debugFrame % 300 == 0 && b->construido) {
+           printf("[RENDER BARCO] Pos(%.1f, %.1f) BasePies: %.1f FilaActual: %d-%d\n", 
+                  b->x, b->y, basePies, yMinFila, yMaxFila);
+      }
+
       if (basePies >= (float)yMinFila && basePies < (float)yMaxFila) {
         int pantX = (int)((b->x - cam.x) * cam.zoom);
         int pantY = (int)((b->y - cam.y) * cam.zoom);
@@ -2114,12 +2167,18 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
             pantY < altoP) {
           // Seleccionar sprite: destruido o construido según estado
           if (b->construido) {
-            SelectObject(hdcSprites, hBarcoBmp[b->dir]);
+            HBITMAP sprite = hBarcoBmp[b->dir];
+            if (!sprite) {
+                 printf("[ERROR RENDER] Sprite de barco NULL para dir %d\n", b->dir);
+                 sprite = hBarcoBmp[0]; // Fallback
+            }
+            SelectObject(hdcSprites, sprite);
           } else {
             SelectObject(hdcSprites, hBarcoDestruidoBmp);
           }
-          TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
+          BOOL res = TransparentBlt(hdcBuffer, pantX, pantY, tam, tam, hdcSprites, 0, 0,
                          192, 192, RGB(255, 255, 255));
+          if (!res) printf("[ERROR RENDER] Fallo TransparentBlt barco\n");
         }
       }
     }
@@ -2479,9 +2538,14 @@ void mapaActualizarArboles(void) {
   frameCounter = 0;
 
   int totalArboles = mapaContarArboles();
-  // Si hay menos de 20 árboles, regenerar
+  // REQUISITO: Eliminar regeneración de árboles. Son recursos finitos.
+  // Si se acaban, no vuelven a aparecer.
+  return;
+
+  /* Lógica anterior de regeneración deshabilitada
   if (totalArboles >= 20)
     return;
+  */
 
   if (!hMapaBmp)
       return;
@@ -2543,4 +2607,22 @@ void mapaActualizarArboles(void) {
   SelectObject(hdcMem, hOldBmp);
   DeleteDC(hdcMem);
   ReleaseDC(NULL, hdcPantalla);
+}
+
+// Retorna true si el arbol fue destruido
+bool mapaGolpearArbol(int f, int c) {
+    if (f < 0 || f >= GRID_SIZE || c < 0 || c >= GRID_SIZE) return false;
+    
+    if (mapaObjetos[f][c] == SIMBOLO_ARBOL) {
+        if (gArbolesVida[f][c] > 0) {
+            gArbolesVida[f][c]--;
+        }
+        
+        if (gArbolesVida[f][c] <= 0) {
+            mapaEliminarObjeto(f, c);
+            gArbolesVida[f][c] = 0;
+            return true; // Destruido
+        }
+    }
+    return false; // No destruido aun
 }

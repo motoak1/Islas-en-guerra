@@ -1668,18 +1668,23 @@ bool recursosIntentarTalar(struct Jugador *j, float mundoX, float mundoY) {
 
     // Permitir talar si hay un OBRERO o GUERRERO cerca
     if (taladorCercano != NULL) {
-      // 3. Confirmación del usuario
-      int respuesta =
-          MessageBox(GetActiveWindow(), "Quieres talar este arbol y obtener madera?",
-                     "Talar Arbol", MB_YESNO | MB_ICONQUESTION);
-
-      if (respuesta == IDYES) {
-        // ... ejecutar accion ...
-        mapaEliminarObjeto(fArbol, cArbol);
-        j->Madera += 50;
-        // Se elimina el MessageBox de exito por solicitud del usuario
-      }
-      return true; // Accion manejada (confirmada o cancelada)
+        // --- NUEVA LÓGICA: GOLPEAR ÁRBOL ---
+        // Se elimina el MessageBox. Cada click resta 1 vida. 
+        // Al 3er golpe (vida=0) se destruye y da madera.
+        
+        // Declaracion extern para la funcion en mapa.c
+        extern bool mapaGolpearArbol(int f, int c);
+        
+        if (mapaGolpearArbol(fArbol, cArbol)) {
+            // Árbol destruido (el último golpe)
+            j->Madera += 50;
+            printf("[RECURSOS] Arbol talado! +50 Madera. Total: %d\n", j->Madera);
+        } else {
+            // Golpe dado pero no destruido
+            printf("[RECURSOS] Arbol golpeado. Vida restante...\n");
+        }
+        
+        return true; // Click manejado
     }
 
     // Si no hay obrero cerca, mandamos caminar al CENTRO del arbol
@@ -1873,14 +1878,14 @@ void panelRecursosDibujar(HDC hdcBuffer, struct Jugador *j, int anchoPantalla) {
   TextOutA(hdcBuffer, panelX + 18, yPos, buffer, strlen(buffer));
   yPos += ESPACIADO_LINEA;
 
-  // Madera (marrón claro/arena)
-  SetTextColor(hdcBuffer, RGB(230, 180, 100));
+  // Madera (verde trigo/hierba - INVERTIDO)
+  SetTextColor(hdcBuffer, RGB(150, 220, 100));
   sprintf(buffer, "Madera:    %d", j->Madera);
   TextOutA(hdcBuffer, panelX + 18, yPos, buffer, strlen(buffer));
   yPos += ESPACIADO_LINEA;
 
-  // Comida (verde trigo/hierba) - Reordenado para agrupar recursos
-  SetTextColor(hdcBuffer, RGB(150, 220, 100));
+  // Comida (marrón claro/arena - INVERTIDO)
+  SetTextColor(hdcBuffer, RGB(230, 180, 100));
   sprintf(buffer, "Comida:    %d", j->Comida);
   TextOutA(hdcBuffer, panelX + 18, yPos, buffer, strlen(buffer));
   yPos += ESPACIADO_LINEA;
@@ -2194,8 +2199,45 @@ bool construirBarco(struct Jugador *j) {
 
   // Marcar como construido
   j->barco.construido = true;
+  j->barco.activo = true;
 
-  printf("[CONSTRUIR BARCO] ¡Barco construido! Ahora puede usarse para navegar.\n");
+  // LÓGICA DE ACTIVACIÓN / REPARACIÓN:
+  // Si el barco ya tiene una posición válida (reparación), NO moverlo.
+  // Solo buscar orilla si es la primera construcción (x=0, y=0).
+  if (j->barco.x > 64.0f && j->barco.y > 64.0f) {
+      printf("[CONSTRUIR BARCO] Reparando barco en posición existente: (%.1f, %.1f)\n", 
+             j->barco.x, j->barco.y);
+      return true;
+  }
+
+  // Si no tiene posición, buscar orilla
+  // Asegurar que el mapa de colisiones esté limpio y actualizado (con agua detectada)
+  mapaReconstruirCollisionMap();
+
+  int dir = 0;
+  float oldX = j->barco.x;
+  float oldY = j->barco.y;
+  
+  mapaDetectarOrilla(&j->barco.x, &j->barco.y, &dir);
+  
+  // Si retorno coordenadas de error (1000,1000), intentar usar la posicion anterior si era valida
+  if (j->barco.x == 1000.0f && j->barco.y == 1000.0f) {
+      if (oldX > 64.0f || oldY > 64.0f) {
+           j->barco.x = oldX;
+           j->barco.y = oldY;
+           printf("[CONSTRUIR BARCO] Fallo deteccion, manteniendo posicion: (%.1f, %.1f)\n", oldX, oldY);
+      } else {
+           // Fallback extremo: Posición 100,100 (probable agua)
+           j->barco.x = 100.0f;
+           j->barco.y = 100.0f;
+           printf("[CONSTRUIR BARCO] Fallo deteccion total, usando fallback 100,100\n");
+      }
+  }
+
+  j->barco.dir = (Direccion)dir;
+
+  printf("[CONSTRUIR BARCO] ¡Barco construido! Posición: (%.1f, %.1f), Dir: %d\n", 
+         j->barco.x, j->barco.y, dir);
 
   return true;
 }
