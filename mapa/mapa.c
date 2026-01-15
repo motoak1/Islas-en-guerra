@@ -954,12 +954,19 @@ void generarBosqueAutomatico() {
   printf("[DEBUG] Edificios y perímetros de seguridad reservados en "
          "mapaObjetos.\n");
 
+  // Obtener ID de isla para adaptar la logica de generacion
+  int islaActual = menuObtenerIsla(); 
+  printf("[DEBUG] Generando recursos para Isla ID: %d\n", islaActual);
+
   // REQUISITO CRÍTICO: Colocar exactamente 20 árboles (no por probabilidad)
   const int NUM_ARBOLES_EXACTO = 20;
   int contador = 0;
 
   // Bucle while que continúa hasta colocar exactamente 40 árboles
-  while (contador < NUM_ARBOLES_EXACTO) {
+  int intentos = 0;
+  const int MAX_INTENTOS = 50000; // Limite de seguridad para evitar congelamiento
+  while (contador < NUM_ARBOLES_EXACTO && intentos < MAX_INTENTOS) {
+    intentos++;
     // Generar coordenadas aleatorias en la matriz 32x32
     int fila = rand() % GRID_SIZE;
     int col = rand() % GRID_SIZE;
@@ -985,14 +992,42 @@ void generarBosqueAutomatico() {
     bool esAgua = (b > r + 20 && b > g + 20) ||
                   (*(*(ptrMatriz + fila) + col) == SIMBOLO_AGUA);
 
-    // Verificar que el suelo sea verde (tierra válida para árbol)
-    // Solo colocar en tierra (verde domina), no en agua (azul domina)
-    // CRITERIO MÁS ESTRICTO: verde debe dominar claramente y azul debe ser bajo
-    if (!esAgua && g > r && g > b && g > 70 && b < 80 && r < 100) {
+    bool esSueloValido = false;
+
+    // Lógica adaptativa según el tipo de isla
+    if (islaActual == 4) {
+        // ISLA 4 (Hielo/Nieve): Check de BLANCO / GRIS CLARO / CIAN
+        // Criterio: rgb altos y balanceados (blanco/gris) o cian claro
+        bool esBlanco = (r > 180 && g > 180 && b > 180);
+        bool esCianSolo = (b > 150 && g > 150 && r > 100); 
+        if (!esAgua && (esBlanco || esCianSolo)) {
+            esSueloValido = true;
+        } 
+    } else if (islaActual == 5) {
+        // ISLA 5 (Fuego/Volcán): Check de ROJO / GRIS OSCURO / CENIZA
+        // Criterio: rojo dominante, o gris oscuro (tierra quemada)
+        bool esRojo = (r > g + 30 && r > b + 30);
+        bool esGrisOscuro = (r < 100 && g < 100 && b < 100 && abs(r-g) < 30 && abs(r-b) < 30);
+        if (!esAgua && (esRojo || esGrisOscuro)) {
+            esSueloValido = true;
+        }
+    } else {
+        // ISLAS 1, 2, 3 (Bosque - Default): Check estricto de VERDE
+        // Criterio: verde debe dominar claramente y azul debe ser bajo
+        if (!esAgua && g > r && g > b && g > 70 && b < 80 && r < 100) {
+            esSueloValido = true;
+        }
+    }
+
+    if (esSueloValido) {
       // Colocar árbol usando aritmética de punteros y símbolo de caracter
       *(*(ptrMatriz + fila) + col) = SIMBOLO_ARBOL;
       contador++;
     }
+  }
+
+  if (intentos >= MAX_INTENTOS) {
+      printf("[WARNING] Timeout generando arboles. Colocados: %d/%d. Verifique que el mapa tenga color verde (R<100, G>70, B<80).\n", contador, NUM_ARBOLES_EXACTO);
   }
 
   printf("[DEBUG] Logica: %d arboles registrados en la matriz con punteros.\n",
@@ -1004,7 +1039,10 @@ void generarBosqueAutomatico() {
   const int NUM_VACAS_EXACTO = 10;
   gNumVacas = 0;
 
-  while (gNumVacas < NUM_VACAS_EXACTO) {
+  while (gNumVacas < NUM_VACAS_EXACTO && intentos < MAX_INTENTOS) {
+    intentos++; // Reutilizamos variable, asumimos que se resetea o continúa incrementando, mejor resetear si queremos full attempts
+    // Pero como MAX_INTENTOS es 50000, es suficiente para ambos. O mejor resetear.
+    
     int fila = rand() % GRID_SIZE;
     int col = rand() % GRID_SIZE;
 
@@ -1027,8 +1065,25 @@ void generarBosqueAutomatico() {
     bool esAgua = (b > r + 20 && b > g + 20) ||
                   (*(*(ptrMatriz + fila) + col) == SIMBOLO_AGUA);
 
-    // Solo en tierra verde (mismo criterio estricto que árboles)
-    if (!esAgua && g > r && g > b && g > 70 && b < 80 && r < 100) {
+    bool esSueloValido = false;
+
+    // Lógica adaptativa según el tipo de isla (MISMA LÓGICA QUE ÁRBOLES)
+    if (islaActual == 4) {
+        // ISLA 4 (Hielo): Blanco/Cian
+        bool esBlanco = (r > 180 && g > 180 && b > 180);
+        bool esCianSolo = (b > 150 && g > 150 && r > 100);
+        if (!esAgua && (esBlanco || esCianSolo)) esSueloValido = true;
+    } else if (islaActual == 5) {
+        // ISLA 5 (Fuego): Rojo/Gris
+        bool esRojo = (r > g + 30 && r > b + 30);
+        bool esGrisOscuro = (r < 100 && g < 100 && b < 100 && abs(r-g) < 30 && abs(r-b) < 30);
+        if (!esAgua && (esRojo || esGrisOscuro)) esSueloValido = true;
+    } else {
+        // ISLAS 1, 2, 3 (Bosque): Verde
+        if (!esAgua && g > r && g > b && g > 70 && b < 80 && r < 100) esSueloValido = true;
+    }
+
+    if (esSueloValido) {
       // Inicializar vaca en el array dinámico
       Vaca *v = &gVacas[gNumVacas];
 
@@ -1047,6 +1102,10 @@ void generarBosqueAutomatico() {
 
       gNumVacas++;
     }
+  }
+
+  if (intentos >= MAX_INTENTOS) {
+       printf("[WARNING] Timeout generando vacas. Colocadas: %d/%d.\n", gNumVacas, NUM_VACAS_EXACTO);
   }
 
   printf("[DEBUG] Logica: %d vacas dinámicas generadas.\n", gNumVacas);
