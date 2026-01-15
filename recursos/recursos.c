@@ -96,6 +96,8 @@ static void obreroLiberarRuta(Unidad *o) {
   o->rutaIdx = 0;
 }
 
+static void sincronizarIslasConquistadas(struct Jugador *j);
+
 // ============================================================================
 // PATHFINDING BFS - RUTA MÁS CORTA GARANTIZADA
 // ============================================================================
@@ -792,6 +794,8 @@ void actualizarPersonajes(struct Jugador *j) {
       mapaMoverObjeto(viejoX, viejoY, u->x, u->y, SIMBOLO_GUERRERO);
     }
   }
+
+  sincronizarIslasConquistadas(j);
 }
 // ============================================================================
 // COMANDAR MOVIMIENTO RTS CON SEPARACIÓN DE UNIDADES
@@ -1142,19 +1146,6 @@ void rtsComandarMovimiento(struct Jugador *j, float mundoX, float mundoY) {
 
 #undef CELDA_YA_ASIGNADA
 
-  // --- NUEVA LÓGICA DE CONQUISTA: Verificar si la isla actual está limpia ---
-  // Solo verificar si estamos en una isla válida (1-5) y no ha sido conquistada aun
-  if (j->islaActual >= 1 && j->islaActual <= 5 && !j->islasConquistadas[j->islaActual]) {
-      int enemCount = 0;
-      // navegacionObtenerEnemigosActivos devuelve puntero a array, pero necesitamos saber si hay activos.
-      // Si la funcion retorna NULL o count es 0, no hay enemigos.
-      navegacionObtenerEnemigosActivos(&enemCount);
-      
-      if (enemCount == 0) {
-          j->islasConquistadas[j->islaActual] = true;
-          printf("[CONQUISTA] ¡Isla %d conquistada! Ahora puedes viajar a nuevas tierras si completas las 3 primeras.\n", j->islaActual);
-      }
-  }
 }
 
 
@@ -1947,12 +1938,34 @@ void panelRecursosDibujar(HDC hdcBuffer, struct Jugador *j, int anchoPantalla) {
   sprintf(buffer, "Nivel Barco: %d", j->barco.nivelMejora);
   TextOutA(hdcBuffer, panelX + 5, yPos + 23, buffer, strlen(buffer));
 
+  // Contador global de islas conquistadas (1..5)
+  int totalConquistadas = 0;
+  for (int i = 1; i <= 5; i++) {
+    if (j->islasConquistadas[i])
+      totalConquistadas++;
+  }
+  sprintf(buffer, "Islas conquistadas: %d/5", totalConquistadas);
+  TextOutA(hdcBuffer, panelX + 5, yPos + 43, buffer, strlen(buffer));
+
   // ================================================================
   // LIMPIEZA DE RECURSOS GDI
   // ================================================================
   SelectObject(hdcBuffer, oldFont);
   DeleteObject(fontTitulo);
   DeleteObject(fontValor);
+}
+
+static void sincronizarIslasConquistadas(struct Jugador *j) {
+  if (!j)
+    return;
+  for (int isla = 1; isla <= 5; isla++) {
+    if (j->islasConquistadas[isla])
+      continue;
+    if (navegacionIsIslaConquistada(isla)) {
+      j->islasConquistadas[isla] = true;
+      printf("[CONQUISTA] Isla %d asegurada.\n", isla);
+    }
+  }
 }
 
 bool recursosObreroCercaDePunto(struct Jugador *j, float x, float y,

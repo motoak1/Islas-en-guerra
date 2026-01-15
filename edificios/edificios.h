@@ -60,13 +60,16 @@ void edificiosLiberarSprites();
 extern HBITMAP g_spriteAyuntamiento;
 extern HBITMAP g_spriteMina;
 extern HBITMAP g_spriteCuartel;
+extern HBITMAP g_spriteMinaFuego;
 
 // Sprites de castillos para islas (256x256, ocupan 4x4 celdas)
 extern HBITMAP g_spriteCastilloAliado;
 extern HBITMAP g_spriteCastilloEnemigo;
+extern HBITMAP g_spriteCastilloFuego;
 
 // Sprites de cuarteles para islas (256x256, ocupan 4x4 celdas)
 extern HBITMAP g_spriteCuartelAliado;
 extern HBITMAP g_spriteCuartelEnemigo;
+extern HBITMAP g_spriteCuartelFuego;
 
 #endif

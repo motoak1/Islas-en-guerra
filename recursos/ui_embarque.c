@@ -110,8 +110,9 @@ void menuEmbarqueDibujar(HDC hdc, MenuEmbarque *menu, struct Jugador *j) {
     int opciones[3];
     int total = 0;
     
-    // Verificar si las 3 islas están conquistadas
-    bool desbloqueado = (j->islasConquistadas[1] && j->islasConquistadas[2] && j->islasConquistadas[3]);
+    // Verificar si las 3 islas están conquistadas o si el modo debug libera viaje
+    const bool modoViajeLibre = navegacionViajeLibreDebug();
+    bool desbloqueado = modoViajeLibre || (j->islasConquistadas[1] && j->islasConquistadas[2] && j->islasConquistadas[3]);
 
     if (!menu->mostrandoDesconocido) {
         // MODO NORMAL: Islas 1-3 y botón de Continente (si desbloqueado)
@@ -383,8 +384,9 @@ bool menuEmbarqueClick(MenuEmbarque *menu, struct Jugador *j, int x, int y) {
     int startY = menu->y + 80;
     int startX = menu->x + (menu->ancho - btnWidth) / 2;
     
-    // Verificar desbloqueo
-    bool desbloqueado = (j->islasConquistadas[1] && j->islasConquistadas[2] && j->islasConquistadas[3]);
+    // Verificar desbloqueo o modo debug
+    const bool modoViajeLibre = navegacionViajeLibreDebug();
+    bool desbloqueado = modoViajeLibre || (j->islasConquistadas[1] && j->islasConquistadas[2] && j->islasConquistadas[3]);
 
     if (!menu->mostrandoDesconocido) {
         for (int i = 0; i < total; i++) {

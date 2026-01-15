@@ -56,6 +56,9 @@ static void edificioASerializable(const Edificio *src,
                                   EdificioIslaSerializable *dst);
 static void serializableAEdificio(const EdificioIslaSerializable *src,
                                   Edificio *dst);
+static const bool sViajeLibreDebug = true;
+
+bool navegacionViajeLibreDebug(void) { return sViajeLibreDebug; }
 
 void navegacionReiniciarEstado(void) {
   for (int isla = 0; isla < 6; isla++) {
@@ -323,6 +326,11 @@ static void obtenerPosicionBarcoIsla(int isla, float *outX, float *outY,
   int columna = *(posIsla + 1);              // Segunda posición: columna
   int direccion = *(posIsla + 2);            // Tercera posición: dirección
 
+  if (isla >= 4 && fila == 0 && columna == 0) {
+    mapaDetectarOrilla(outX, outY, outDir);
+    return;
+  }
+
   // Convertir coordenadas de matriz a píxeles
   *outX = (float)(columna * TILE_SIZE);
   *outY = (float)(fila * TILE_SIZE);
@@ -409,7 +417,8 @@ static void activarEnemigosDesdeEstado(EstadoIsla *estado) {
   marcarEnemigosEnMapa(sEnemigosActivos, sNumEnemigosActivos);
 }
 
-static void statsBasicosEnemigo(Unidad *u, TipoUnidad tipo) {
+static void statsBasicosEnemigo(Unidad *u, TipoUnidad tipo, int islaDestino) {
+  const int factorStats = (islaDestino == 4) ? 3 : 1;
   u->tipo = tipo;
   u->moviendose = false;
   u->seleccionado = false;
@@ -425,17 +434,17 @@ static void statsBasicosEnemigo(Unidad *u, TipoUnidad tipo) {
   u->frameMuerte = 0;
 
   if (tipo == TIPO_CABALLERO) {
-    u->vida = CABALLERO_VIDA;
-    u->vidaMax = CABALLERO_VIDA;
-    u->damage = CABALLERO_DANO;
-    u->defensa = CABALLERO_DEFENSA;
-    u->critico = CABALLERO_CRITICO;
+    u->vida = CABALLERO_VIDA * factorStats;
+    u->vidaMax = CABALLERO_VIDA * factorStats;
+    u->damage = CABALLERO_DANO * factorStats;
+    u->defensa = CABALLERO_DEFENSA * factorStats;
+    u->critico = CABALLERO_CRITICO * factorStats;
   } else {
-    u->vida = GUERRERO_VIDA;
-    u->vidaMax = GUERRERO_VIDA;
-    u->damage = GUERRERO_DANO;
-    u->defensa = GUERRERO_DEFENSA;
-    u->critico = GUERRERO_CRITICO;
+    u->vida = GUERRERO_VIDA * factorStats;
+    u->vidaMax = GUERRERO_VIDA * factorStats;
+    u->damage = GUERRERO_DANO * factorStats;
+    u->defensa = GUERRERO_DEFENSA * factorStats;
+    u->critico = GUERRERO_CRITICO * factorStats;
   }
 }
 
@@ -1262,8 +1271,20 @@ bool viajarAIsla(struct Jugador *j, int islaDestino) {
     sIslaInicial = j->islaActual;
     sIslaInicialDefinida = true;
   }
+
+  const bool modoViajeLibre = navegacionViajeLibreDebug();
+  bool desbloqueadasOriginales =
+      (j->islasConquistadas[1] && j->islasConquistadas[2] &&
+       j->islasConquistadas[3]);
+  if ((islaDestino == 4 || islaDestino == 5) && !modoViajeLibre &&
+      !desbloqueadasOriginales) {
+    MessageBox(NULL,
+               "Debes conquistar las tres islas originales antes de viajar al nuevo continente.",
+               "Isla bloqueada", MB_OK | MB_ICONWARNING);
+    return false;
+  }
   // Validación: no permitir llevar obreros a islas no conquistadas
-  if (islaDestino != j->islaActual) {
+  if (!modoViajeLibre && islaDestino != j->islaActual) {
     if (barcoTieneObreros(&j->barco) && !islaConquistada(islaDestino)) {
       MessageBox(NULL, "No puedes llevar obreros hasta conquistar la isla",
                  "Embarque restringido", MB_OK | MB_ICONWARNING);
@@ -1371,7 +1392,8 @@ bool viajarAIsla(struct Jugador *j, int islaDestino) {
         Unidad *e = &estadoDestino->enemigos[estadoDestino->numEnemigos];
         e->x = ex;
         e->y = ey;
-        statsBasicosEnemigo(e, (i % 2 == 0) ? TIPO_CABALLERO : TIPO_GUERRERO);
+        statsBasicosEnemigo(e, (i % 2 == 0) ? TIPO_CABALLERO : TIPO_GUERRERO,
+                islaDestino);
         estadoDestino->numEnemigos++;
       }
       estadoDestino->enemigosGenerados = (estadoDestino->numEnemigos > 0);

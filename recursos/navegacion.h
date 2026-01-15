@@ -35,6 +35,9 @@ bool navegacionIsIslaConquistada(int isla);
 // True si la isla actual del jugador NO está conquistada
 bool navegacionIslaActualNoConquistada(const struct Jugador *j);
 
+// Dev-mode helper: true cuando las islas avanzadas están desbloqueadas
+bool navegacionViajeLibreDebug(void);
+
 // Guardado: sincroniza la isla activa para que el snapshot refleje muertes y tropas actuales
 void navegacionSincronizarIslaActual(struct Jugador *j);
 
