@@ -181,6 +181,7 @@ struct Jugador {
   int islaActual;          // Isla donde está el jugador (1, 2, o 3)
   void *mina;              // Puntero a Edificio de la mina
   void *cuartel;           // Puntero a Edificio del cuartel
+  bool islasConquistadas[6]; // Estado de conquista: [1]=Isla1, etc.
 };
 
 void actualizarPersonajes(struct Jugador *j);

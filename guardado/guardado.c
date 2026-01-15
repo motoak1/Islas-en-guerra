@@ -335,6 +335,11 @@ bool guardarPartidaPorNombre(const char *nombreJugador, struct Jugador *j,
   navegacionExportarEstadosIsla(datos.estadosIsla);
   datos.islaInicial = navegacionObtenerIslaInicial();
   datos.islaInicialDefinida = navegacionIslaInicialDefinida();
+  
+  // Guardar estado de conquista
+  for(int i=0; i<6; i++) {
+      datos.islasConquistadas[i] = j->islasConquistadas[i] ? 1 : 0;
+  }
 
   // Escribir todo en binario
   size_t escritos = fwrite(&datos, sizeof(DatosGuardado), 1, f);
@@ -382,6 +387,11 @@ bool cargarPartidaPorNombre(const char *nombreJugador, struct Jugador *j,
   navegacionImportarEstadosIsla(datos.estadosIsla);
   navegacionRestaurarIslaInicial(datos.islaInicial,
                                  datos.islaInicialDefinida);
+  
+  // Restaurar estado de conquista
+  for(int i=0; i<6; i++) {
+      j->islasConquistadas[i] = (datos.islasConquistadas[i] != 0);
+  }
 
   // --- Recursos ---
   j->Comida = datos.Comida;

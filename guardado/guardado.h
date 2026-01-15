@@ -155,10 +155,12 @@ typedef struct {
   float camaraZoom;
 
   // --- Persistencia extendida ---
-  MapaEstadoSerializable estadosMapa[4];
-  EstadoIslaSerializable estadosIsla[4];
+  MapaEstadoSerializable estadosMapa[6];
+  EstadoIslaSerializable estadosIsla[6];
+  int islaInicial;
   int islaInicial;
   bool islaInicialDefinida;
+  int islasConquistadas[6]; // Guardado como int (0/1)
 
 } DatosGuardado;
 

@@ -109,8 +109,8 @@ Vaca *mapaObtenerVacas(int *cantidad);
 // Elimina una vaca por su índice en el array (evita desincronización si la vaca se movió)
 bool mapaEliminarVacaPorIndice(int indice);
 void mapaRestaurarVacasExternas(const Vaca *vacas, int cantidad);
-void mapaExportarEstadosIsla(MapaEstadoSerializable estados[4]);
-void mapaImportarEstadosIsla(const MapaEstadoSerializable estados[4]);
+void mapaExportarEstadosIsla(MapaEstadoSerializable estados[6]);
+void mapaImportarEstadosIsla(const MapaEstadoSerializable estados[6]);
 
 // Dibuja el mundo (terreno, árboles, obreros) en el DC especificado
 // Ahora acepta el menú para dibujarlo dentro del mismo buffer (evitar parpadeo)

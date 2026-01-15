@@ -164,17 +164,17 @@ static int gNumVacas = 0; // Cantidad de vacas activas
 // ---------------------------------------------------------------------------
 // PERSISTENCIA EN MEMORIA POR ISLA (1..3)
 // ---------------------------------------------------------------------------
-static bool gIslaGuardada[4] = {false};
-static char gMapaObjetosIsla[4][GRID_SIZE][GRID_SIZE];
-static int gCollisionIsla[4][GRID_SIZE][GRID_SIZE];
-static Vaca gVacasIsla[4][10];
-static int gNumVacasIsla[4] = {0};
+static bool gIslaGuardada[6] = {false};
+static char gMapaObjetosIsla[6][GRID_SIZE][GRID_SIZE];
+static int gCollisionIsla[6][GRID_SIZE][GRID_SIZE];
+static Vaca gVacasIsla[6][10];
+static int gNumVacasIsla[6] = {0};
 
 // --- VIDA DE ARBOLES (NUEVO) ---
 // Matriz paralela para almacenar la vida de cada árbol (3 = full, 2, 1, 0)
 // Inicialmente 0. Se pone a 3 cuando se genera un árbol.
 static int gArbolesVida[GRID_SIZE][GRID_SIZE] = {0};
-static int gArbolesVidaIsla[4][GRID_SIZE][GRID_SIZE]; // Persistencia por isla
+static int gArbolesVidaIsla[6][GRID_SIZE][GRID_SIZE]; // Persistencia por isla
 
 
 static void detectarAguaEnMapa(void);
@@ -343,7 +343,7 @@ void mapaRestaurarVacasExternas(const Vaca *vacas, int cantidad) {
 }
 
 void mapaSeleccionarIsla(int isla) {
-  int seleccion = (isla >= 1 && isla <= 3) ? isla : 1;
+  int seleccion = (isla >= 1 && isla <= 5) ? isla : 1;
     snprintf(gRutaMapaPrincipal, sizeof(gRutaMapaPrincipal), "..\\assets\\islas\\isla%d.bmp", seleccion);
     snprintf(gRutaMapaAlterna, sizeof(gRutaMapaAlterna), "assets/islas/isla%d.bmp", seleccion);
 }
@@ -438,7 +438,7 @@ void mapaLiberarCollisionMap(void) {
 // ---------------------------------------------------------------------------
 // PERSISTENCIA DE ESTADO POR ISLA (MEMORIA)
 // ---------------------------------------------------------------------------
-static bool islaValida(int isla) { return isla >= 1 && isla <= 3; }
+static bool islaValida(int isla) { return isla >= 1 && isla <= 5; }
 
 void mapaGuardarEstadoIsla(int isla) {
   if (!islaValida(isla))
@@ -505,10 +505,10 @@ void mapaRestaurarEstadoIsla(int isla) {
 
 // Guardado: extrae un snapshot del mapa/collision/vacas de cada isla para
 // escribirlo en el archivo de guardado.
-void mapaExportarEstadosIsla(MapaEstadoSerializable estados[4]) {
+void mapaExportarEstadosIsla(MapaEstadoSerializable estados[6]) {
   if (!estados)
     return;
-  for (int isla = 0; isla < 4; isla++) {
+  for (int isla = 0; isla < 6; isla++) {
     estados[isla].valido = gIslaGuardada[isla];
     estados[isla].numVacas = 0;
     if (!gIslaGuardada[isla])
@@ -530,10 +530,10 @@ void mapaExportarEstadosIsla(MapaEstadoSerializable estados[4]) {
 
 // Carga: hidrata los snapshots per-isla desde el archivo para que el juego
 // no tenga que regenerar estados al reanudar una partida.
-void mapaImportarEstadosIsla(const MapaEstadoSerializable estados[4]) {
+void mapaImportarEstadosIsla(const MapaEstadoSerializable estados[6]) {
   if (!estados)
     return;
-  for (int isla = 0; isla < 4; isla++) {
+  for (int isla = 0; isla < 6; isla++) {
     gIslaGuardada[isla] = estados[isla].valido;
     if (!estados[isla].valido)
       continue;

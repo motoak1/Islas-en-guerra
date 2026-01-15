@@ -33,7 +33,7 @@ typedef struct {
   bool enemigosGenerados;
 } EstadoIsla;
 
-static EstadoIsla sIslas[4];
+static EstadoIsla sIslas[6];
 static int sIslaInicial = 1;
 static bool sIslaInicialDefinida = false;
 static Unidad sEnemigosActivos[8];
@@ -51,7 +51,7 @@ static void serializableAEdificio(const EdificioIslaSerializable *src,
                                   Edificio *dst);
 
 void navegacionReiniciarEstado(void) {
-  for (int isla = 0; isla < 4; isla++) {
+  for (int isla = 0; isla < 6; isla++) {
     EstadoIsla *estado = &sIslas[isla];
     memset(estado, 0, sizeof(EstadoIsla)); // Guardado: limpiar snapshot per isla
   }
@@ -168,10 +168,10 @@ static void serializableAEdificio(const EdificioIslaSerializable *src,
 
 // Guardado: expone el snapshot lógico de cada isla para que guardado.c pueda
 // escribirlo en disco junto con el mapa.
-void navegacionExportarEstadosIsla(EstadoIslaSerializable estados[4]) {
+void navegacionExportarEstadosIsla(EstadoIslaSerializable estados[6]) {
   if (!estados)
     return;
-  for (int isla = 0; isla < 4; isla++) {
+  for (int isla = 0; isla < 6; isla++) {
     EstadoIsla *src = &sIslas[isla];
     EstadoIslaSerializable *dst = &estados[isla];
     dst->inicializado = src->inicializado;
@@ -207,10 +207,10 @@ void navegacionExportarEstadosIsla(EstadoIslaSerializable estados[4]) {
 
 // Carga: restaura el snapshot de cada isla desde el archivo sin tener que
 // regenerar edificios, enemigos o recursos.
-void navegacionImportarEstadosIsla(const EstadoIslaSerializable estados[4]) {
+void navegacionImportarEstadosIsla(const EstadoIslaSerializable estados[6]) {
   if (!estados)
     return;
-  for (int isla = 0; isla < 4; isla++) {
+  for (int isla = 0; isla < 6; isla++) {
     EstadoIsla *dst = &sIslas[isla];
     const EstadoIslaSerializable *src = &estados[isla];
     dst->inicializado = src->inicializado;
@@ -263,7 +263,7 @@ bool navegacionIslaInicialDefinida(void) { return sIslaInicialDefinida; }
 
 // Carga: reinyecta los enemigos pasivos guardados para la isla restaurada.
 void navegacionActivarEnemigosIsla(int isla) {
-  if (isla < 1 || isla > 3) {
+  if (isla < 1 || isla > 5) {
     limpiarEnemigosActivos();
     return;
   }
@@ -289,17 +289,21 @@ static bool buscarCeldaLibreCerca(int preferX, int preferY, int ancho, int alto,
 
 // Array de posiciones por isla [isla][0=fila, 1=columna, 2=direccion]
 // Isla 0 no se usa, islas 1-3 son válidas
-static int sPosicionesBarco[4][3] = {
+// Array de posiciones por isla [isla][0=fila, 1=columna, 2=direccion]
+// Isla 0 no se usa, islas 1-3 son válidas
+static int sPosicionesBarco[6][3] = {
     {0, 0, 0},   // Índice 0: no usado
     {15, 2, 3},  // Isla 1: fila=15, col=2, dir=DIR_RIGHT (mirando hacia isla)
     {15, 29, 2}, // Isla 2: fila=15, col=29, dir=DIR_LEFT
-    {2, 15, 0}   // Isla 3: fila=2, col=15, dir=DIR_FRONT
+    {2, 15, 0},   // Isla 3: fila=2, col=15, dir=DIR_FRONT
+    {0,0,0}, // Isla 4 (se usará detección automática)
+    {0,0,0}  // Isla 5 (se usará detección automática)
 };
 
 static void obtenerPosicionBarcoIsla(int isla, float *outX, float *outY,
                                      int *outDir) {
   // Validar isla
-  if (isla < 1 || isla > 3) {
+  if (isla < 1 || isla > 5) {
     // Fallback: usar detección automática
     mapaDetectarOrilla(outX, outY, outDir);
     return;
@@ -328,7 +332,7 @@ void navegacionObtenerPosicionBarcoIsla(int isla, float *outX, float *outY,
 }
 static int contarIslasConquistadas(void) {
   int total = 0;
-  for (int i = 1; i <= 3; i++) {
+  for (int i = 1; i <= 5; i++) {
     if (sIslas[i].inicializado)
       total++;
   }
@@ -509,7 +513,7 @@ int navegacionContarUnidadesGlobal(const struct Jugador *j, TipoUnidad tipo) {
   }
 
   // 2. Sumar unidades de OTROS islas guardadas en sIslas
-  for (int k = 1; k <= 3; k++) {
+  for (int k = 1; k <= 5; k++) {
     if (k == j->islaActual) continue; // Ya contadas (o por guardar)
     if (!sIslas[k].inicializado) continue;
 
@@ -554,7 +558,7 @@ static DWORD sStartMs = 0;
 // VALIDACIONES DE VIAJE
 // ---------------------------------------------------------------------------
 static bool islaConquistada(int isla) {
-  if (isla < 1 || isla > 3) return false;
+  if (isla < 1 || isla > 5) return false;
   EstadoIsla *e = &sIslas[isla];
   // Isla inicial no tiene enemigos por diseño; si aún no está inicializada,
   // consideramos que no está conquistada salvo que sea la inicial definida.
@@ -1137,7 +1141,7 @@ bool viajarAIsla(struct Jugador *j, int islaDestino) {
     numTropasEnRuta++;
   }
 
-  bool islaYaVisitada = (islaDestino >= 1 && islaDestino <= 3) &&
+  bool islaYaVisitada = (islaDestino >= 1 && islaDestino <= 5) &&
                         sIslas[islaDestino].inicializado;
 
   // Guardar estado de la isla actual antes de salir

@@ -98,8 +98,8 @@ typedef struct {
 	bool enemigosGenerados;
 } EstadoIslaSerializable;
 
-void navegacionExportarEstadosIsla(EstadoIslaSerializable estados[4]);
-void navegacionImportarEstadosIsla(const EstadoIslaSerializable estados[4]);
+void navegacionExportarEstadosIsla(EstadoIslaSerializable estados[6]);
+void navegacionImportarEstadosIsla(const EstadoIslaSerializable estados[6]);
 void navegacionRestaurarIslaInicial(int isla, bool definida);
 bool navegacionIslaInicialDefinida(void);
 void navegacionActivarEnemigosIsla(int isla);

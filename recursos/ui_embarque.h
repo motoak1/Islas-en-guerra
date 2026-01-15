@@ -11,6 +11,7 @@ typedef struct MenuEmbarque {
   int caballerosSeleccionados;
   int guerrerosSeleccionados;
   int totalSeleccionados;
+  bool mostrandoDesconocido; // Nuevo flag para submenú
   
   // Posición y tamaño de la UI
   int x, y;

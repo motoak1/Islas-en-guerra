@@ -297,6 +297,10 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
     j->caballerosSinEscudo[i].tipo = TIPO_CABALLERO_SIN_ESCUDO;
     j->caballerosSinEscudo[i].recibiendoAtaque = false;
   }
+  
+  // Inicializar estado de conquista
+  for(int i=0; i<6; i++) j->islasConquistadas[i] = false;
+
 
   for (int i = 0; i < MAX_GUERREROS; i++) {
     j->guerreros[i].x = -1000.0f;
@@ -1091,15 +1095,6 @@ void rtsComandarMovimiento(struct Jugador *j, float mundoX, float mundoY) {
   // --- COMANDAR GUERREROS ---
   for (int i = 0; i < MAX_GUERREROS; i++) {
     Unidad *u = &j->guerreros[i];
-    if (u->seleccionado && u->x >= 0 && u->vida > 0) {
-      // Buscar destino libre
-      int destinoF = gF;
-      int destinoC = gC;
-
-      if (CELDA_YA_ASIGNADA(destinoF, destinoC) ||
-          (*(*(col + destinoF) + destinoC) == 3)) {
-        bool encontrado = false;
-        for (int r = 1; r <= 3 && !encontrado; r++) {
           for (int dy = -r; dy <= r && !encontrado; dy++) {
             for (int dx = -r; dx <= r && !encontrado; dx++) {
               int nf = gF + dy;
@@ -1137,7 +1132,22 @@ void rtsComandarMovimiento(struct Jugador *j, float mundoX, float mundoY) {
   }
 
 #undef CELDA_YA_ASIGNADA
+
+  // --- NUEVA LÓGICA DE CONQUISTA: Verificar si la isla actual está limpia ---
+  // Solo verificar si estamos en una isla válida (1-5) y no ha sido conquistada aun
+  if (j->islaActual >= 1 && j->islaActual <= 5 && !j->islasConquistadas[j->islaActual]) {
+      int enemCount = 0;
+      // navegacionObtenerEnemigosActivos devuelve puntero a array, pero necesitamos saber si hay activos.
+      // Si la funcion retorna NULL o count es 0, no hay enemigos.
+      navegacionObtenerEnemigosActivos(&enemCount);
+      
+      if (enemCount == 0) {
+          j->islasConquistadas[j->islaActual] = true;
+          printf("[CONQUISTA] ¡Isla %d conquistada! Ahora puedes viajar a nuevas tierras si completas las 3 primeras.\n", j->islaActual);
+      }
+  }
 }
+
 
 void rtsLiberarMovimientoJugador(struct Jugador *j) {
   for (int i = 0; i < MAX_OBREROS; i++)

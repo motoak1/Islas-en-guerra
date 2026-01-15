@@ -52,6 +52,7 @@ static bool unidadListaParaEmbarcar(const Unidad *u, const Barco *barco) {
 void menuEmbarqueInicializar(MenuEmbarque *menu) {
   menu->activo = false;
   menu->eligiendoIsla = false;
+  menu->mostrandoDesconocido = false;
   menu->obrerosSeleccionados = 0;
   menu->caballerosSeleccionados = 0;
   menu->guerrerosSeleccionados = 0;
@@ -65,6 +66,7 @@ void menuEmbarqueInicializar(MenuEmbarque *menu) {
 void menuEmbarqueAbrir(MenuEmbarque *menu, int anchoVentana, int altoVentana) {
   menu->activo = true;
   menu->eligiendoIsla = false;
+  menu->mostrandoDesconocido = false;
   menu->obrerosSeleccionados = 0;
   menu->caballerosSeleccionados = 0;
   menu->guerrerosSeleccionados = 0;
@@ -107,29 +109,82 @@ void menuEmbarqueDibujar(HDC hdc, MenuEmbarque *menu, struct Jugador *j) {
 
     int opciones[3];
     int total = 0;
-    for (int i = 1; i <= 3; i++) {
-      if (i != j->islaActual) {
-        opciones[total++] = i;
-      }
-    }
+    
+    // Verificar si las 3 islas están conquistadas
+    bool desbloqueado = (j->islasConquistadas[1] && j->islasConquistadas[2] && j->islasConquistadas[3]);
 
-    int btnWidth = 260;
-    int btnHeight = 50;
-    int startY = menu->y + 100;
-    int startX = menu->x + (menu->ancho - btnWidth) / 2;
+    if (!menu->mostrandoDesconocido) {
+        // MODO NORMAL: Islas 1-3 y botón de Continente (si desbloqueado)
+        for (int i = 1; i <= 3; i++) {
+          if (i != j->islaActual) {
+            opciones[total++] = i;
+          }
+        }
 
-    for (int i = 0; i < total; i++) {
-      RECT btn = {startX, startY + i * (btnHeight + 20), startX + btnWidth,
-                  startY + i * (btnHeight + 20) + btnHeight};
-      HBRUSH hBrushIsla = CreateSolidBrush(RGB(0, 80, 140));
-      HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrushIsla);
-      Rectangle(hdc, btn.left, btn.top, btn.right, btn.bottom);
-      SelectObject(hdc, hOldBrush);
-      DeleteObject(hBrushIsla);
+        int btnWidth = 260;
+        int btnHeight = 50;
+        int startY = menu->y + 80; // Subir un poco para espacio extra
+        int startX = menu->x + (menu->ancho - btnWidth) / 2;
 
-      char label[64];
-      snprintf(label, sizeof(label), "Viajar a Isla %d", opciones[i]);
-      DrawTextA(hdc, label, -1, &btn, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        for (int i = 0; i < total; i++) {
+          RECT btn = {startX, startY + i * (btnHeight + 10), startX + btnWidth,
+                      startY + i * (btnHeight + 10) + btnHeight};
+          HBRUSH hBrushIsla = CreateSolidBrush(RGB(0, 80, 140));
+          HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrushIsla);
+          Rectangle(hdc, btn.left, btn.top, btn.right, btn.bottom);
+          SelectObject(hdc, hOldBrush);
+          DeleteObject(hBrushIsla);
+
+          char label[64];
+          snprintf(label, sizeof(label), "Viajar a Isla %d", opciones[i]);
+          DrawTextA(hdc, label, -1, &btn, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        }
+        
+        // Botón "Continente Desconocido"
+        if (desbloqueado) {
+             RECT btnDesc = {startX, startY + total * (btnHeight + 10), startX + btnWidth,
+                            startY + total * (btnHeight + 10) + btnHeight};
+             HBRUSH hBrushDesc = CreateSolidBrush(RGB(100, 0, 100)); // Morado misterioso
+             HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrushDesc);
+             Rectangle(hdc, btnDesc.left, btnDesc.top, btnDesc.right, btnDesc.bottom);
+             SelectObject(hdc, hOldBrush);
+             DeleteObject(hBrushDesc);
+             
+             DrawTextA(hdc, "CONTINENTE DESCONOCIDO", -1, &btnDesc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        }
+    } else {
+        // MODO SUBMENÚ: Islas 4 y 5
+        int btnWidth = 260;
+        int btnHeight = 50;
+        int startY = menu->y + 80;
+        int startX = menu->x + (menu->ancho - btnWidth) / 2;
+        
+        // Isla 4 (Hielo)
+        RECT btn4 = {startX, startY, startX + btnWidth, startY + btnHeight};
+        HBRUSH hBrush4 = CreateSolidBrush(RGB(0, 200, 255)); // Azul Hielo
+        HBRUSH hOld4 = (HBRUSH)SelectObject(hdc, hBrush4);
+        Rectangle(hdc, btn4.left, btn4.top, btn4.right, btn4.bottom);
+        SelectObject(hdc, hOld4);
+        DeleteObject(hBrush4);
+        DrawTextA(hdc, "Viajar a Isla 4 (Hielo)", -1, &btn4, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        
+        // Isla 5 (Fuego)
+        RECT btn5 = {startX, startY + btnHeight + 10, startX + btnWidth, startY + 2 * btnHeight + 10};
+        HBRUSH hBrush5 = CreateSolidBrush(RGB(200, 50, 0)); // Rojo Fuego
+        HBRUSH hOld5 = (HBRUSH)SelectObject(hdc, hBrush5);
+        Rectangle(hdc, btn5.left, btn5.top, btn5.right, btn5.bottom);
+        SelectObject(hdc, hOld5);
+        DeleteObject(hBrush5);
+        DrawTextA(hdc, "Viajar a Isla 5 (Fuego)", -1, &btn5, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        
+        // Botón Volver
+        RECT btnVolver = {startX, startY + 2 * (btnHeight + 10), startX + btnWidth, startY + 2 * (btnHeight + 10) + btnHeight};
+        HBRUSH hBrushVolver = CreateSolidBrush(RGB(80, 80, 80));
+        HBRUSH hOldVolver = (HBRUSH)SelectObject(hdc, hBrushVolver);
+        Rectangle(hdc, btnVolver.left, btnVolver.top, btnVolver.right, btnVolver.bottom);
+        SelectObject(hdc, hOldVolver);
+        DeleteObject(hBrushVolver);
+        DrawTextA(hdc, "Volver", -1, &btnVolver, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     }
 
     // Botón cancelar
@@ -325,29 +380,76 @@ bool menuEmbarqueClick(MenuEmbarque *menu, struct Jugador *j, int x, int y) {
 
     int btnWidth = 260;
     int btnHeight = 50;
-    int startY = menu->y + 100;
+    int startY = menu->y + 80;
     int startX = menu->x + (menu->ancho - btnWidth) / 2;
+    
+    // Verificar desbloqueo
+    bool desbloqueado = (j->islasConquistadas[1] && j->islasConquistadas[2] && j->islasConquistadas[3]);
 
-    for (int i = 0; i < total; i++) {
-      RECT btn = {startX, startY + i * (btnHeight + 20), startX + btnWidth,
-                  startY + i * (btnHeight + 20) + btnHeight};
-      if (x >= btn.left && x <= btn.right && y >= btn.top && y <= btn.bottom) {
-        bool ok = viajarAIsla(j, opciones[i]);
-        if (ok) {
-          // Cerrar y limpiar selección si el viaje se realizó o se desembarcó en misma isla
-          menu->activo = false;
-          menu->eligiendoIsla = false;
-          menu->obrerosSeleccionados = 0;
-          menu->caballerosSeleccionados = 0;
-          menu->guerrerosSeleccionados = 0;
-          menu->totalSeleccionados = 0;
-        } else {
-          // Mantener selección de isla abierta; el mensaje ya fue mostrado en viajarAIsla
-          menu->activo = true;
-          menu->eligiendoIsla = true;
+    if (!menu->mostrandoDesconocido) {
+        for (int i = 0; i < total; i++) {
+          RECT btn = {startX, startY + i * (btnHeight + 10), startX + btnWidth,
+                      startY + i * (btnHeight + 10) + btnHeight};
+          if (x >= btn.left && x <= btn.right && y >= btn.top && y <= btn.bottom) {
+            bool ok = viajarAIsla(j, opciones[i]);
+            if (ok) {
+              menu->activo = false;
+              menu->eligiendoIsla = false;
+              menu->obrerosSeleccionados = 0;
+              menu->caballerosSeleccionados = 0;
+              menu->guerrerosSeleccionados = 0;
+              menu->totalSeleccionados = 0;
+            } else {
+              menu->activo = true;
+              menu->eligiendoIsla = true;
+            }
+            return true;
+          }
         }
-        return true;
-      }
+        
+        // Click en "Continente Desconocido"
+        if (desbloqueado) {
+             RECT btnDesc = {startX, startY + total * (btnHeight + 10), startX + btnWidth,
+                            startY + total * (btnHeight + 10) + btnHeight};
+             if (x >= btnDesc.left && x <= btnDesc.right && y >= btnDesc.top && y <= btnDesc.bottom) {
+                 menu->mostrandoDesconocido = true;
+                 return true;
+             }
+        }
+    } else {
+        // MODO SUBMENÚ
+        // Isla 4
+        RECT btn4 = {startX, startY, startX + btnWidth, startY + btnHeight};
+        if (x >= btn4.left && x <= btn4.right && y >= btn4.top && y <= btn4.bottom) {
+            // Viajar a isla 4
+            if (viajarAIsla(j, 4)) {
+              menu->activo = false;
+              menu->eligiendoIsla = false;
+              menu->mostrandoDesconocido = false;
+              menu->totalSeleccionados = 0;
+            }
+            return true;
+        }
+        
+        // Isla 5
+        RECT btn5 = {startX, startY + btnHeight + 10, startX + btnWidth, startY + 2 * btnHeight + 10};
+        if (x >= btn5.left && x <= btn5.right && y >= btn5.top && y <= btn5.bottom) {
+            // Viajar a isla 5
+            if (viajarAIsla(j, 5)) {
+              menu->activo = false;
+              menu->eligiendoIsla = false;
+              menu->mostrandoDesconocido = false;
+              menu->totalSeleccionados = 0;
+            }
+            return true;
+        }
+        
+        // Volver
+        RECT btnVolver = {startX, startY + 2 * (btnHeight + 10), startX + btnWidth, startY + 2 * (btnHeight + 10) + btnHeight};
+        if (x >= btnVolver.left && x <= btnVolver.right && y >= btnVolver.top && y <= btnVolver.bottom) {
+             menu->mostrandoDesconocido = false;
+             return true;
+        }
     }
 
     // Botón cancelar
@@ -364,6 +466,7 @@ bool menuEmbarqueClick(MenuEmbarque *menu, struct Jugador *j, int x, int y) {
       menu->guerrerosSeleccionados = 0;
       menu->totalSeleccionados = 0;
       menu->eligiendoIsla = false;
+      menu->mostrandoDesconocido = false;
       return true;
     }
     return true;
