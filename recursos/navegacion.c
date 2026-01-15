@@ -418,7 +418,12 @@ static void activarEnemigosDesdeEstado(EstadoIsla *estado) {
 }
 
 static void statsBasicosEnemigo(Unidad *u, TipoUnidad tipo, int islaDestino) {
-  const int factorStats = (islaDestino == 4) ? 3 : 1;
+  int factorStats = 1;
+  if (islaDestino == 4) {
+    factorStats = 2;
+  } else if (islaDestino == 5) {
+    factorStats = 3;
+  }
   u->tipo = tipo;
   u->moviendose = false;
   u->seleccionado = false;

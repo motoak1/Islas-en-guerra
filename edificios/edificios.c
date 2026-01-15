@@ -25,16 +25,19 @@ HBITMAP g_spriteAyuntamiento = NULL;
 HBITMAP g_spriteMina = NULL;
 HBITMAP g_spriteCuartel = NULL;
 HBITMAP g_spriteMinaFuego = NULL;
+HBITMAP g_spriteMinaHielo = NULL;
 
 // Sprites de castillos para islas (256x256)
 HBITMAP g_spriteCastilloAliado = NULL;
 HBITMAP g_spriteCastilloEnemigo = NULL;
 HBITMAP g_spriteCastilloFuego = NULL;
+HBITMAP g_spriteCastilloHielo = NULL;
 
 // Sprites de cuarteles para islas (256x256)
 HBITMAP g_spriteCuartelAliado = NULL;
 HBITMAP g_spriteCuartelEnemigo = NULL;
 HBITMAP g_spriteCuartelFuego = NULL;
+HBITMAP g_spriteCuartelHielo = NULL;
 
 void edificioInicializar(Edificio *e, TipoEdificio tipo, float x, float y) {
   e->tipo = tipo;
@@ -206,6 +209,19 @@ void edificiosCargarSprites() {
       break;
   }
 
+  const char *attemptsMinaHielo[] = {"\\assets\\iglu.bmp",
+                                     "\\..\\assets\\iglu.bmp",
+                                     "\\iglu.bmp"};
+  g_spriteMinaHielo = NULL;
+  for (int i = 0; i < 3; i++) {
+    sprintf(fullPath, "%s%s", pathExe, attemptsMinaHielo[i]);
+    g_spriteMinaHielo = (HBITMAP)LoadImageA(
+        NULL, fullPath, IMAGE_BITMAP, 128, 128,
+        LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    if (g_spriteMinaHielo)
+      break;
+  }
+
   if ( g_spriteMina) {
     printf("[SISTEMA] Recursos de edificios cargados con exito.\n");
   } else {
@@ -272,6 +288,20 @@ void edificiosCargarSprites() {
     }
   }
 
+  const char *attemptsCastilloHielo[] = {
+      "\\assets\\castillo_hielo.bmp", "\\..\\assets\\castillo_hielo.bmp",
+      "\\castillo_hielo.bmp"};
+  g_spriteCastilloHielo = NULL;
+  for (int i = 0; i < 3; i++) {
+    sprintf(fullPath, "%s%s", pathExe, attemptsCastilloHielo[i]);
+    g_spriteCastilloHielo = (HBITMAP)LoadImageA(
+        NULL, fullPath, IMAGE_BITMAP, CASTILLO_SIZE, CASTILLO_SIZE,
+        LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    if (g_spriteCastilloHielo) {
+      break;
+    }
+  }
+
   // ============================================================================
   // CARGAR SPRITES DE CUARTELES ALIADO Y ENEMIGO (256x256, 4x4 celdas)
   // ============================================================================
@@ -328,6 +358,20 @@ void edificiosCargarSprites() {
       break;
     }
   }
+
+  const char *attemptsCuartelHielo[] = {
+      "\\assets\\cuartel_hielo.bmp", "\\..\\assets\\cuartel_hielo.bmp",
+      "\\cuartel_hielo.bmp"};
+  g_spriteCuartelHielo = NULL;
+  for (int i = 0; i < 3; i++) {
+    sprintf(fullPath, "%s%s", pathExe, attemptsCuartelHielo[i]);
+    g_spriteCuartelHielo = (HBITMAP)LoadImageA(
+        NULL, fullPath, IMAGE_BITMAP, CUARTEL_SIZE, CUARTEL_SIZE,
+        LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    if (g_spriteCuartelHielo) {
+      break;
+    }
+  }
 }
 
 void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
@@ -335,7 +379,8 @@ void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
   if (!e->construido)
     return;
 
-  bool esIslaFuego = (islaActual == 5);
+  bool esIslaFuego = mapaTemaActualEsFuego();
+  bool esIslaHielo = mapaTemaActualEsHielo();
 
   // Convertir coordenadas del mundo a pantalla
   int pantallaX = (int)((e->x - camX) * zoom);
@@ -355,6 +400,8 @@ void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
     if (e->tipo == EDIFICIO_AYUNTAMIENTO) {
       if (esIslaFuego && g_spriteCastilloFuego) {
         spriteADibujar = g_spriteCastilloFuego;
+      } else if (esIslaHielo && g_spriteCastilloHielo) {
+        spriteADibujar = g_spriteCastilloHielo;
       } else {
         bool esConquistada = navegacionIsIslaConquistada(islaActual);
         if (esConquistada && g_spriteCastilloAliado) {
@@ -369,6 +416,8 @@ void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
     else if (e->tipo == EDIFICIO_MINA) {
       if (esIslaFuego && g_spriteMinaFuego) {
         spriteADibujar = g_spriteMinaFuego;
+      } else if (esIslaHielo && g_spriteMinaHielo) {
+        spriteADibujar = g_spriteMinaHielo;
       } else {
         spriteADibujar = g_spriteMina;
       }
@@ -376,6 +425,8 @@ void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
     else if (e->tipo == EDIFICIO_CUARTEL) {
       if (esIslaFuego && g_spriteCuartelFuego) {
         spriteADibujar = g_spriteCuartelFuego;
+      } else if (esIslaHielo && g_spriteCuartelHielo) {
+        spriteADibujar = g_spriteCuartelHielo;
       } else {
         bool esConquistada = navegacionIsIslaConquistada(islaActual);
         if (esConquistada && g_spriteCuartelAliado) {
@@ -457,6 +508,14 @@ void edificiosLiberarSprites() {
     DeleteObject(g_spriteMina);
     g_spriteMina = NULL;
   }
+  if (g_spriteMinaFuego) {
+    DeleteObject(g_spriteMinaFuego);
+    g_spriteMinaFuego = NULL;
+  }
+  if (g_spriteMinaHielo) {
+    DeleteObject(g_spriteMinaHielo);
+    g_spriteMinaHielo = NULL;
+  }
   if (g_spriteCuartel) {
     DeleteObject(g_spriteCuartel);
     g_spriteCuartel = NULL;
@@ -470,6 +529,14 @@ void edificiosLiberarSprites() {
     DeleteObject(g_spriteCastilloEnemigo);
     g_spriteCastilloEnemigo = NULL;
   }
+  if (g_spriteCastilloFuego) {
+    DeleteObject(g_spriteCastilloFuego);
+    g_spriteCastilloFuego = NULL;
+  }
+  if (g_spriteCastilloHielo) {
+    DeleteObject(g_spriteCastilloHielo);
+    g_spriteCastilloHielo = NULL;
+  }
   // Liberar sprites de cuarteles
   if (g_spriteCuartelAliado) {
     DeleteObject(g_spriteCuartelAliado);
@@ -478,5 +545,13 @@ void edificiosLiberarSprites() {
   if (g_spriteCuartelEnemigo) {
     DeleteObject(g_spriteCuartelEnemigo);
     g_spriteCuartelEnemigo = NULL;
+  }
+  if (g_spriteCuartelFuego) {
+    DeleteObject(g_spriteCuartelFuego);
+    g_spriteCuartelFuego = NULL;
+  }
+  if (g_spriteCuartelHielo) {
+    DeleteObject(g_spriteCuartelHielo);
+    g_spriteCuartelHielo = NULL;
   }
 }

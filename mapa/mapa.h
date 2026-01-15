@@ -127,6 +127,9 @@ void cargarRecursosGraficos();
 void dibujarObreros(HDC hdcBuffer, struct Jugador *j, Camara cam, int anchoP,
                     int altoP);
 void mapaSeleccionarIsla(int isla);
+int mapaObtenerIslaSeleccionada(void);
+bool mapaTemaActualEsFuego(void);
+bool mapaTemaActualEsHielo(void);
 
 // Nuevas funciones para interacción con recursos
 int mapaObtenerTipoObjeto(int f, int c);

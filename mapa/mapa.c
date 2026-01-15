@@ -32,6 +32,8 @@
 
 #define ARBOL_FUEGO "../assets/arboles/arbol-fuego.bmp"
 #define ARBOL_FUEGO_ALT "assets/arboles/arbol-fuego.bmp"
+#define ARBOL_HIELO "../assets/arboles/arbol-hielo.bmp"
+#define ARBOL_HIELO_ALT "assets/arboles/arbol-hielo.bmp"
 
 #define obrero_front "../assets/obrero/obrero_front.bmp"
 #define obrero_back "../assets/obrero/obrero_back.bmp"
@@ -76,6 +78,14 @@
 #define VACA_FUEGO_B_ALT "assets/vaca/vaca-fuego-back.bmp"
 #define VACA_FUEGO_L_ALT "assets/vaca/vaca-fuego-left.bmp"
 #define VACA_FUEGO_R_ALT "assets/vaca/vaca-fuego-right.bmp"
+#define VACA_HIELO_F "../assets/vaca/vaca-hielo-front.bmp"
+#define VACA_HIELO_B "../assets/vaca/vaca-hielo-back.bmp"
+#define VACA_HIELO_L "../assets/vaca/vaca-hielo-left.bmp"
+#define VACA_HIELO_R "../assets/vaca/vaca-hielo-right.bmp"
+#define VACA_HIELO_F_ALT "assets/vaca/vaca-hielo-front.bmp"
+#define VACA_HIELO_B_ALT "assets/vaca/vaca-hielo-back.bmp"
+#define VACA_HIELO_L_ALT "assets/vaca/vaca-hielo-left.bmp"
+#define VACA_HIELO_R_ALT "assets/vaca/vaca-hielo-right.bmp"
 
 #define CAB_FUEGO_FRONT "../assets/caballero-fuego/caballero-fuego-front.bmp"
 #define CAB_FUEGO_FRONT_ALT "assets/caballero-fuego/caballero-fuego-front.bmp"
@@ -105,6 +115,38 @@
 #define CAB_FUEGO_MOVE2_L_ALT "assets/caballero-fuego/caballero-fuego-war-move-2-left.bmp"
 #define CAB_FUEGO_MOVE2_R "../assets/caballero-fuego/caballero-fuego-war-move-2-right.bmp"
 #define CAB_FUEGO_MOVE2_R_ALT "assets/caballero-fuego/caballero-fuego-war-move-2-right.bmp"
+#define CAB_HIELO_FRONT "../assets/caballero-hielo/caballero-hielo-front.bmp"
+#define CAB_HIELO_FRONT_ALT "assets/caballero-hielo/caballero-hielo-front.bmp"
+#define CAB_HIELO_BACK "../assets/caballero-hielo/caballero-hielo-back.bmp"
+#define CAB_HIELO_BACK_ALT "assets/caballero-hielo/caballero-hielo-back.bmp"
+#define CAB_HIELO_LEFT "../assets/caballero-hielo/caballero-hielo-left.bmp"
+#define CAB_HIELO_LEFT_ALT "assets/caballero-hielo/caballero-hielo-left.bmp"
+#define CAB_HIELO_RIGHT "../assets/caballero-hielo/caballero-hielo-right.bmp"
+#define CAB_HIELO_RIGHT_ALT "assets/caballero-hielo/caballero-hielo-right.bmp"
+#define CAB_HIELO_STAND_L "../assets/caballero-hielo/caballero-hielo-stand-left.bmp"
+#define CAB_HIELO_STAND_L_ALT "assets/caballero-hielo/caballero-hielo-stand-left.bmp"
+#define CAB_HIELO_STAND_R "../assets/caballero-hielo/caballero-hielo-stand-right.bmp"
+#define CAB_HIELO_STAND_R_ALT "assets/caballero-hielo/caballero-hielo-stand-right.bmp"
+#define CAB_HIELO_DIE1_L "../assets/caballero-hielo/caballero-hielo-die-1-left.bmp"
+#define CAB_HIELO_DIE1_L_ALT "assets/caballero-hielo/caballero-hielo-die-1-left.bmp"
+#define CAB_HIELO_DIE1_R "../assets/caballero-hielo/caballero-hielo-die-1-right.bmp"
+#define CAB_HIELO_DIE1_R_ALT "assets/caballero-hielo/caballero-hielo-die-1-right.bmp"
+#define CAB_HIELO_DIE2_L "../assets/caballero-hielo/caballero-hielo-die-2-left.bmp"
+#define CAB_HIELO_DIE2_L_ALT "assets/caballero-hielo/caballero-hielo-die-2-left.bmp"
+#define CAB_HIELO_DIE2_R "../assets/caballero-hielo/caballero-hielo-die-2-right.bmp"
+#define CAB_HIELO_DIE2_R_ALT "assets/caballero-hielo/caballero-hielo-die-2-right.bmp"
+#define CAB_HIELO_MOVE1_L "../assets/caballero-hielo/caballero-hielo-war-move-1-left.bmp"
+#define CAB_HIELO_MOVE1_L_ALT "assets/caballero-hielo/caballero-hielo-war-move-1-left.bmp"
+#define CAB_HIELO_MOVE2_L "../assets/caballero-hielo/caballero-hielo-war-move-2-left.bmp"
+#define CAB_HIELO_MOVE2_L_ALT "assets/caballero-hielo/caballero-hielo-war-move-2-left.bmp"
+#define CAB_HIELO_MOVE3_L "../assets/caballero-hielo/caballero-hielo-war-move-3-left.bmp"
+#define CAB_HIELO_MOVE3_L_ALT "assets/caballero-hielo/caballero-hielo-war-move-3-left.bmp"
+#define CAB_HIELO_MOVE1_R "../assets/caballero-hielo/caballero-hielo-war-move-1-right.bmp"
+#define CAB_HIELO_MOVE1_R_ALT "assets/caballero-hielo/caballero-hielo-war-move-1-right.bmp"
+#define CAB_HIELO_MOVE2_R "../assets/caballero-hielo/caballero-hielo-war-move-2-right.bmp"
+#define CAB_HIELO_MOVE2_R_ALT "assets/caballero-hielo/caballero-hielo-war-move-2-right.bmp"
+#define CAB_HIELO_MOVE3_R "../assets/caballero-hielo/caballero-hielo-war-move-3-right.bmp"
+#define CAB_HIELO_MOVE3_R_ALT "assets/caballero-hielo/caballero-hielo-war-move-3-right.bmp"
 
 #define GUERRERO_FUEGO_FRONT "../assets/guerrero-fuego/guerrero-fuego-front.bmp"
 #define GUERRERO_FUEGO_FRONT_ALT "assets/guerrero-fuego/guerrero-fuego-front.bmp"
@@ -134,6 +176,34 @@
 #define GUERRERO_FUEGO_MOVE2_L_ALT "assets/guerrero-fuego/guerrero-fuego-war-move-2-left.bmp"
 #define GUERRERO_FUEGO_MOVE2_R "../assets/guerrero-fuego/guerrero-fuego-war-move-2-right.bmp"
 #define GUERRERO_FUEGO_MOVE2_R_ALT "assets/guerrero-fuego/guerrero-fuego-war-move-2-right.bmp"
+#define GUERRERO_HIELO_FRONT "../assets/guerrero-hielo/guerrero-hielo-front.bmp"
+#define GUERRERO_HIELO_FRONT_ALT "assets/guerrero-hielo/guerrero-hielo-front.bmp"
+#define GUERRERO_HIELO_BACK "../assets/guerrero-hielo/guerrero-hielo-back.bmp"
+#define GUERRERO_HIELO_BACK_ALT "assets/guerrero-hielo/guerrero-hielo-back.bmp"
+#define GUERRERO_HIELO_LEFT "../assets/guerrero-hielo/guerrero-hielo-left.bmp"
+#define GUERRERO_HIELO_LEFT_ALT "assets/guerrero-hielo/guerrero-hielo-left.bmp"
+#define GUERRERO_HIELO_RIGHT "../assets/guerrero-hielo/guerrero-hielo-right.bmp"
+#define GUERRERO_HIELO_RIGHT_ALT "assets/guerrero-hielo/guerrero-hielo-right.bmp"
+#define GUERRERO_HIELO_STAND_L "../assets/guerrero-hielo/guerrero-hielo-war-stand-left.bmp"
+#define GUERRERO_HIELO_STAND_L_ALT "assets/guerrero-hielo/guerrero-hielo-war-stand-left.bmp"
+#define GUERRERO_HIELO_STAND_R "../assets/guerrero-hielo/guerrero-hielo-war-stand-right.bmp"
+#define GUERRERO_HIELO_STAND_R_ALT "assets/guerrero-hielo/guerrero-hielo-war-stand-right.bmp"
+#define GUERRERO_HIELO_DIE1_L "../assets/guerrero-hielo/guerrero-hielo-die-1-left.bmp"
+#define GUERRERO_HIELO_DIE1_L_ALT "assets/guerrero-hielo/guerrero-hielo-die-1-left.bmp"
+#define GUERRERO_HIELO_DIE1_R "../assets/guerrero-hielo/guerrero-hielo-die-1-right.bmp"
+#define GUERRERO_HIELO_DIE1_R_ALT "assets/guerrero-hielo/guerrero-hielo-die-1-right.bmp"
+#define GUERRERO_HIELO_DIE2_L "../assets/guerrero-hielo/guerrero-hielo-die-2-left.bmp"
+#define GUERRERO_HIELO_DIE2_L_ALT "assets/guerrero-hielo/guerrero-hielo-die-2-left.bmp"
+#define GUERRERO_HIELO_DIE2_R "../assets/guerrero-hielo/guerrero-hielo-die-2-right.bmp"
+#define GUERRERO_HIELO_DIE2_R_ALT "assets/guerrero-hielo/guerrero-hielo-die-2-right.bmp"
+#define GUERRERO_HIELO_MOVE1_L "../assets/guerrero-hielo/guerrero-hielo-war-move-1-left.bmp"
+#define GUERRERO_HIELO_MOVE1_L_ALT "assets/guerrero-hielo/guerrero-hielo-war-move-1-left.bmp"
+#define GUERRERO_HIELO_MOVE1_R "../assets/guerrero-hielo/guerrero-hielo-war-move-1-right.bmp"
+#define GUERRERO_HIELO_MOVE1_R_ALT "assets/guerrero-hielo/guerrero-hielo-war-move-1-right.bmp"
+#define GUERRERO_HIELO_MOVE2_L "../assets/guerrero-hielo/guerrero-hielo-war-move-2-left.bmp"
+#define GUERRERO_HIELO_MOVE2_L_ALT "assets/guerrero-hielo/guerrero-hielo-war-move-2-left.bmp"
+#define GUERRERO_HIELO_MOVE2_R "../assets/guerrero-hielo/guerrero-hielo-war-move-2-right.bmp"
+#define GUERRERO_HIELO_MOVE2_R_ALT "assets/guerrero-hielo/guerrero-hielo-war-move-2-right.bmp"
 
 #define TIEMPO_DESAPARICION_CUERPO_MS 5000ULL
 
@@ -153,12 +223,23 @@ static HBITMAP hCaballeroFuegoStand[2] = {NULL};
 static HBITMAP hCaballeroFuegoDie[2] = {NULL};
 static HBITMAP hCaballeroFuegoDie2[2] = {NULL};
 static HBITMAP hCaballeroFuegoAtk[2][3] = {{NULL}};
+static HBITMAP hCaballeroHieloBmp[4] = {NULL};
+static HBITMAP hCaballeroHieloStand[2] = {NULL};
+static HBITMAP hCaballeroHieloDie[2] = {NULL};
+static HBITMAP hCaballeroHieloDie2[2] = {NULL};
+static HBITMAP hCaballeroHieloAtk[2][3] = {{NULL}};
 static HBITMAP hGuerreroFuegoBmp[4] = {NULL};
 static HBITMAP hGuerreroFuegoStand[2] = {NULL};
 static HBITMAP hGuerreroFuegoWalk[2] = {NULL};
 static HBITMAP hGuerreroFuegoDie[2] = {NULL};
 static HBITMAP hGuerreroFuegoDie2[2] = {NULL};
 static HBITMAP hGuerreroFuegoAtk[2][2] = {{NULL}};
+static HBITMAP hGuerreroHieloBmp[4] = {NULL};
+static HBITMAP hGuerreroHieloStand[2] = {NULL};
+static HBITMAP hGuerreroHieloWalk[2] = {NULL};
+static HBITMAP hGuerreroHieloDie[2] = {NULL};
+static HBITMAP hGuerreroHieloDie2[2] = {NULL};
+static HBITMAP hGuerreroHieloAtk[2][2] = {{NULL}};
 
 // Sprites adicionales para combates (quieto, caminar, defensa, muerte)
 static HBITMAP hCaballeroStand[2] = {NULL};   // [0=left,1=right]
@@ -179,12 +260,14 @@ static bool gGenerarRecursos = true;
 
 typedef enum {
   MAPA_TEMA_CLASICO = 0,
-  MAPA_TEMA_FUEGO = 1
+  MAPA_TEMA_HIELO = 1,
+  MAPA_TEMA_FUEGO = 2
 } TemaIsla;
 
 static TemaIsla gTemaIslaActual = MAPA_TEMA_CLASICO;
 static int gIslaSeleccionadaActual = 1;
 static bool gSpritesFuegoCargados = false;
+static bool gSpritesHieloCargados = false;
 
 static bool unidadCuerpoDesaparecido(Unidad *u, ULONGLONG ahora,
                                      ULONGLONG *outDt) {
@@ -213,6 +296,7 @@ static bool unidadBarraVisible(Unidad *u) {
 }
 
 static bool mapaEsTemaFuego(void) { return gTemaIslaActual == MAPA_TEMA_FUEGO; }
+static bool mapaEsTemaHielo(void) { return gTemaIslaActual == MAPA_TEMA_HIELO; }
 
 static HBITMAP cargarSpriteOpcional(const char *principal, const char *alterno,
                   int ancho, int alto) {
@@ -307,6 +391,93 @@ static void cargarSpritesFuego(void) {
 
   gSpritesFuegoCargados = true;
 }
+
+  static void cargarSpritesHielo(void) {
+    if (gSpritesHieloCargados)
+    return;
+
+    hCaballeroHieloBmp[DIR_FRONT] =
+      cargarSpriteOpcional(CAB_HIELO_FRONT, CAB_HIELO_FRONT_ALT, 64, 64);
+    hCaballeroHieloBmp[DIR_BACK] =
+      cargarSpriteOpcional(CAB_HIELO_BACK, CAB_HIELO_BACK_ALT, 64, 64);
+    hCaballeroHieloBmp[DIR_LEFT] =
+      cargarSpriteOpcional(CAB_HIELO_LEFT, CAB_HIELO_LEFT_ALT, 64, 64);
+    hCaballeroHieloBmp[DIR_RIGHT] =
+      cargarSpriteOpcional(CAB_HIELO_RIGHT, CAB_HIELO_RIGHT_ALT, 64, 64);
+
+    hCaballeroHieloStand[0] =
+      cargarSpriteOpcional(CAB_HIELO_STAND_L, CAB_HIELO_STAND_L_ALT, 64, 64);
+    hCaballeroHieloStand[1] =
+      cargarSpriteOpcional(CAB_HIELO_STAND_R, CAB_HIELO_STAND_R_ALT, 64, 64);
+    hCaballeroHieloDie[0] =
+      cargarSpriteOpcional(CAB_HIELO_DIE1_L, CAB_HIELO_DIE1_L_ALT, 64, 64);
+    hCaballeroHieloDie[1] =
+      cargarSpriteOpcional(CAB_HIELO_DIE1_R, CAB_HIELO_DIE1_R_ALT, 64, 64);
+    hCaballeroHieloDie2[0] =
+      cargarSpriteOpcional(CAB_HIELO_DIE2_L, CAB_HIELO_DIE2_L_ALT, 64, 64);
+    hCaballeroHieloDie2[1] =
+      cargarSpriteOpcional(CAB_HIELO_DIE2_R, CAB_HIELO_DIE2_R_ALT, 64, 64);
+
+    hCaballeroHieloAtk[0][0] =
+      cargarSpriteOpcional(CAB_HIELO_MOVE1_L, CAB_HIELO_MOVE1_L_ALT, 64, 64);
+    hCaballeroHieloAtk[0][1] =
+      cargarSpriteOpcional(CAB_HIELO_MOVE2_L, CAB_HIELO_MOVE2_L_ALT, 64, 64);
+    hCaballeroHieloAtk[0][2] =
+      cargarSpriteOpcional(CAB_HIELO_MOVE3_L, CAB_HIELO_MOVE3_L_ALT, 64, 64);
+    if (!hCaballeroHieloAtk[0][2])
+    hCaballeroHieloAtk[0][2] = hCaballeroHieloAtk[0][1];
+    if (!hCaballeroHieloAtk[0][1])
+    hCaballeroHieloAtk[0][1] = hCaballeroHieloAtk[0][0];
+
+    hCaballeroHieloAtk[1][0] =
+      cargarSpriteOpcional(CAB_HIELO_MOVE1_R, CAB_HIELO_MOVE1_R_ALT, 64, 64);
+    hCaballeroHieloAtk[1][1] =
+      cargarSpriteOpcional(CAB_HIELO_MOVE2_R, CAB_HIELO_MOVE2_R_ALT, 64, 64);
+    hCaballeroHieloAtk[1][2] =
+      cargarSpriteOpcional(CAB_HIELO_MOVE3_R, CAB_HIELO_MOVE3_R_ALT, 64, 64);
+    if (!hCaballeroHieloAtk[1][2])
+    hCaballeroHieloAtk[1][2] = hCaballeroHieloAtk[1][1];
+    if (!hCaballeroHieloAtk[1][1])
+    hCaballeroHieloAtk[1][1] = hCaballeroHieloAtk[1][0];
+
+    hGuerreroHieloBmp[DIR_FRONT] = cargarSpriteOpcional(
+      GUERRERO_HIELO_FRONT, GUERRERO_HIELO_FRONT_ALT, 64, 64);
+    hGuerreroHieloBmp[DIR_BACK] = cargarSpriteOpcional(
+      GUERRERO_HIELO_BACK, GUERRERO_HIELO_BACK_ALT, 64, 64);
+    hGuerreroHieloBmp[DIR_LEFT] = cargarSpriteOpcional(
+      GUERRERO_HIELO_LEFT, GUERRERO_HIELO_LEFT_ALT, 64, 64);
+    hGuerreroHieloBmp[DIR_RIGHT] = cargarSpriteOpcional(
+      GUERRERO_HIELO_RIGHT, GUERRERO_HIELO_RIGHT_ALT, 64, 64);
+
+    hGuerreroHieloStand[0] = cargarSpriteOpcional(
+      GUERRERO_HIELO_STAND_L, GUERRERO_HIELO_STAND_L_ALT, 64, 64);
+    hGuerreroHieloStand[1] = cargarSpriteOpcional(
+      GUERRERO_HIELO_STAND_R, GUERRERO_HIELO_STAND_R_ALT, 64, 64);
+    hGuerreroHieloDie[0] = cargarSpriteOpcional(
+      GUERRERO_HIELO_DIE1_L, GUERRERO_HIELO_DIE1_L_ALT, 64, 64);
+    hGuerreroHieloDie[1] = cargarSpriteOpcional(
+      GUERRERO_HIELO_DIE1_R, GUERRERO_HIELO_DIE1_R_ALT, 64, 64);
+    hGuerreroHieloDie2[0] = cargarSpriteOpcional(
+      GUERRERO_HIELO_DIE2_L, GUERRERO_HIELO_DIE2_L_ALT, 64, 64);
+    hGuerreroHieloDie2[1] = cargarSpriteOpcional(
+      GUERRERO_HIELO_DIE2_R, GUERRERO_HIELO_DIE2_R_ALT, 64, 64);
+
+    hGuerreroHieloWalk[0] = cargarSpriteOpcional(
+      GUERRERO_HIELO_MOVE1_L, GUERRERO_HIELO_MOVE1_L_ALT, 64, 64);
+    hGuerreroHieloWalk[1] = cargarSpriteOpcional(
+      GUERRERO_HIELO_MOVE1_R, GUERRERO_HIELO_MOVE1_R_ALT, 64, 64);
+
+    hGuerreroHieloAtk[0][0] = cargarSpriteOpcional(
+      GUERRERO_HIELO_MOVE1_L, GUERRERO_HIELO_MOVE1_L_ALT, 64, 64);
+    hGuerreroHieloAtk[0][1] = cargarSpriteOpcional(
+      GUERRERO_HIELO_MOVE2_L, GUERRERO_HIELO_MOVE2_L_ALT, 64, 64);
+    hGuerreroHieloAtk[1][0] = cargarSpriteOpcional(
+      GUERRERO_HIELO_MOVE1_R, GUERRERO_HIELO_MOVE1_R_ALT, 64, 64);
+    hGuerreroHieloAtk[1][1] = cargarSpriteOpcional(
+      GUERRERO_HIELO_MOVE2_R, GUERRERO_HIELO_MOVE2_R_ALT, 64, 64);
+
+    gSpritesHieloCargados = true;
+  }
 
 // Definiciones para obrerro fallback
 #define OBRERO_F_ALT "assets/obrero/obrero_front.bmp"
@@ -534,8 +705,18 @@ void mapaSeleccionarIsla(int isla) {
     snprintf(gRutaMapaPrincipal, sizeof(gRutaMapaPrincipal), "..\\assets\\islas\\isla%d.bmp", seleccion);
     snprintf(gRutaMapaAlterna, sizeof(gRutaMapaAlterna), "assets/islas/isla%d.bmp", seleccion);
     gIslaSeleccionadaActual = seleccion;
-    gTemaIslaActual = (seleccion == 5) ? MAPA_TEMA_FUEGO : MAPA_TEMA_CLASICO;
+    if (seleccion == 5) {
+      gTemaIslaActual = MAPA_TEMA_FUEGO;
+    } else if (seleccion == 4) {
+      gTemaIslaActual = MAPA_TEMA_HIELO;
+    } else {
+      gTemaIslaActual = MAPA_TEMA_CLASICO;
+    }
 }
+
+int mapaObtenerIslaSeleccionada(void) { return gIslaSeleccionadaActual; }
+bool mapaTemaActualEsFuego(void) { return mapaEsTemaFuego(); }
+bool mapaTemaActualEsHielo(void) { return mapaEsTemaHielo(); }
 
 void mapaReconstruirCollisionMap(void) {
   collisionMapAllocIfNeeded();
@@ -884,6 +1065,13 @@ static void detectarAguaEnMapa(void) {
 
       bool esAgua = esAguaAzulOscura || esAguaAzulClara;
 
+      if (!esAgua && gIslaSeleccionadaActual == 4) {
+        // Isla 4 usa agua turquesa/helada con mucho verde; permitir azul dominante suave
+        bool esAguaCianBrillante = (b > 150 && g > 140 && r < 120 && (b - r) > 25);
+        bool esAguaTurquesa = (b > 170 && g > 150 && r < 150 && (b - g) <= 25);
+        esAgua = esAguaCianBrillante || esAguaTurquesa;
+      }
+
       if (esAgua) {
         // ES AGUA - marcar como impasable
         *(fila + c) = 1;
@@ -1155,7 +1343,7 @@ void generarBosqueAutomatico() {
          "mapaObjetos.\n");
 
   // Obtener ID de isla para adaptar la logica de generacion
-  int islaActual = menuObtenerIsla(); 
+  int islaActual = gIslaSeleccionadaActual;
   printf("[DEBUG] Generando recursos para Isla ID: %d\n", islaActual);
 
   // REQUISITO CRÍTICO: Colocar exactamente 15 árboles (no por probabilidad)
@@ -1332,6 +1520,8 @@ void cargarRecursosGraficos() {
 
   if (mapaEsTemaFuego()) {
     cargarSpritesFuego();
+  } else if (mapaEsTemaHielo()) {
+    cargarSpritesHielo();
   }
 
   // NUEVO: Cargar mapa global con las 3 islas (mapaDemo2.bmp)
@@ -1357,6 +1547,11 @@ void cargarRecursosGraficos() {
     for (int i = 0; i < 4; i++) {
       rutasPrincipales[i] = ARBOL_FUEGO;
       rutasAlternas[i] = ARBOL_FUEGO_ALT;
+    }
+  } else if (mapaEsTemaHielo()) {
+    for (int i = 0; i < 4; i++) {
+      rutasPrincipales[i] = ARBOL_HIELO;
+      rutasAlternas[i] = ARBOL_HIELO_ALT;
     }
   } else {
     rutasPrincipales[0] = ARBOL1;
@@ -1672,6 +1867,15 @@ void cargarRecursosGraficos() {
     rutasVacaAlt[DIR_LEFT] = VACA_FUEGO_L_ALT;
     rutasVaca[DIR_RIGHT] = VACA_FUEGO_R;
     rutasVacaAlt[DIR_RIGHT] = VACA_FUEGO_R_ALT;
+  } else if (mapaEsTemaHielo()) {
+    rutasVaca[DIR_FRONT] = VACA_HIELO_F;
+    rutasVacaAlt[DIR_FRONT] = VACA_HIELO_F_ALT;
+    rutasVaca[DIR_BACK] = VACA_HIELO_B;
+    rutasVacaAlt[DIR_BACK] = VACA_HIELO_B_ALT;
+    rutasVaca[DIR_LEFT] = VACA_HIELO_L;
+    rutasVacaAlt[DIR_LEFT] = VACA_HIELO_L_ALT;
+    rutasVaca[DIR_RIGHT] = VACA_HIELO_R;
+    rutasVacaAlt[DIR_RIGHT] = VACA_HIELO_R_ALT;
   } else {
     rutasVaca[DIR_FRONT] = VACA_F;
     rutasVacaAlt[DIR_FRONT] = VACA_F_ALT;
@@ -1867,21 +2071,34 @@ static void dibujarUnidadCombat(HDC hdcBuffer, HDC hdcSprites, Unidad *u,
     }
   }
   bool usarSpritesFuego = esEnemigo && mapaEsTemaFuego();
+  bool usarSpritesHielo = esEnemigo && mapaEsTemaHielo();
   if (u->tipo == TIPO_CABALLERO) {
-    HBITMAP muerte1 = usarSpritesFuego && hCaballeroFuegoDie[dirIdx]
-                          ? hCaballeroFuegoDie[dirIdx]
-                          : hCaballeroDie[dirIdx];
-    HBITMAP muerte2 = usarSpritesFuego && hCaballeroFuegoDie2[dirIdx]
-                          ? hCaballeroFuegoDie2[dirIdx]
-                          : hCaballeroDie2[dirIdx];
-    HBITMAP standSprite = usarSpritesFuego && hCaballeroFuegoStand[dirIdx]
-                              ? hCaballeroFuegoStand[dirIdx]
-                              : hCaballeroStand[dirIdx];
-    HBITMAP (*atkSet)[3] = usarSpritesFuego ? hCaballeroFuegoAtk
-                                            : hCaballeroAtk;
+    HBITMAP muerte1 = hCaballeroDie[dirIdx];
+    HBITMAP muerte2 = hCaballeroDie2[dirIdx];
+    HBITMAP standSprite = hCaballeroStand[dirIdx];
+    HBITMAP (*atkSet)[3] = hCaballeroAtk;
+    HBITMAP *dirsBase = hCaballeroBmp;
+
+    if (usarSpritesFuego) {
+      if (hCaballeroFuegoDie[dirIdx])
+        muerte1 = hCaballeroFuegoDie[dirIdx];
+      if (hCaballeroFuegoDie2[dirIdx])
+        muerte2 = hCaballeroFuegoDie2[dirIdx];
+      if (hCaballeroFuegoStand[dirIdx])
+        standSprite = hCaballeroFuegoStand[dirIdx];
+      atkSet = hCaballeroFuegoAtk;
+      dirsBase = hCaballeroFuegoBmp;
+    } else if (usarSpritesHielo) {
+      if (hCaballeroHieloDie[dirIdx])
+        muerte1 = hCaballeroHieloDie[dirIdx];
+      if (hCaballeroHieloDie2[dirIdx])
+        muerte2 = hCaballeroHieloDie2[dirIdx];
+      if (hCaballeroHieloStand[dirIdx])
+        standSprite = hCaballeroHieloStand[dirIdx];
+      atkSet = hCaballeroHieloAtk;
+      dirsBase = hCaballeroHieloBmp;
+    }
     HBITMAP ataqueFrame = atkSet[dirIdx][atkFrame % 3];
-    HBITMAP *dirsBase = usarSpritesFuego ? hCaballeroFuegoBmp
-                                         : hCaballeroBmp;
     HBITMAP marcha = (dirsBase && dirsBase[u->dir]) ? dirsBase[u->dir]
                                                     : hCaballeroBmp[u->dir];
 
@@ -1922,25 +2139,42 @@ static void dibujarUnidadCombat(HDC hdcBuffer, HDC hdcSprites, Unidad *u,
       sprite = hCaballeroSinEscudoBmp[u->dir];
     }
   } else { // GUERRERO
-    HBITMAP muerte1 = usarSpritesFuego && hGuerreroFuegoDie[dirIdx]
-                          ? hGuerreroFuegoDie[dirIdx]
-                          : hGuerreroDie[dirIdx];
-    HBITMAP muerte2 = usarSpritesFuego && hGuerreroFuegoDie2[dirIdx]
-                          ? hGuerreroFuegoDie2[dirIdx]
-                          : hGuerreroDie2[dirIdx];
-    HBITMAP standSprite = usarSpritesFuego && hGuerreroFuegoStand[dirIdx]
-                              ? hGuerreroFuegoStand[dirIdx]
-                              : hGuerreroStand[dirIdx];
-    HBITMAP (*atkSetG)[2] = usarSpritesFuego ? hGuerreroFuegoAtk
-                                             : hGuerreroAtk;
+    HBITMAP muerte1 = hGuerreroDie[dirIdx];
+    HBITMAP muerte2 = hGuerreroDie2[dirIdx];
+    HBITMAP standSprite = hGuerreroStand[dirIdx];
+    HBITMAP (*atkSetG)[2] = hGuerreroAtk;
+    HBITMAP *dirsGuerr = hGuerreroBmp;
+
+    if (usarSpritesFuego) {
+      if (hGuerreroFuegoDie[dirIdx])
+        muerte1 = hGuerreroFuegoDie[dirIdx];
+      if (hGuerreroFuegoDie2[dirIdx])
+        muerte2 = hGuerreroFuegoDie2[dirIdx];
+      if (hGuerreroFuegoStand[dirIdx])
+        standSprite = hGuerreroFuegoStand[dirIdx];
+      atkSetG = hGuerreroFuegoAtk;
+      dirsGuerr = hGuerreroFuegoBmp;
+    } else if (usarSpritesHielo) {
+      if (hGuerreroHieloDie[dirIdx])
+        muerte1 = hGuerreroHieloDie[dirIdx];
+      if (hGuerreroHieloDie2[dirIdx])
+        muerte2 = hGuerreroHieloDie2[dirIdx];
+      if (hGuerreroHieloStand[dirIdx])
+        standSprite = hGuerreroHieloStand[dirIdx];
+      atkSetG = hGuerreroHieloAtk;
+      dirsGuerr = hGuerreroHieloBmp;
+    }
     HBITMAP ataqueFrame = atkSetG[dirIdx][atkFrame % 2];
-    HBITMAP *dirsGuerr = usarSpritesFuego ? hGuerreroFuegoBmp
-                                          : hGuerreroBmp;
-    HBITMAP movimiento = (!gEsIslaPrincipalActual)
-                             ? (usarSpritesFuego && hGuerreroFuegoWalk[dirIdx]
-                                    ? hGuerreroFuegoWalk[dirIdx]
-                                    : hGuerreroWalk[dirIdx])
-                             : NULL;
+    HBITMAP movimiento = NULL;
+    if (!gEsIslaPrincipalActual) {
+      if (usarSpritesFuego && hGuerreroFuegoWalk[dirIdx]) {
+        movimiento = hGuerreroFuegoWalk[dirIdx];
+      } else if (usarSpritesHielo && hGuerreroHieloWalk[dirIdx]) {
+        movimiento = hGuerreroHieloWalk[dirIdx];
+      } else {
+        movimiento = hGuerreroWalk[dirIdx];
+      }
+    }
     HBITMAP baseDir = (dirsGuerr && dirsGuerr[u->dir]) ? dirsGuerr[u->dir]
                                                        : hGuerreroBmp[u->dir];
 
