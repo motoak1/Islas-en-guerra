@@ -60,7 +60,7 @@ void menuEmbarqueInicializar(MenuEmbarque *menu) {
   menu->x = 0;
   menu->y = 0;
   menu->ancho = 400;
-  menu->alto = 350;
+  menu->alto = 460;
 }
 
 void menuEmbarqueAbrir(MenuEmbarque *menu, int anchoVentana, int altoVentana) {
