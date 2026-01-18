@@ -412,11 +412,13 @@ static void activarEnemigosDesdeEstado(EstadoIsla *estado) {
 }
 
 static void statsBasicosEnemigo(Unidad *u, TipoUnidad tipo, int islaDestino) {
-  float factorStats = 1;
+  float factorStats = 1.0f;
+  // Reducir stats en islas temáticas para balancear la dificultad
+  // (Debido a la alta defensa y lenta cadencia, se sentían invencibles con factor 1.0)
   if (islaDestino == 4) {
-    factorStats = 1.3;
+    factorStats = 1.1;
   } else if (islaDestino == 5) {
-    factorStats = 1.6;
+    factorStats = 1.2f;
   }
   u->tipo = tipo;
   u->moviendose = false;
@@ -1082,15 +1084,39 @@ static void restaurarEstadoIslaJugador(struct Jugador *j, int isla) {
   j->mina = estado->tieneMina ? &estado->mina : NULL;
   j->cuartel = estado->tieneCuartel ? &estado->cuartel : NULL;
 
-  // Restaurar unidades de esta isla
-  for (int i = 0; i < MAX_OBREROS; i++)
+  // Restaurar unidades de esta isla con saneamiento
+  for (int i = 0; i < MAX_OBREROS; i++) {
     j->obreros[i] = estado->obreros[i];
-  for (int i = 0; i < MAX_CABALLEROS; i++)
+    if (j->obreros[i].x < 1.0f && j->obreros[i].y < 1.0f) {
+        memset(&j->obreros[i], 0, sizeof(Unidad)); // Limpiar unidad fantasma en 0,0
+    } else if (j->obreros[i].vida <= 0 || j->obreros[i].tiempoMuerteMs > 0) {
+        memset(&j->obreros[i], 0, sizeof(Unidad)); // Remover cadáveres antiguos
+    }
+  }
+  for (int i = 0; i < MAX_CABALLEROS; i++) {
     j->caballeros[i] = estado->caballeros[i];
-  for (int i = 0; i < MAX_CABALLEROS_SIN_ESCUDO; i++)
+    if (j->caballeros[i].x < 1.0f && j->caballeros[i].y < 1.0f) {
+        memset(&j->caballeros[i], 0, sizeof(Unidad));
+    } else if (j->caballeros[i].vida <= 0 || j->caballeros[i].tiempoMuerteMs > 0) {
+        memset(&j->caballeros[i], 0, sizeof(Unidad));
+    }
+  }
+  for (int i = 0; i < MAX_CABALLEROS_SIN_ESCUDO; i++) {
     j->caballerosSinEscudo[i] = estado->caballerosSinEscudo[i];
-  for (int i = 0; i < MAX_GUERREROS; i++)
+     if (j->caballerosSinEscudo[i].x < 1.0f && j->caballerosSinEscudo[i].y < 1.0f) {
+        memset(&j->caballerosSinEscudo[i], 0, sizeof(Unidad));
+    } else if (j->caballerosSinEscudo[i].vida <= 0 || j->caballerosSinEscudo[i].tiempoMuerteMs > 0) {
+        memset(&j->caballerosSinEscudo[i], 0, sizeof(Unidad));
+    }
+  }
+  for (int i = 0; i < MAX_GUERREROS; i++) {
     j->guerreros[i] = estado->guerreros[i];
+    if (j->guerreros[i].x < 1.0f && j->guerreros[i].y < 1.0f) {
+        memset(&j->guerreros[i], 0, sizeof(Unidad));
+    } else if (j->guerreros[i].vida <= 0 || j->guerreros[i].tiempoMuerteMs > 0) {
+        memset(&j->guerreros[i], 0, sizeof(Unidad));
+    }
+  }
 
   if (estado->enemigosGenerados) {
     activarEnemigosDesdeEstado(estado);
@@ -1158,11 +1184,18 @@ void desembarcarTropas(Barco *barco, struct Jugador *j) {
     if (!tropa)
       continue;
 
+    // Asegurar que la tropa sea visible
+    tropa->x = -100; tropa->y = -100; // Temporal fuera de pantalla
+
     bool puesta = false;
-    // Búsqueda en radio creciente desde la celda de tierra encontrada
-    for (int radio = 0; radio <= 3 && !puesta; radio++) {
+    // Búsqueda en radio creciente ampliado (hasta radio 8)
+    for (int radio = 0; radio <= 8 && !puesta; radio++) {
       for (int dy = -radio; dy <= radio && !puesta; dy++) {
         for (int dx = -radio; dx <= radio; dx++) {
+          // Optimización: solo procesar anillo exterior del radio actual
+          // si radio > 0, para no repetir celdas internas
+          if (radio > 0 && abs(dx) < radio && abs(dy) < radio) continue;
+
           int cx = tierraX + dx;
           int cy = tierraY + dy;
           if (cx < 0 || cy < 0 || cx >= GRID_SIZE || cy >= GRID_SIZE)
@@ -1208,11 +1241,22 @@ void desembarcarTropas(Barco *barco, struct Jugador *j) {
               i, cy, cx, tropa->x, tropa->y);
           puesta = true;
           if (colocadas >= maxColocables) {
-            // No colocar más de las esperadas por seguridad
             break;
           }
         }
       }
+    }
+
+    // FALLBACK: Si no se encontró lugar libre, colocar en el centro de desembarco
+    // (mejor superpuestos que perdidos/invisibles)
+    if (!puesta) {
+        printf("[WARNING] No se encontro espacio libre para tropa %d, colocando en centro de desembarco (superpuesta)\n", i);
+        tropa->x = (float)(tierraX * TILE_SIZE);
+        tropa->y = (float)(tierraY * TILE_SIZE);
+        tropa->destinoX = tropa->x;
+        tropa->destinoY = tropa->y;
+        tropa->moviendose = false;
+        tropa->seleccionado = true;
     }
   }
 
@@ -1361,6 +1405,28 @@ bool viajarAIsla(struct Jugador *j, int islaDestino) {
       }
       estadoDestino->margenesAjustados = true;
     }
+    // FIX: Rebalancear estadísticas de enemigos si estamos en islas temáticas
+    // Esto corrige "esponjas de daño" en estados ya guardados
+    if (islaDestino == 4 || islaDestino == 5) {
+         for (int i=0; i < estadoDestino->numEnemigos; i++) {
+              Unidad *e = &estadoDestino->enemigos[i];
+              if (e->vida <= 0) continue; // Ignorar muertos
+
+              // Calcular porcentaje de vida actual
+              float pct = 1.0f;
+              if (e->vidaMax > 0) pct = (float)e->vida / (float)e->vidaMax;
+              
+              // Recalcular stats base con el nuevo factor 0.8
+              // NOTA: guardamos la posición antes porque statsBasicosEnemigo usa e->x/y actual
+              TipoUnidad tipoOriginal = e->tipo;
+              statsBasicosEnemigo(e, tipoOriginal, islaDestino); 
+              
+              // Restaurar vida proporcional
+              e->vida = (int)(e->vidaMax * pct);
+              if (e->vida <= 0 && pct > 0) e->vida = 1; // Evitar muerte accidental por redondeo
+         }
+    }
+
     activarEnemigosDesdeEstado(estadoDestino);
   } else {
     // Primera vez en la isla: resetear y generar base

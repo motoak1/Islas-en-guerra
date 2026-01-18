@@ -220,7 +220,7 @@ void simularBatalla(struct Jugador *j) {
 
 	// 2) Movimiento y ataques por turnos, lento
 	ULONGLONG ahora = GetTickCount64();
-	const ULONGLONG cadenciaMs = 1200; // ataques lentos
+	const ULONGLONG cadenciaMs = 1000; // ataques más fluidos (antes 1200)
 	const float velMov = 1.5f; // movimiento lento
 
 	for (int e = 0; e < numEnemigos; e++) {
