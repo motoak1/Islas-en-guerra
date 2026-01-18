@@ -344,16 +344,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
       }
       // Verificar si se hizo click sobre el cuartel
       else if (edificioContienePunto(&cuartel, mundoX, mundoY)) {
-        // RESTRICCIÓN: Todos pueden interactuar con el cuartel
-        // Usamos el centro del cuartel para medir proximidad
-        if (recursosCualquierTropaCercaDePunto(&jugador1, cuartel.x + 64.0f,
-                                               cuartel.y + 64.0f, 200.0f)) {
+        // RESTRICCIÓN: Solo OBREROS pueden interactuar con el cuartel
+        // (igual que el ayuntamiento - los soldados no entrenan tropas)
+        if (recursosObreroCercaDePunto(&jugador1, cuartel.x + 64.0f,
+                                       cuartel.y + 64.0f, 200.0f)) {
           // Abrir menú de entrenamiento
           GetClientRect(hwnd, &rect);
           menuEntrenamientoAbrir(&menuEntrenamiento, rect.right - rect.left,
                                  rect.bottom - rect.top);
         } else {
-          // Mandar al centro
+          // Mandar obreros seleccionados al cuartel
           rtsComandarMovimiento(&jugador1, cuartel.x + 64.0f,
                                 cuartel.y + 64.0f);
         }

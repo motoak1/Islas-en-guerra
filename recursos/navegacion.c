@@ -299,16 +299,15 @@ static bool buscarCeldaLibreCerca(int preferX, int preferY, int ancho, int alto,
 // ============================================================================
 
 // Array de posiciones por isla [isla][0=fila, 1=columna, 2=direccion]
-// Isla 0 no se usa, islas 1-3 son válidas
-// Array de posiciones por isla [isla][0=fila, 1=columna, 2=direccion]
-// Isla 0 no se usa, islas 1-3 son válidas
+// Isla 0 no se usa, islas 1-5 son válidas
+// Las posiciones están en coordenadas de celda (fila, columna)
 static int sPosicionesBarco[6][3] = {
     {0, 0, 0},   // Índice 0: no usado
     {15, 2, 3},  // Isla 1: fila=15, col=2, dir=DIR_RIGHT (mirando hacia isla)
     {15, 29, 2}, // Isla 2: fila=15, col=29, dir=DIR_LEFT
-    {2, 15, 0},   // Isla 3: fila=2, col=15, dir=DIR_FRONT
-    {0,0,0}, // Isla 4 (se usará detección automática)
-    {0,0,0}  // Isla 5 (se usará detección automática)
+    {2, 15, 0},  // Isla 3: fila=2, col=15, dir=DIR_FRONT
+    {5, 5, 3},   // Isla 4 (Hielo): fila=5, col=5, dir=DIR_RIGHT (cerca de orilla)
+    {3, 2, 3}    // Isla 5 (Fuego): fila=3, col=2, dir=DIR_RIGHT (en agua azul)
 };
 
 static void obtenerPosicionBarcoIsla(int isla, float *outX, float *outY,
@@ -325,11 +324,6 @@ static void obtenerPosicionBarcoIsla(int isla, float *outX, float *outY,
   int fila = *(posIsla + 0);                 // Primera posición: fila
   int columna = *(posIsla + 1);              // Segunda posición: columna
   int direccion = *(posIsla + 2);            // Tercera posición: dirección
-
-  if (isla >= 4 && fila == 0 && columna == 0) {
-    mapaDetectarOrilla(outX, outY, outDir);
-    return;
-  }
 
   // Convertir coordenadas de matriz a píxeles
   *outX = (float)(columna * TILE_SIZE);

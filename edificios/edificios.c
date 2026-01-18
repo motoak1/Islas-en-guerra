@@ -228,7 +228,19 @@ void edificiosCargarSprites() {
     printf("[ERROR] Fallo en carga de sprites:\n");
     if (!g_spriteMina)
       printf(" - Fallo Mina\n");
-
+  }
+  
+  // Debug específico para sprites temáticos
+  if (g_spriteMinaFuego) {
+    printf("[SISTEMA] Sprite mina-fuego.bmp cargado correctamente.\n");
+  } else {
+    printf("[ERROR] No se pudo cargar mina-fuego.bmp\n");
+  }
+  
+  if (g_spriteMinaHielo) {
+    printf("[SISTEMA] Sprite iglu.bmp cargado correctamente.\n");
+  } else {
+    printf("[ERROR] No se pudo cargar iglu.bmp\n");
   }
 
   // ============================================================================
@@ -381,6 +393,17 @@ void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
 
   bool esIslaFuego = mapaTemaActualEsFuego();
   bool esIslaHielo = mapaTemaActualEsHielo();
+  
+  // Debug temporal para verificar tema en islas 4 y 5
+  static int debugContador = 0;
+  if (debugContador < 10 && e->tipo == EDIFICIO_MINA && (esIslaFuego || esIslaHielo)) {
+    printf("[DEBUG EDIFICIO] Dibujando MINA en isla tematica: esIslaFuego=%d, esIslaHielo=%d, islaActual=%d\n",
+           esIslaFuego, esIslaHielo, islaActual);
+    printf("[DEBUG EDIFICIO] Sprites: MinaFuego=%p, MinaHielo(iglu)=%p, MinaNormal=%p\n",
+           (void*)g_spriteMinaFuego, (void*)g_spriteMinaHielo, (void*)g_spriteMina);
+    fflush(stdout);
+    debugContador++;
+  }
 
   // Convertir coordenadas del mundo a pantalla
   int pantallaX = (int)((e->x - camX) * zoom);
@@ -394,50 +417,56 @@ void edificioDibujar(HDC hdcBuffer, const Edificio *e, int camX, int camY,
     return;
   }
 
-  // SEGURIDAD: Si no tiene sprite asignado, intentar usar el global de carga
-  HBITMAP spriteADibujar = e->sprite;
-  if (!spriteADibujar) {
-    if (e->tipo == EDIFICIO_AYUNTAMIENTO) {
-      if (esIslaFuego && g_spriteCastilloFuego) {
-        spriteADibujar = g_spriteCastilloFuego;
-      } else if (esIslaHielo && g_spriteCastilloHielo) {
-        spriteADibujar = g_spriteCastilloHielo;
+  // SELECCIÓN DE SPRITE SEGÚN TEMA DE ISLA
+  // Siempre determinar el sprite correcto según el tema actual,
+  // ignorando e->sprite que puede tener un valor por defecto
+  HBITMAP spriteADibujar = NULL;
+  
+  if (e->tipo == EDIFICIO_AYUNTAMIENTO) {
+    if (esIslaFuego && g_spriteCastilloFuego) {
+      spriteADibujar = g_spriteCastilloFuego;
+    } else if (esIslaHielo && g_spriteCastilloHielo) {
+      spriteADibujar = g_spriteCastilloHielo;
+    } else {
+      bool esConquistada = navegacionIsIslaConquistada(islaActual);
+      if (esConquistada && g_spriteCastilloAliado) {
+        spriteADibujar = g_spriteCastilloAliado;
+      } else if (!esConquistada && g_spriteCastilloEnemigo) {
+        spriteADibujar = g_spriteCastilloEnemigo;
       } else {
-        bool esConquistada = navegacionIsIslaConquistada(islaActual);
-        if (esConquistada && g_spriteCastilloAliado) {
-          spriteADibujar = g_spriteCastilloAliado;
-        } else if (!esConquistada && g_spriteCastilloEnemigo) {
-          spriteADibujar = g_spriteCastilloEnemigo;
-        } else {
-          spriteADibujar = g_spriteAyuntamiento;
-        }
+        spriteADibujar = g_spriteAyuntamiento;
       }
     }
-    else if (e->tipo == EDIFICIO_MINA) {
-      if (esIslaFuego && g_spriteMinaFuego) {
-        spriteADibujar = g_spriteMinaFuego;
-      } else if (esIslaHielo && g_spriteMinaHielo) {
-        spriteADibujar = g_spriteMinaHielo;
+  }
+  else if (e->tipo == EDIFICIO_MINA) {
+    // MINA: Usar sprite temático si está en isla de fuego/hielo
+    if (esIslaFuego && g_spriteMinaFuego) {
+      spriteADibujar = g_spriteMinaFuego;
+    } else if (esIslaHielo && g_spriteMinaHielo) {
+      spriteADibujar = g_spriteMinaHielo;
+    } else {
+      spriteADibujar = g_spriteMina;
+    }
+  }
+  else if (e->tipo == EDIFICIO_CUARTEL) {
+    if (esIslaFuego && g_spriteCuartelFuego) {
+      spriteADibujar = g_spriteCuartelFuego;
+    } else if (esIslaHielo && g_spriteCuartelHielo) {
+      spriteADibujar = g_spriteCuartelHielo;
+    } else {
+      bool esConquistada = navegacionIsIslaConquistada(islaActual);
+      if (esConquistada && g_spriteCuartelAliado) {
+        spriteADibujar = g_spriteCuartelAliado;
+      } else if (!esConquistada && g_spriteCuartelEnemigo) {
+        spriteADibujar = g_spriteCuartelEnemigo;
       } else {
-        spriteADibujar = g_spriteMina;
+        spriteADibujar = g_spriteCuartel;
       }
     }
-    else if (e->tipo == EDIFICIO_CUARTEL) {
-      if (esIslaFuego && g_spriteCuartelFuego) {
-        spriteADibujar = g_spriteCuartelFuego;
-      } else if (esIslaHielo && g_spriteCuartelHielo) {
-        spriteADibujar = g_spriteCuartelHielo;
-      } else {
-        bool esConquistada = navegacionIsIslaConquistada(islaActual);
-        if (esConquistada && g_spriteCuartelAliado) {
-          spriteADibujar = g_spriteCuartelAliado;
-        } else if (!esConquistada && g_spriteCuartelEnemigo) {
-          spriteADibujar = g_spriteCuartelEnemigo;
-        } else {
-          spriteADibujar = g_spriteCuartel;
-        }
-      }
-    }
+  }
+  else {
+    // Otros tipos de edificio: usar el sprite asignado directamente
+    spriteADibujar = e->sprite;
   }
 
   // DIBUJAR SPRITE
