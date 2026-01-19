@@ -1,6 +1,6 @@
 #include "recursos.h"
 #include "navegacion.h" // Incluir para navegacionContarUnidadesGlobal
-#include "../edificios/edificios.h"
+#include "edificios/edificios.h"
 #include "../mapa/mapa.h"
 #include "../mapa/menu.h"
 #include "stdbool.h"

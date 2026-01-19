@@ -2,7 +2,7 @@
 #define NAVEGACION_H
 
 #include "recursos.h"
-#include "../edificios/edificios.h"
+#include "edificios/edificios.h"
 #include <windows.h>
 
 // Verifica si un punto está dentro del barco (para detección de clicks)

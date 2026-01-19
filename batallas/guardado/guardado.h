@@ -4,10 +4,10 @@
 #ifndef GUARDADO_H
 #define GUARDADO_H
 
-#include "../edificios/edificios.h"
-#include "../mapa/mapa.h"
-#include "../recursos/navegacion.h"
-#include "../recursos/recursos.h"
+#include "../../recursos/edificios/edificios.h"
+#include "../../mapa/mapa.h"
+#include "../../recursos/navegacion.h"
+#include "../../recursos/recursos.h"
 #include <stdbool.h>
 #include <windows.h>
 

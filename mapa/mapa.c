@@ -1,8 +1,8 @@
 // Definir version de Windows para habilitar GetTickCount64 en MinGW/GCC
 #define _WIN32_WINNT 0x0600
 #include "mapa.h"
-#include "../edificios/edificios.h"
-#include "../guardado/guardado.h"
+#include "../recursos/edificios/edificios.h"
+#include "../batallas/guardado/guardado.h"
 #include "../recursos/navegacion.h"
 #include "../recursos/recursos.h"
 #include "../recursos/ui_compra.h"

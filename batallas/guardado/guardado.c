@@ -3,8 +3,8 @@
 // Guardado único por nombre de jugador - Sin parpadeo
 #define _WIN32_WINNT 0x0600
 #include "guardado.h"
-#include "../mapa/mapa.h"
-#include "../recursos/recursos.h"
+#include "../../mapa/mapa.h"
+#include "../../recursos/recursos.h"
 #include <ctype.h>
 #include <direct.h>
 #include <stdio.h>

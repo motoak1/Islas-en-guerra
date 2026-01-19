@@ -1,20 +1,20 @@
 // edificios/edificios.c
 #include "edificios.h"
-#include "../mapa/mapa.h"
-#include "../recursos/navegacion.h"
+#include "../../mapa/mapa.h"
+#include "../navegacion.h"
 #include <stdio.h>
 #include <string.h>
 #include <windows.h>
 
 
-#define imgMina "../assets/mina.bmp"
-#define imgMinaFuego "../assets/mina-fuego.bmp"
-#define imgCastilloAliado "../assets/castillo_aliado.bmp"
-#define imgCastilloEnemigo "../assets/castillo_enemigo.bmp"
-#define imgCastilloFuego "../assets/castillo_fuego.bmp"
-#define imgCuartelAliado "../assets/cuartel_aliado.bmp"
-#define imgCuartelEnemigo "../assets/cuartel_enemigo.bmp"
-#define imgCuartelFuego "../assets/cuartel_fuego.bmp"
+#define imgMina "../../assets/mina.bmp"
+#define imgMinaFuego "../../assets/mina-fuego.bmp"
+#define imgCastilloAliado "../../assets/castillo_aliado.bmp"
+#define imgCastilloEnemigo "../../assets/castillo_enemigo.bmp"
+#define imgCastilloFuego "../../assets/castillo_fuego.bmp"
+#define imgCuartelAliado "../../assets/cuartel_aliado.bmp"
+#define imgCuartelEnemigo "../../assets/cuartel_enemigo.bmp"
+#define imgCuartelFuego "../../assets/cuartel_fuego.bmp"
 
 // Tamaño del castillo y cuartel (4x4 celdas de 64px = 256px)
 #define CASTILLO_SIZE 256
@@ -209,7 +209,7 @@ void edificiosCargarSprites() {
       break;
   }
 
-  const char *attemptsMinaHielo[] = {"\\assets\\iglu.bmp",
+  const char *attemptsMinaHielo[] = {"../../assets/iglu.bmp",
                                      "\\..\\assets\\iglu.bmp",
                                      "\\iglu.bmp"};
   g_spriteMinaHielo = NULL;
@@ -247,7 +247,7 @@ void edificiosCargarSprites() {
   // CARGAR SPRITES DE CASTILLOS ALIADO Y ENEMIGO (256x256, 4x4 celdas)
   // ============================================================================
   const char *attemptsCastilloAliado[] = {
-      "\\assets\\castillo_aliado.bmp", "\\..\\assets\\castillo_aliado.bmp",
+      "../../assets/castillo_aliado.bmp", "\\..\\assets\\castillo_aliado.bmp",
       "\\castillo_aliado.bmp"};
 
   g_spriteCastilloAliado = NULL;
@@ -263,7 +263,7 @@ void edificiosCargarSprites() {
   }
 
   const char *attemptsCastilloEnemigo[] = {
-      "\\assets\\castillo_enemigo.bmp", "\\..\\assets\\castillo_enemigo.bmp",
+      "../../assets/castillo_enemigo.bmp", "\\..\\assets\\castillo_enemigo.bmp",
       "\\castillo_enemigo.bmp"};
 
   g_spriteCastilloEnemigo = NULL;
@@ -287,7 +287,7 @@ void edificiosCargarSprites() {
   }
 
   const char *attemptsCastilloFuego[] = {
-      "\\assets\\castillo_fuego.bmp", "\\..\\assets\\castillo_fuego.bmp",
+      "../../assets/castillo_fuego.bmp", "\\..\\assets\\castillo_fuego.bmp",
       "\\castillo_fuego.bmp"};
   g_spriteCastilloFuego = NULL;
   for (int i = 0; i < 3; i++) {
@@ -301,7 +301,7 @@ void edificiosCargarSprites() {
   }
 
   const char *attemptsCastilloHielo[] = {
-      "\\assets\\castillo_hielo.bmp", "\\..\\assets\\castillo_hielo.bmp",
+      "../../assets/castillo_hielo.bmp", "\\..\\assets\\castillo_hielo.bmp",
       "\\castillo_hielo.bmp"};
   g_spriteCastilloHielo = NULL;
   for (int i = 0; i < 3; i++) {
@@ -318,7 +318,7 @@ void edificiosCargarSprites() {
   // CARGAR SPRITES DE CUARTELES ALIADO Y ENEMIGO (256x256, 4x4 celdas)
   // ============================================================================
   const char *attemptsCuartelAliado[] = {
-      "\\assets\\cuartel_aliado.bmp", "\\..\\assets\\cuartel_aliado.bmp",
+      "../../assets/cuartel_aliado.bmp", "\\..\\assets\\cuartel_aliado.bmp",
       "\\cuartel_aliado.bmp"};
 
   g_spriteCuartelAliado = NULL;
@@ -334,7 +334,7 @@ void edificiosCargarSprites() {
   }
 
   const char *attemptsCuartelEnemigo[] = {
-      "\\assets\\cuartel_enemigo.bmp", "\\..\\assets\\cuartel_enemigo.bmp",
+      "../../assets/cuartel_enemigo.bmp", "\\..\\assets\\cuartel_enemigo.bmp",
       "\\cuartel_enemigo.bmp"};
 
   g_spriteCuartelEnemigo = NULL;
@@ -358,7 +358,7 @@ void edificiosCargarSprites() {
   }
 
   const char *attemptsCuartelFuego[] = {
-      "\\assets\\cuartel_fuego.bmp", "\\..\\assets\\cuartel_fuego.bmp",
+      "../../assets/cuartel_fuego.bmp", "\\..\\assets\\cuartel_fuego.bmp",
       "\\cuartel_fuego.bmp"};
   g_spriteCuartelFuego = NULL;
   for (int i = 0; i < 3; i++) {
@@ -372,7 +372,7 @@ void edificiosCargarSprites() {
   }
 
   const char *attemptsCuartelHielo[] = {
-      "\\assets\\cuartel_hielo.bmp", "\\..\\assets\\cuartel_hielo.bmp",
+      "../../assets/cuartel_hielo.bmp", "\\..\\assets\\cuartel_hielo.bmp",
       "\\cuartel_hielo.bmp"};
   g_spriteCuartelHielo = NULL;
   for (int i = 0; i < 3; i++) {

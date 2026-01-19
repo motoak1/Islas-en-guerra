@@ -5,7 +5,7 @@
 #include <conio.h>
 #include <windows.h>
 #include <windowsx.h>
-#include "../guardado/guardado.h"
+#include "../batallas/guardado/guardado.h"
 
 // --- CONSTANTES DE DIMENSIONES Y POSICIONAMIENTO ---
 #define ANCHO_CONSOLA 80

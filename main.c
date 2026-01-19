@@ -1,5 +1,5 @@
-#include "edificios/edificios.h"
-#include "guardado/guardado.h"
+#include "recursos/edificios/edificios.h"
+#include "batallas/guardado/guardado.h"
 #include "mapa/mapa.h"
 #include "mapa/menu.h"
 #include "recursos/navegacion.h"
