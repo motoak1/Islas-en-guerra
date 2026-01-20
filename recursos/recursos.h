@@ -72,11 +72,11 @@ typedef enum { DIR_FRONT, DIR_BACK, DIR_LEFT, DIR_RIGHT } Direccion;
 // Sistema mínimo de animación (lógica). El render actual usa BMP por dirección;
 // aquí mantenemos el estado como punteros a estructuras, como pide la
 // especificación.
-typedef struct Animation {
-  Direccion dir;     // Dirección asociada a la animación
-  int frameCount;    // Cantidad de frames (lógico)
-  int ticksPerFrame; // Cuántos ticks dura cada frame
-} Animation;
+typedef struct Animacion {
+  Direccion direccion;     // Dirección asociada a la animación
+  int cantidadCuadros;    // Cantidad de frames (lógico)
+  int ticksPorCuadro; // Cuántos ticks dura cada frame
+} Animacion;
 
 typedef struct {
   float x, y;               // Posición exacta en el mapa (píxeles)
@@ -100,7 +100,7 @@ typedef struct {
   int celdaCol;
 
   // --- Animación por puntero a estado ---
-  const Animation *animActual;
+  const Animacion *animActual;
   int animTick;
 
   // --- Tipo de unidad ---
@@ -109,7 +109,7 @@ typedef struct {
   // --- Atributos de unidad ---
   float vida;
   float vidaMax;
-  float damage;
+  float dano;
   float critico; // Probabilidad de crítico (0-100)
   float defensa;
   float alcance;  

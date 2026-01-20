@@ -87,7 +87,7 @@ static void unidadASerializable(const Unidad *src,
   dst->tipo = (int)src->tipo;
   dst->vida = src->vida;
   dst->vidaMax = src->vidaMax;
-  dst->damage = src->damage;
+  dst->dano = src->dano;
   dst->critico = src->critico;
   dst->defensa = src->defensa;
   dst->alcance = src->alcance;
@@ -123,7 +123,7 @@ static void serializableAUnidad(const UnidadIslaSerializable *src,
   dst->tipo = (TipoUnidad)src->tipo;
   dst->vida = src->vida;
   dst->vidaMax = src->vidaMax;
-  dst->damage = src->damage;
+  dst->dano = src->dano;
   dst->critico = src->critico;
   dst->defensa = src->defensa;
   dst->alcance = src->alcance;
@@ -429,13 +429,13 @@ static void statsBasicosEnemigo(Unidad *u, TipoUnidad tipo, int islaDestino) {
   if (tipo == TIPO_CABALLERO) {
     u->vida = CABALLERO_VIDA * factorStats;
     u->vidaMax = CABALLERO_VIDA * factorStats;
-    u->damage = CABALLERO_DANO * factorStats;
+    u->dano = CABALLERO_DANO * factorStats;
     u->defensa = CABALLERO_DEFENSA * factorStats;
     u->critico = CABALLERO_CRITICO * factorStats;
   } else {
     u->vida = GUERRERO_VIDA * factorStats;
     u->vidaMax = GUERRERO_VIDA * factorStats;
-    u->damage = GUERRERO_DANO * factorStats;
+    u->dano = GUERRERO_DANO * factorStats;
     u->defensa = GUERRERO_DEFENSA * factorStats;
     u->critico = GUERRERO_CRITICO * factorStats;
   }

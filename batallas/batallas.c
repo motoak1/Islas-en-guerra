@@ -34,7 +34,7 @@ static void asegurarStats(Unidad *u) {
     };
     int idx = (u->tipo == TIPO_CABALLERO) ? 0 : (u->tipo == TIPO_CABALLERO_SIN_ESCUDO ? 1 : 2);
     u->vidaMax = u->vida = stats[idx][0];
-    u->damage = stats[idx][1]; u->defensa = stats[idx][2]; u->critico = stats[idx][3];
+    u->dano = stats[idx][1]; u->defensa = stats[idx][2]; u->critico = stats[idx][3];
 }
 
 static bool moverSuelo(Unidad *u, float nx, float ny, int **col) {
@@ -129,7 +129,7 @@ void simularBatalla(struct Jugador *j) {
         ULONGLONG *lastT = enTurn ? &sAttTimeEnemy[e] : &sAttTimeAlly[a];
 
         if (tick - *lastT >= 1000) {
-            int dmg = atkr->damage - def->defensa;
+            int dmg = atkr->dano - def->defensa;
             if (dmg < 5) dmg = 5;
             if (atkr->critico > rand()%100) dmg = (int)(dmg*1.5f);
             def->recibiendoAtaque = true;

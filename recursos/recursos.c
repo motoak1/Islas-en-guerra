@@ -11,12 +11,14 @@
 #include <windows.h>
 
 // --- Animaciones Lógicas ---
-static const Animation gAnimFront = {DIR_FRONT, 4, 6};
-static const Animation gAnimBack = {DIR_BACK, 4, 6};
-static const Animation gAnimLeft = {DIR_LEFT, 4, 6};
-static const Animation gAnimRight = {DIR_RIGHT, 4, 6};
+// Definimos animaciones constantes para cada dirección.
+// Cada animación tiene una dirección base, cantidad de cuadros y velocidad (ticks por cuadro).
+static const Animacion gAnimFront = {DIR_FRONT, 4, 6};
+static const Animacion gAnimBack = {DIR_BACK, 4, 6};
+static const Animacion gAnimLeft = {DIR_LEFT, 4, 6};
+static const Animacion gAnimRight = {DIR_RIGHT, 4, 6};
 
-static const Animation *animPorDireccion(Direccion d) {
+static const Animacion *animPorDireccion(Direccion d) {
   switch (d) {
   case DIR_BACK:
     return &gAnimBack;
@@ -94,6 +96,9 @@ static void obreroLiberarRuta(Unidad *o) {
 static void sincronizarIslasConquistadas(struct Jugador *j);
 
 // Pathfinding BFS - Ruta más corta usando arrays básicos
+// Implementación del algoritmo de Búsqueda en Anchura (Breadth-First Search).
+// Explora el mapa nivel por nivel para encontrar el camino más corto sin usar pesos.
+// Se utilizan arrays planos 'padreIdx' y 'bufferBFS' simulando colas para evitar estructuras de datos complejas.
 static bool pathfindSimple(int startF, int startC, int goalF, int goalC,
                            int **collision, int **outRuta, int *outLen) {
   if (startF == goalF && startC == goalC)
@@ -335,9 +340,9 @@ static void actualizarGrupoUnidades(Unidad *grupo, int count, int **col) {
       
       u->animActual = animPorDireccion(u->dir);
       u->animTick++;
-      if (u->animTick >= u->animActual->ticksPerFrame) {
+      if (u->animTick >= u->animActual->ticksPorCuadro) {
         u->animTick = 0;
-        u->frame = (u->frame + 1) % u->animActual->frameCount;
+        u->frame = (u->frame + 1) % u->animActual->cantidadCuadros;
       }
     }
 
@@ -525,7 +530,7 @@ static bool entrenarUnidadGenerico(struct Jugador *j, Unidad *array, int count, 
         array[i].recibiendoAtaque = false; array[i].tiempoMuerteMs = 0; array[i].frameMuerte = 0;
 
         if(tipo == TIPO_OBRERO) { array[i].vidaMax = OBRERO_VIDA_MAX; }
-        else if(tipo == TIPO_GUERRERO) { array[i].vidaMax = 120; array[i].damage = 30; array[i].critico = GUERRERO_CRITICO; array[i].defensa = 20; array[i].alcance = 64; }
+        else if(tipo == TIPO_GUERRERO) { array[i].vidaMax = 120; array[i].dano = 30; array[i].critico = GUERRERO_CRITICO; array[i].defensa = 20; array[i].alcance = 64; }
         else { array[i].vidaMax = CABALLERO_VIDA; } // Caballero
         array[i].vida = array[i].vidaMax;
 

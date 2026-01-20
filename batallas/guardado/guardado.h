@@ -50,7 +50,7 @@ typedef struct {
   int tipo; // TipoUnidad (guardado como int)
   int vida;
   int vidaMax;
-  int damage;
+  int dano;
   int critico;
   int defensa;
   int alcance;

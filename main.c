@@ -39,6 +39,9 @@ MenuPausa menuPausa;
 bool partidaCargada = false;
 
 // --- MOTOR DE VALIDACIÓN DE CÁMARA ---
+// Esta función asegura que la cámara nunca muestre zonas fuera del mapa.
+// Calcula el zoom mínimo para cubrir la pantalla y ajusta (x,y)
+// para mantenerse dentro de los límites [0, MAPA_SIZE].
 void corregirLimitesCamara(RECT rect) {
   int w = rect.right - rect.left, h = rect.bottom - rect.top;
   float sX = (float)w / MAPA_SIZE, sY = (float)h / MAPA_SIZE;
@@ -52,16 +55,19 @@ void corregirLimitesCamara(RECT rect) {
   if (camara.y < 0) camara.y = 0; else if (camara.y > maxH) camara.y = maxH;
 }
 
-// Helper inline para colisiones
-static inline bool enHitbox(Unidad *u, float mx, float my) {
+// Función auxiliar en línea para colisiones
+// Verifica si el punto (mx, my) está dentro del cuadro de 64x64 de la unidad.
+static inline bool enAreaContacto(Unidad *u, float mx, float my) {
     return (mx >= u->x && mx < u->x + 64.0f && my >= u->y && my < u->y + 64.0f);
 }
 
-// Procesa selección de un grupo de unidades
+// Procesa la selección de un grupo de unidades
+// Recorre un array de unidades y verifica si el clic cayó sobre alguna.
+// toggle: Si es true, invierte la selección (para shift-click).
 void procesarGrupo(Unidad *u, int cant, float mx, float my, bool toggle) {
     for (Unidad *top = u + cant; u < top; u++) {
         if (u->x < 0 || u->vida <= 0) { u->seleccionado = false; continue; }
-        bool hit = enHitbox(u, mx, my);
+        bool hit = enAreaContacto(u, mx, my);
         u->seleccionado = hit ? (toggle ? !u->seleccionado : true) : false;
     }
 }
@@ -79,7 +85,9 @@ void comandarMovimiento(float mundoX, float mundoY) {
   rtsComandarMovimiento(&jugador1, mundoX, mundoY);
 }
 
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
+// Procedimiento principal de ventana (Callback de Windows)
+// Maneja todos los eventos del sistema operativo (input, timers, pintado).
+LRESULT CALLBACK ProcedimientoVentana(HWND hwnd, UINT uMsg, WPARAM wParam,
                             LPARAM lParam) {
   static RECT rect;
 
@@ -462,7 +470,7 @@ int main() {
 
   // Registrar clase de ventana una sola vez
   WNDCLASSA wc = {0};
-  wc.lpfnWndProc = WindowProc;
+  wc.lpfnWndProc = ProcedimientoVentana;
   wc.hInstance = GetModuleHandle(NULL);
   wc.lpszClassName = "ClaseGuerraIslas";
   wc.hCursor = LoadCursor(NULL, IDC_ARROW);

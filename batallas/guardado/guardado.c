@@ -61,7 +61,7 @@ static void unidadAGuardada(const Unidad *src, UnidadGuardada *dst) {
   dst->tipo = (int)src->tipo;
   dst->vida = src->vida;
   dst->vidaMax = src->vidaMax;
-  dst->damage = src->damage;
+  dst->dano = src->dano;
   dst->critico = src->critico;
   dst->defensa = src->defensa;
   dst->alcance = src->alcance;
@@ -93,7 +93,7 @@ static void guardadaAUnidad(const UnidadGuardada *src, Unidad *dst) {
   dst->tipo = (TipoUnidad)src->tipo;
   dst->vida = src->vida;
   dst->vidaMax = src->vidaMax;
-  dst->damage = src->damage;
+  dst->dano = src->dano;
   dst->critico = src->critico;
   dst->defensa = src->defensa;
   dst->alcance = src->alcance;

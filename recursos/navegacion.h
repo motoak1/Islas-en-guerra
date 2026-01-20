@@ -54,7 +54,7 @@ typedef struct {
 	int tipo;
 	int vida;
 	int vidaMax;
-	int damage;
+	int dano;
 	int critico;
 	int defensa;
 	int alcance;

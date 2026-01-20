@@ -227,6 +227,7 @@ static void cargarSpritesTema(int tema) {
     if ((tema == 1 && gSpritesHieloCargados) || (tema == 2 && gSpritesFuegoCargados)) return;
     
     // Arrays de punteros a globals y rutas
+    // Carga recursiva de recursos gráficos según el tema seleccionado.
     HBITMAP *targets[] = {
         hCaballeroFuegoBmp, hCaballeroHieloBmp, // Front/Back/Left/Right
         hGuerreroFuegoBmp, hGuerreroHieloBmp
@@ -303,6 +304,8 @@ char mapaObjetos[GRID_SIZE][GRID_SIZE] = {0};
 
 // --- COLISIONES (matriz dinámica int**)
 // 0 = libre, 1 = ocupado (árboles u obstáculos)
+// 2 = Ocupada por unidad (temporalmente bloqueada)
+// Se utiliza puntero a puntero (int**) para gestión dinámica de memoria.
 static int **gCollisionMap = NULL;
 
 // --- SISTEMA DE VACAS DINÁMICAS ---
@@ -502,7 +505,8 @@ void mapaReconstruirCollisionMap(void) {
   collisionMapAllocIfNeeded();
     collisionMapClear(0);
 
-  // mapaObjetos ahora es 32x32 chars, collision map también es 32x32
+  // Reconstrucción del mapa de colisiones:
+  // Sincroniza la matriz visual (mapaObjetos) con la matriz lógica (gCollisionMap).
   // Mapeo 1:1 entre mapaObjetos y collisionMap (cada celda = 64px)
   for (int f = 0; f < GRID_SIZE; f++) {
     for (int c = 0; c < GRID_SIZE; c++) {
@@ -715,6 +719,7 @@ void mapaImportarEstadosIsla(const MapaEstadoSerializable estados[6]) {
 // ============================================================================
 
 // Helper para verificar color de agua segun tema
+// Detecta si un color RGB corresponde a agua basándose en el tema actual.
 static inline bool esColorAgua(BYTE r, BYTE g, BYTE b, int tema) {
     if (tema == 4) return (r < 20 && g < 80 && b > 100);
     if (tema == 5) return (r < 50 && b > 80 && b > g + 40);
