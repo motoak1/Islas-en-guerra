@@ -529,9 +529,22 @@ static bool entrenarUnidadGenerico(struct Jugador *j, Unidad *array, int count, 
         array[i].animActual = animPorDireccion(DIR_FRONT);
         array[i].recibiendoAtaque = false; array[i].tiempoMuerteMs = 0; array[i].frameMuerte = 0;
 
-        if(tipo == TIPO_OBRERO) { array[i].vidaMax = OBRERO_VIDA_MAX; }
-        else if(tipo == TIPO_GUERRERO) { array[i].vidaMax = 120; array[i].dano = 30; array[i].critico = GUERRERO_CRITICO; array[i].defensa = 20; array[i].alcance = 64; }
-        else { array[i].vidaMax = CABALLERO_VIDA; } // Caballero
+        if(tipo == TIPO_OBRERO) { 
+            array[i].vidaMax = OBRERO_VIDA_MAX; 
+        } else if(tipo == TIPO_GUERRERO) { 
+            array[i].vidaMax = GUERRERO_VIDA; 
+            array[i].dano = GUERRERO_DANO; 
+            array[i].critico = GUERRERO_CRITICO; 
+            array[i].defensa = GUERRERO_DEFENSA; 
+            array[i].alcance = 64; 
+        } else { 
+            // Caballero
+            array[i].vidaMax = CABALLERO_VIDA;
+            array[i].dano = CABALLERO_DANO;
+            array[i].defensa = CABALLERO_DEFENSA;
+            array[i].critico = CABALLERO_CRITICO;
+            array[i].alcance = 64; 
+        }
         array[i].vida = array[i].vidaMax;
 
         return true;
