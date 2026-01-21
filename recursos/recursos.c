@@ -96,8 +96,8 @@ static void obreroLiberarRuta(Unidad *o) {
 static void sincronizarIslasConquistadas(struct Jugador *j);
 
 // Pathfinding BFS - Ruta más corta usando arrays básicos
-// Implementación del algoritmo de Búsqueda en Anchura (Breadth-First Search).
-// Explora el mapa nivel por nivel para encontrar el camino más corto sin usar pesos.
+
+// Explora el mapa nivel por nivel para encontrar el camino más corto
 // Se utilizan arrays planos 'padreIdx' y 'bufferBFS' simulando colas para evitar estructuras de datos complejas.
 static bool pathfindSimple(int startF, int startC, int goalF, int goalC,
                            int **collision, int **outRuta, int *outLen) {
@@ -257,10 +257,6 @@ void IniciacionRecursos(struct Jugador *j, const char *Nombre) {
   j->CantidadEspadas = 0;
 
   initUnitArray(j->obreros, MAX_OBREROS, TIPO_OBRERO, 900.0f, 900.0f);
-  // Ocultar obreros restantes (logic handles > 6 check inside init?)
-  // Actually the original code had distinct logic for first 6 obreros. 
-  // Let's just fix the positions manually for the first 6 after init or make init smarter.
-  // Re-doing Init simplified:
   
   for(int i=0; i<MAX_OBREROS; i++) {
       if(i<6) { j->obreros[i].x = 900.0f + (i*64.0f); j->obreros[i].y = 900.0f; }
@@ -652,7 +648,6 @@ bool recursosIntentarCazar(struct Jugador *j, float mundoX, float mundoY) {
                                "Cazar Vaca", MB_YESNO | MB_ICONQUESTION);
 
     if (respuesta == IDYES) {
-      // CORRECCIÓN BUG DE SINCRONIZACIÓN:
       // Usamos el ÍNDICE de la vaca (vacaEncontrada) para eliminarla,
       // no su posición anterior (vacaFila, vacaCol).
       // Esto garantiza que aunque la vaca se haya movido mientras el
@@ -672,7 +667,7 @@ bool recursosIntentarCazar(struct Jugador *j, float mundoX, float mundoY) {
 
   // Si no hay tropa cerca, mandarlos a caminar
   rtsComandarMovimiento(j, mundoX, mundoY);
-  return true; // Click manejado (movimiento comandado)
+  return true; 
 }
 
 // Lógica de talar árboles
@@ -863,20 +858,15 @@ bool recursosIntentarRecogerMina(struct Jugador *j, float mundoX,
   return false;
 }
 
-// ============================================================================
-// PANEL HUD DE RECURSOS (Esquina superior derecha)
-// ============================================================================
 // Dibuja un panel con los recursos actuales del jugador y conteo de unidades.
 // Se renderiza sobre el buffer para evitar parpadeo.
 // Estilo visual: Medieval (pergamino, cuero, bronce)
-// ============================================================================
 void panelRecursosDibujar(HDC hdcBuffer, struct Jugador *j, int anchoPantalla) {
   if (!j)
     return;
 
-  // ================================================================
   // CONFIGURACIÓN DEL PANEL
-  // ================================================================
+
   const int PANEL_ANCHO = 230;
   const int PANEL_ALTO =
       230; // Aumentado para incluir Nivel de Barco
@@ -917,9 +907,7 @@ void panelRecursosDibujar(HDC hdcBuffer, struct Jugador *j, int anchoPantalla) {
   DeleteObject(penBordeExt);
   DeleteObject(penBordeInt);
 
-  // ================================================================
   // CONFIGURACIÓN DE TEXTO
-  // ================================================================
   SetBkMode(hdcBuffer, TRANSPARENT);
 
   // Fuente para el título (estilo medieval)
@@ -936,9 +924,7 @@ void panelRecursosDibujar(HDC hdcBuffer, struct Jugador *j, int anchoPantalla) {
 
   HFONT oldFont = (HFONT)SelectObject(hdcBuffer, fontTitulo);
 
-  // ================================================================
   // TÍTULO "RECURSOS" (Dorado brillante)
-  // ================================================================
   SetTextColor(hdcBuffer, RGB(255, 200, 80)); // Dorado cálido
   TextOutA(hdcBuffer, panelX + 12, panelY + 10, "RECURSOS", 8);
 
@@ -949,9 +935,7 @@ void panelRecursosDibujar(HDC hdcBuffer, struct Jugador *j, int anchoPantalla) {
   LineTo(hdcBuffer, panelX + PANEL_ANCHO - 12, panelY + 32);
   DeleteObject(penSeparador);
 
-  // ================================================================
   // RECURSOS (con colores distintivos sobre fondo cuero)
-  // ================================================================
   SelectObject(hdcBuffer, fontValor);
 
   char buffer[64];
@@ -987,9 +971,7 @@ void panelRecursosDibujar(HDC hdcBuffer, struct Jugador *j, int anchoPantalla) {
   TextOutA(hdcBuffer, panelX + 18, yPos, buffer, strlen(buffer));
   yPos += ESPACIADO_LINEA + 8; // Espacio extra antes de tropas
 
-  // ================================================================
   // CONTEO DE UNIDADES (parte inferior)
-  // ================================================================
   // Línea separadora (bronce)
   HPEN penSep2 = CreatePen(PS_SOLID, 1, RGB(160, 120, 60));
   SelectObject(hdcBuffer, penSep2);
@@ -1022,9 +1004,7 @@ void panelRecursosDibujar(HDC hdcBuffer, struct Jugador *j, int anchoPantalla) {
   sprintf(buffer, "Islas conquistadas: %d/5", totalConquistadas);
   TextOutA(hdcBuffer, panelX + 5, yPos + 43, buffer, strlen(buffer));
 
-  // ================================================================
   // LIMPIEZA DE RECURSOS GDI
-  // ================================================================
   SelectObject(hdcBuffer, oldFont);
   DeleteObject(fontTitulo);
   DeleteObject(fontValor);
@@ -1066,13 +1046,7 @@ bool entrenarCaballeroSinEscudo(struct Jugador *j, float x, float y) {
     return entrenarUnidadGenerico(j, j->caballerosSinEscudo, MAX_CABALLEROS_SIN_ESCUDO, (Edificio*)j->cuartel, TIPO_CABALLERO_SIN_ESCUDO);
 }
 
-// ============================================================================
 // FUNCIÓN DE MEJORA DEL BARCO
-// ============================================================================
-// Incrementa el nivel de mejora del barco, ampliando su capacidad de tropas.
-// Niveles: 1 (6 tropas) → 2 (9 tropas) → 3 (12 tropas) → 4 (15 tropas)
-// Cada mejora requiere recursos significativos.
-// ============================================================================
 bool mejorarBarco(struct Jugador *j) {
   if (!j)
     return false;
@@ -1124,12 +1098,7 @@ bool mejorarBarco(struct Jugador *j) {
   return true;
 }
 
-// ============================================================================
 // FUNCIÓN DE CONSTRUCCIÓN DEL BARCO
-// ============================================================================
-// Construye el barco inicialmente destruido, permitiendo su uso para navegar.
-// Una vez construido, se pueden aplicar mejoras desde el cuartel.
-// ============================================================================
 bool construirBarco(struct Jugador *j) {
   if (!j)
     return false;
@@ -1157,7 +1126,6 @@ bool construirBarco(struct Jugador *j) {
   j->barco.construido = true;
   j->barco.activo = true;
 
-  // LÓGICA DE ACTIVACIÓN / REPARACIÓN:
   // Si el barco ya tiene una posición válida (reparación), NO moverlo.
   // Solo buscar orilla si es la primera construcción (x=0, y=0).
   if (j->barco.x > 64.0f && j->barco.y > 64.0f) {

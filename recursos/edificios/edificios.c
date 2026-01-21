@@ -25,7 +25,7 @@
 
 // Sprites globales de edificios
 HBITMAP g_sprites[12] = {0}; // 0-2: Basics, 3-6: Castillos, 7-10: Cuarteles, 11: MinaHielo 
-// Mappings could be cleaner but this array approach simplifies cleanup significantly
+
 HBITMAP g_spriteAyuntamiento = NULL; 
 HBITMAP g_spriteMina = NULL;
 HBITMAP g_spriteCuartel = NULL;
@@ -41,8 +41,6 @@ HBITMAP g_spriteCuartelAliado = NULL;
 HBITMAP g_spriteCuartelEnemigo = NULL;
 HBITMAP g_spriteCuartelFuego = NULL;
 HBITMAP g_spriteCuartelHielo = NULL;
-// The file relies on specific global variables. Let's keep variables but optimize helper logic.
-// Actually, better to just use a helper function to redundant LoadImage calls.
 
 static HBITMAP cargarSprite(const char* path, int size) {
     return (HBITMAP)LoadImageA(NULL, path, IMAGE_BITMAP, size, size, LR_LOADFROMFILE | LR_CREATEDIBSECTION);

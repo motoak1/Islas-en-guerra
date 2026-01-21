@@ -12,18 +12,18 @@
 
 #define COSTO_CABALLERO_ORO 30 // Mantener Oro
 #define COSTO_CABALLERO_COMIDA 35 // Sube un poco
-#define COSTO_CABALLERO_MADERA 35 // Sube madera (Era 25)
-#define COSTO_CABALLERO_HIERRO 45 // Sube hierro (Era 35)
+#define COSTO_CABALLERO_MADERA 35 // Sube madera
+#define COSTO_CABALLERO_HIERRO 45 // Sube hierro
 
 #define COSTO_CABALLERO_SIN_ESCUDO_ORO 25 // Restaurado precio en oro
 #define COSTO_CABALLERO_SIN_ESCUDO_COMIDA 25
-#define COSTO_CABALLERO_SIN_ESCUDO_MADERA 25 // Sube madera (Era 15)
-#define COSTO_CABALLERO_SIN_ESCUDO_HIERRO 35 // Sube hierro (Era 25)
+#define COSTO_CABALLERO_SIN_ESCUDO_MADERA 25 // Sube madera
+#define COSTO_CABALLERO_SIN_ESCUDO_HIERRO 35 // Sube hierro
 
 #define COSTO_GUERRERO_ORO 15 // Mantener Oro
 #define COSTO_GUERRERO_COMIDA 25
-#define COSTO_GUERRERO_MADERA 25 // Sube madera (Era 15)
-#define COSTO_GUERRERO_HIERRO 40 // Sube hierro (Era 30)
+#define COSTO_GUERRERO_MADERA 25 // Sube madera
+#define COSTO_GUERRERO_HIERRO 40 // Sube hierro
 
 // --- ESTRUCTURA DEL MENÚ DE ENTRENAMIENTO ---
 typedef struct MenuEntrenamiento {

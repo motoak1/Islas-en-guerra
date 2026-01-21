@@ -8,11 +8,6 @@
 #include <time.h>
 #include <windows.h>
 
-
-// ============================================================================
-// FUNCIONES AUXILIARES INTERNAS
-// ============================================================================
-
 // Construye la ruta completa del archivo de guardado por nombre
 static void obtenerRutaGuardado(const char *nombreJugador, char *ruta, int maxLen) {
   // Sanitizar nombre (quitar caracteres inválidos para archivos)
@@ -156,10 +151,7 @@ static void guardadoAEdificio(const EdificioGuardado *src, Edificio *dst) {
   dst->ultimoTickGeneracion = GetTickCount();
 }
 
-// ============================================================================
 // FUNCIONES PÚBLICAS DE GUARDADO/CARGA
-// ============================================================================
-
 bool existePartida(const char *nombreJugador) {
   char ruta[256];
   obtenerRutaGuardado(nombreJugador, ruta, sizeof(ruta));
@@ -594,9 +586,7 @@ bool eliminarPartida(const char *nombreJugador) {
   return (remove(ruta) == 0);
 }
 
-// ============================================================================
 // MENÚ DE PAUSA EN PANTALLA (GDI) - Sin parpadeo
-// ============================================================================
 
 static const char *OPCIONES_PAUSA[] = {"Continuar", "Guardar partida",
                                        "Cargar partida", "Salir al menu"};
@@ -670,9 +660,7 @@ void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {
     
     int anchoV = rect.right - rect.left;
     int altoV = rect.bottom - rect.top;
-    
-    // NO dibujar overlay oscuro - permitir que el mapa se vea detras del panel
-    
+
     // Determinar tamaño del panel según el modo
     int panelAncho = 580;  // Aumentado de 450 a 580 para que quepa todo el texto
     int panelAlto = 340;   // Aumentado de 320 a 340
@@ -809,8 +797,6 @@ void menuPausaDibujar(HDC hdcBuffer, RECT rect, MenuPausa *menu) {
         int ayudaY = menu->numPartidas > 0 ? inicioY + 230 : inicioY + 150;
         TextOutA(hdcBuffer, panelX + (panelAncho - nSize.cx) / 2, ayudaY, nueva, strlen(nueva));
         SelectObject(hdcBuffer, fontOpciones);
-        
-       
         
     } else if (menu->modo == MODO_CARGAR) {
         // Pantalla de cargar - lista de partidas

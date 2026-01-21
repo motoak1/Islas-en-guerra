@@ -1006,26 +1006,12 @@ static void restaurarEstadoIslaJugador(struct Jugador *j, int isla) {
   if (!estado->inicializado)
     return;
 
-  // RECURSOS GLOBALES: No sobrescribir con el estado guardado de la isla
-  // j->Comida = estado->Comida;
-  // j->Oro = estado->Oro;
-  // j->Madera = estado->Madera;
-  // j->Piedra = estado->Piedra;
-  // j->Hierro = estado->Hierro;
+
 
   j->ayuntamiento = estado->tieneAyuntamiento ? &estado->ayuntamiento : NULL;
   j->mina = estado->tieneMina ? &estado->mina : NULL;
   j->cuartel = estado->tieneCuartel ? &estado->cuartel : NULL;
 
-  // Restaurar unidades con memcpy y limpieza
-  // Helper local (moved out) defined below or we can just inline. 
-  // But wait, the previous edit inserted it INSIDE. 
-  // Let's assume restoreAndClean is defined ABOVE or we define it here if we want to inline it, 
-  // but to be clean, let's fix the structure.
-  
-  // Actually, I can't move it "out" easily with a single replace block if I don't see the outside context fully safe.
-  // I will just Inline it here to be safe and remove the function definition.
-  
   Unidad *dsts[] = {j->obreros, j->caballeros, j->caballerosSinEscudo, j->guerreros};
   const Unidad *srcs[] = {estado->obreros, estado->caballeros, estado->caballerosSinEscudo, estado->guerreros};
   int counts[] = {MAX_OBREROS, MAX_CABALLEROS, MAX_CABALLEROS_SIN_ESCUDO, MAX_GUERREROS};
@@ -1042,9 +1028,7 @@ static void restaurarEstadoIslaJugador(struct Jugador *j, int isla) {
   } 
 }
 
-// ============================================================================
 // FUNCIONES AUXILIARES
-// ============================================================================
 
 bool barcoContienePunto(Barco *barco, float mundoX, float mundoY) {
   return (mundoX >= barco->x && mundoX < barco->x + BARCO_SIZE_PX &&
@@ -1174,20 +1158,14 @@ void desembarcarTropas(Barco *barco, struct Jugador *j) {
   }
 }
 
-// ============================================================================
+
 // REINICIAR ISLA DESCONOCIDA
-// ============================================================================
 // Cuando el jugador llega a una nueva isla, esta es una isla "desconocida"
 // sin edificios desarrollados, con recursos básicos, etc.
 // Esta función resetea el estado del jugador para la nueva isla.
-// ============================================================================
+
 void reiniciarIslaDesconocida(struct Jugador *j) {
 
-  // RECURSOS GLOBALES: Mantener los recursos actuales del jugador
-  // j->Comida = 50; // Menos recursos que al inicio
-  // j->Oro = 30;
-  // j->Madera = 40;
-  // j->Piedra = 30;
 
   // CRÍTICO: Eliminar edificios (la nueva isla no tiene edificios)
   j->ayuntamiento = NULL;
@@ -1195,12 +1173,11 @@ void reiniciarIslaDesconocida(struct Jugador *j) {
   j->cuartel = NULL;
 }
 
-// ============================================================================
+
 // VIAJE DIRECTO A ISLA (SIN ANIMACIÓN)
-// ============================================================================
+
 // Cuando el jugador selecciona una isla después de embarcar tropas,
 // viaja directamente sin animación del barco.
-// ============================================================================
 
 bool viajarAIsla(struct Jugador *j, int islaDestino) {
   if (!sIslaInicialDefinida) {

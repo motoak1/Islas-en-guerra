@@ -313,9 +313,8 @@ static int **gCollisionMap = NULL;
 static Vaca gVacas[10];
 static int gNumVacas = 0; // Cantidad de vacas activas
 
-// ---------------------------------------------------------------------------
+
 // PERSISTENCIA EN MEMORIA POR ISLA (1..3)
-// ---------------------------------------------------------------------------
 static bool gIslaGuardada[6] = {false};
 static char gMapaObjetosIsla[6][GRID_SIZE][GRID_SIZE];
 static int gCollisionIsla[6][GRID_SIZE][GRID_SIZE];
@@ -327,7 +326,6 @@ static int gNumVacasIsla[6] = {0};
 // Inicialmente 0. Se pone a 3 cuando se genera un árbol.
 static int gArbolesVida[GRID_SIZE][GRID_SIZE] = {0};
 static int gArbolesVidaIsla[6][GRID_SIZE][GRID_SIZE]; // Persistencia por isla
-
 
 static void detectarAguaEnMapa(void);
 void mapaMarcarArea(int f_inicio, int c_inicio, int ancho_celdas,
@@ -342,7 +340,6 @@ static void collisionMapAllocIfNeeded(void) {
     return;
 
   for (int i = 0; i < GRID_SIZE; i++) {
-    // Use calloc to zero-initialize memory (clean map)
     *(gCollisionMap + i) = (int *)calloc(GRID_SIZE, sizeof(int));
     if (!*(gCollisionMap + i)) {
       for (int k = 0; k < i; k++)
@@ -589,9 +586,7 @@ void mapaLiberarCollisionMap(void) {
   gCollisionMap = NULL;
 }
 
-// ---------------------------------------------------------------------------
 // PERSISTENCIA DE ESTADO POR ISLA (MEMORIA)
-// ---------------------------------------------------------------------------
 static bool islaValida(int isla) { return isla >= 1 && isla <= 5; }
 
 void mapaGuardarEstadoIsla(int isla) {
@@ -709,17 +704,16 @@ void mapaImportarEstadosIsla(const MapaEstadoSerializable estados[6]) {
   }
 }
 
-// ============================================================================
 // DETECCIÓN DE AGUA Y RECONSTRUCCIÓN DE COLISIONES
-// ============================================================================
+// 
 // Valores en collisionMap:
 //   0 = Celda libre (transitable)
 //   1 = Obstáculo (árbol o agua - impasable)
 //   2 = Ocupada por unidad (temporalmente bloqueada)
-// ============================================================================
 
 // Helper para verificar color de agua segun tema
 // Detecta si un color RGB corresponde a agua basándose en el tema actual.
+
 static inline bool esColorAgua(BYTE r, BYTE g, BYTE b, int tema) {
     if (tema == 4) return (r < 20 && g < 80 && b > 100);
     if (tema == 5) return (r < 50 && b > 80 && b > g + 40);
@@ -783,15 +777,14 @@ static void detectarAguaEnMapa(void) {
   }
 }
 
-// ============================================================================
 // DETECCIÓN AUTOMÁTICA DE ORILLA PARA BARCO (192x192px)
-// ============================================================================
+
 // Encuentra una posición válida en la orilla del mapa donde:
 // - El barco está EN EL AGUA (valor 1 = azul)
 // - Hay tierra adyacente (para confirmar que es orilla, no mar abierto)
 // - Hay espacio suficiente para el barco (6x6 celdas = 192px de agua)
 // Retorna la posición en píxeles y la dirección hacia la tierra
-// ============================================================================
+
 void mapaDetectarOrilla(float *outX, float *outY, int *outDir) {
   int **col = mapaObtenerCollisionMap();
   if (!col) {
@@ -819,14 +812,9 @@ void mapaDetectarOrilla(float *outX, float *outY, int *outDir) {
       for (int c = centroC - radio; c <= centroC + radio; c++) {
         // Verificar límites (el barco necesita espacio 6x6)
         if (f < 1 || f >= GRID_SIZE - BARCO_CELDAS - 1 || c < 1 ||
-            c >= GRID_SIZE - BARCO_CELDAS - 1)
-          continue;
+            c >= GRID_SIZE - BARCO_CELDAS - 1) continue;
 
-        // ================================================================
-        // CRÍTICO: La celda actual debe ser AGUA (valor 1)
-        // ================================================================
-        if (*(*(col + f) + c) != 1)
-          continue;
+        if (*(*(col + f) + c) != 1) continue;
 
         // Verificar que el bloque 6x6 completo sea AGUA (valor 1)
         bool bloqueAgua = true;
@@ -865,7 +853,7 @@ void mapaDetectarOrilla(float *outX, float *outY, int *outDir) {
           // Verificar si la celda adyacente es TIERRA (0)
 
           if (*(*(col + nf) + nc) == 0) {
-            // ¡Encontramos una orilla válida! El barco está en agua, orientado
+            //  El barco está en agua, orientado
             // hacia tierra
             *outX = (float)(c * TILE_SIZE);
             *outY = (float)(f * TILE_SIZE);
@@ -1026,13 +1014,10 @@ void cargarRecursosGraficos() {
   if (gGenerarRecursos) generarBosqueAutomatico(); else mapaReconstruirCollisionMap();
 }
 
-// ============================================================================
 // ACTUALIZACIÓN DE VACAS (MOVIMIENTO AUTOMÁTICO)
-// ============================================================================
-// Se ejecuta cada frame (60 FPS). Cada vaca tiene un timer que cuenta hasta 120
-// frames (~2 segundos). Cuando el timer llega a 120, la vaca se mueve una celda
+
 // en una dirección aleatoria, validando colisiones antes de moverse.
-// ============================================================================
+
 void mapaActualizarVacas(void) {
   if (!gCollisionMap)
     return;
@@ -1141,12 +1126,7 @@ void mapaActualizarVacas(void) {
     }
   }
 
-  // ================================================================
   // SINCRONIZACIÓN FORZADA: Limpiar y remarcar posiciones de vacas
-  // ================================================================
-  // Esto asegura que mapaObjetos siempre refleje la posición real
-  // de cada vaca, eliminando cualquier celda 'V' huérfana.
-  // ================================================================
 
   // Paso 1: Limpiar TODAS las celdas 'V' de la matriz
   for (int f = 0; f < GRID_SIZE; f++) {
@@ -1327,9 +1307,6 @@ static void dibujarUnidadCombat(HDC hdcBuffer, HDC hdcSprites, Unidad *u,
   }
 }
 
-// ============================================================================
-// DIBUJADO CON Y-SORTING (PROFUNDIDAD POR FILA)
-// ============================================================================
 // En lugar de dibujar todos los árboles y luego todos los obreros,
 // dibujamos el mapa fila por fila (de arriba hacia abajo).
 // Por cada fila Y:
@@ -1338,11 +1315,10 @@ static void dibujarUnidadCombat(HDC hdcBuffer, HDC hdcSprites, Unidad *u,
 //
 // Esto crea un efecto de profundidad natural: los objetos "más abajo"
 // en la pantalla se dibujan después (encima) de los objetos "más arriba).
-// ============================================================================
 
-// ============================================================================
+
 // DIBUJADO DE BARRAS DE VIDA
-// ============================================================================
+
 static void dibujarBarraVida(HDC hdc, int x, int y, int vida, int vidaMax,
                              float zoom) {
   if (vidaMax <= 0)
@@ -1673,9 +1649,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
   // Se dibuja siempre que el jugador esté en vista local
   panelRecursosDibujar(hdcBuffer, pJugador, anchoP);
 
-  // ============================================================================
   // RESALTAR CELDA BAJO EL CURSOR (DEBUG/VISUAL AID)
-  // ============================================================================
   if (highlightFila >= 0 && highlightCol >= 0) {
     // Calcular coordenadas en píxeles del mundo
     int mundoX = highlightCol * TILE_SIZE;
@@ -1731,9 +1705,7 @@ void dibujarMundo(HDC hdc, RECT rect, Camara cam, struct Jugador *pJugador,
   DeleteDC(hdcBuffer);
 }
 
-// ============================================================================
 // FUNCIONES DE GESTIÓN DE OBJETOS DEL MAPA (ACCESO EXTERNO)
-// ============================================================================
 
 int mapaObtenerTipoObjeto(int f, int c) {
   if (f >= 0 && f < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
@@ -1776,9 +1748,8 @@ void mapaEliminarObjeto(int f, int c) {
   }
 }
 
-// ============================================================================
 // SERIALIZACIÓN DEL MAPA
-// ============================================================================
+
 void mapaGuardar(FILE *f) {
   if (!f)
     return;
@@ -1797,9 +1768,7 @@ void mapaCargar(FILE *f) {
   mapaReconstruirCollisionMap();
 }
 
-// ============================================================================
 // FUNCIONES REQUERIDAS POR ESPECIFICACI\u00d3N ACAD\u00c9MICA
-// ============================================================================
 
 void inicializarMapa(char mapa[GRID_SIZE][GRID_SIZE]) {
   char (*ptrFila)[GRID_SIZE] = mapa;
@@ -1856,10 +1825,8 @@ void mostrarMapa(char mapa[GRID_SIZE][GRID_SIZE]) {
     printf("--");
   printf("+\n\n");
 }
-// ============================================================================
+
 // FUNCIONES DE SINCRONIZACIÓN: mapaObjetos <-> Estado del Juego
-// ============================================================================
-// Mantienen mapaObjetos actualizado con las posiciones reales de los objetos
 
 void mapaRegistrarObjeto(float pixelX, float pixelY, char simbolo) {
   int fila = (int)(pixelY / TILE_SIZE);
@@ -1949,10 +1916,8 @@ bool mapaCeldaEsTierra(int fila, int col) {
           BYTE g = GetGValue(color);
           BYTE b = GetBValue(color);
           
-          // ================================================================
           // DETECCIÓN DE AGUA SEGÚN TIPO DE ISLA
           // Solo el AZUL OSCURO oceánico bloquea el paso
-          // ================================================================
           bool agua = false;
           
           if (gIslaSeleccionadaActual == 4) {
@@ -2017,11 +1982,6 @@ void mapaActualizarArboles(void) {
   // REQUISITO: Eliminar regeneración de árboles. Son recursos finitos.
   // Si se acaban, no vuelven a aparecer.
   return;
-
-  /* Lógica anterior de regeneración deshabilitada
-  if (totalArboles >= 20)
-    return;
-  */
 
   if (!hMapaBmp)
       return;
